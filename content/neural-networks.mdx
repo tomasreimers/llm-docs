@@ -47,6 +47,7 @@ $$y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2$$
 With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
 
 <MlpFigure />
+
 ## The loss: measuring wrongness
 
 The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
