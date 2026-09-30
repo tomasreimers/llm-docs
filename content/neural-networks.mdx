@@ -37,7 +37,7 @@ Back to MNIST — an MNIST image is 28×28 pixels. Flatten it and you get a vect
 
 <FlattenFigure />
 
-Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, which we can treat as (and will shortly convert into) probabilities. We're doing statistics, not logic.
+Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, which we can treat as (and will shortly convert into) probabilities. Again, we're doing statistics, not logic.
 
 And the simplest mechanism in all of statistics for turning many weighted pieces of evidence into a score is a regression — a linear function of the input:
 
