@@ -50,6 +50,10 @@ With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the fi
 
 ## The loss: measuring wrongness
 
+We now have a function template with ~400,000 tunable parameters — currently filled with random numbers, producing garbage. "Training" means searching for parameter values that classify digits well. And any search needs a compass: a single number that says how good the current parameters are, so the algorithm can tell whether a change made things better or worse. That number is the **loss**, and defining it well matters as much as the architecture does — it is, literally, the spec the model will be optimized against.
+
+The obvious candidate — accuracy, percent correct — turns out to be a terrible compass. Nudge one weight slightly and usually *no* prediction flips, so accuracy doesn't move at all: the search gets no signal about which direction is better. What we want instead is a number that improves *continuously* as the model gets less wrong — one that rewards moving from "99% sure it's a 3" to "60% sure it's a 3" on an image of a 5, even though both are, discretely, the same mistake. That means grading the model's *confidence*, not just its verdict — and for that, its outputs need to be probabilities.
+
 The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
 
 $$p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}$$
