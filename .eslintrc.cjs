@@ -1,5 +1,6 @@
 module.exports = {
   root: true,
+  ignorePatterns: ["dist", ".next"],
   plugins: [
     "simple-import-sort",
     "import",
