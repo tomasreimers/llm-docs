@@ -17,7 +17,11 @@ export function IdleChrome() {
 
     const idle = () => {
       // Don't hide the chrome out from under a cursor resting on it.
-      if (document.querySelector('.nextra-sidebar:hover, .nextra-toc:hover')) {
+      if (
+        document.querySelector(
+          '.nextra-navbar:hover, .nextra-sidebar:hover, .nextra-toc:hover',
+        )
+      ) {
         timer = window.setTimeout(idle, IDLE_MS);
         return;
       }
