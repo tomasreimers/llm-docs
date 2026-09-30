@@ -15,7 +15,7 @@ A useful frame before diving in: the base model is a simulator of documents, and
 
 The first step is embarrassingly direct. Hire people (increasingly: use stronger models, with humans editing) to write ideal transcripts — conversations between a user and the assistant you *wish* existed. Then train on them with the exact same next-token loss from Chapter 1.
 
-This is **supervised fine-tuning** (SFT), and mechanically there is nothing new in it: it's more pre-training, on a tiny, curated corpus of "documents" that all happen to depict a helpful assistant. Conversations are serialized with special tokens marking who's speaking — the **chat template**:
+This is **supervised fine-tuning** (SFT), and mechanically there is nothing new in it: it's more pre-training, on a tiny, curated corpus of "documents" that all happen to depict a helpful assistant. (If you learned some ML years ago, you may know this whole pattern — train a general network once, expensively, then adapt it to tasks cheaply — as **transfer learning**. In the LLM era nobody says the term anymore, because it stopped being a technique and became the field's entire structure: the "P" in GPT stands for *pre-trained* precisely because the model is built to be adapted.) Conversations are serialized with special tokens marking who's speaking — the **chat template**:
 
 ```
 <|system|>You are a helpful assistant.<|end|>
