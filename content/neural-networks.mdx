@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { MlpFigure } from "../components/figures/mlp"
 import { Image } from "../components/image"
 import MnistPng from "../public/images/content/neural-networks/mnist.png"
@@ -75,6 +76,8 @@ So we have a function with hundreds of thousands of parameters and a loss we wan
 $$\theta \leftarrow \theta - \eta \nabla_\theta L$$
 
 The step size $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and the parameters ricochet around and diverge.
+
+<GradientDescentFigure />
 
 Two practical modifications matter:
 
