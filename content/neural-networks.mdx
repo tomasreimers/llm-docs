@@ -21,15 +21,15 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 
 ## Programming with data
 
-How do you program a computer to read these scribbles? The answer, in three steps:
+Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 — every rule you write has a thousand exceptions — and the early vision systems built on hand-written rules fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
 
-1. The problem is fuzzy, so we treat it as statistics — starting with the simplest tool, a regression.
+That's the thread this chapter pulls on, in three steps:
+
+1. We treat digit-reading as a statistics problem — starting with the simplest tool, a regression.
 2. Regression works surprisingly well, but it's linear; neural networks let us learn arbitrary functions.
 3. We learn them with gradient descent, powered by the chain rule.
 
-Machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
-
-Classifying a handwritten digit is a perfect example. Try writing the rules for what makes a scribble a "7" — every rule you come up with has a thousand exceptions — but everybody can label examples of one. When the rules are hard to write and the examples are cheap, you learn the function from data.
+Seen this way, machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
 
 ## The model: from a matrix to an MLP
 
