@@ -19,13 +19,11 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 
 ## Programming with data
 
-How do you program a computer to read these scribbles? The answer, in five steps:
+How do you program a computer to read these scribbles? The answer, in three steps:
 
-1. We wanted to identify handwritten digits.
-2. Since the problem is fuzzy, we had the idea to use statistics — the simplest tool being a regression.
-3. Statistics turned out to work quite well.
-4. We realized we could do better by learning arbitrary functions, not just linear ones.
-5. And we learn them via the chain rule.
+1. The problem is fuzzy, so we treat it as statistics — starting with the simplest tool, a regression.
+2. Regression works surprisingly well, but it's linear; neural networks let us learn arbitrary functions.
+3. We learn them with gradient descent, powered by the chain rule.
 
 Machine learning is a different way to program a computer: instead of writing the function yourself, you write a *template* for the function (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm search for the parameters that produce it.
 
