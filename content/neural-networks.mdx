@@ -44,7 +44,7 @@ Stack linear layers with nonlinearities between them and you have a **multi-laye
 
 $$y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2$$
 
-With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits. The nonlinearity is what lets the network make *decisions* — "this feature is present or it isn't" — rather than just re-weighting the input.
+With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
 
 <MlpFigure />
 
