@@ -15,9 +15,6 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 <Image src={MnistPng} alt="A grid of sample handwritten digits from the MNIST dataset, ten examples each of 0 through 9" />
 
 <span className="mt-2 block text-center text-sm text-gray-500 dark:text-gray-400">Samples from MNIST. Image by [Josef Steppan](https://commons.wikimedia.org/wiki/File:MnistExamples.png), CC BY-SA 4.0.</span>
-
-The reason to start here, rather than with language, is that every idea in this chapter survives unchanged inside a frontier LLM. A trillion-parameter model is trained with the same loop we're about to write: make a prediction, measure how wrong it was, nudge the parameters to be less wrong, repeat.
-
 ## Programming with data
 
 Andrej Karpathy calls this paradigm [Software 2.0](https://karpathy.medium.com/software-2-0-a64152b37c35), and I think it's the right mental model for an engineer: instead of writing the function yourself, you write a *template* for the function (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm search for the parameters that produce it.
