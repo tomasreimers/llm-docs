@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@source "./pages/**/*.{js,ts,md,jsx,tsx,mdx}";
+@source "./components/**/*.{js,ts,md,jsx,tsx,mdx}";
+@source not ".next";
+@source not "dist";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import 'nextra-theme-docs/style.css';
+
+.nextra-content {
+  ul {
+    padding: 0;
+    list-style-type: none;
+
+    li {
+      &::before {
+        content: "–";
+        display: inline-block;
+        color: var(--color-gray-500);
+        position: absolute;
+        margin-left: -15px;
+      }
+
+      ul {
+        margin-top: 0;
+      }
+    }
+  }
+
+  ol {
+    li::marker {
+      color: var(--color-gray-500);
+    }
+  }
+}

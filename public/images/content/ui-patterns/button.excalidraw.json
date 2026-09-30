@@ -1,0 +1,82 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "vjwhdBDI2WfVKhbvvBNtW",
+      "type": "rectangle",
+      "x": 67.67791823533037,
+      "y": -407.0518639148644,
+      "width": 149.5706823143414,
+      "height": 50.55966334202378,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": {
+        "type": 3
+      },
+      "seed": 1833689414,
+      "version": 313,
+      "versionNonce": 611791686,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "eJ_yeUE3RlxbjfBNpd9P7"
+        }
+      ],
+      "updated": 1705176464933,
+      "link": null,
+      "locked": false
+    },
+    {
+      "id": "eJ_yeUE3RlxbjfBNpd9P7",
+      "type": "text",
+      "x": 92.61328380656357,
+      "y": -394.2720322438525,
+      "width": 99.699951171875,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1889732442,
+      "version": 9,
+      "versionNonce": 1580561542,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1705176466197,
+      "link": null,
+      "locked": false,
+      "text": "CLICK ME",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "vjwhdBDI2WfVKhbvvBNtW",
+      "originalText": "CLICK ME",
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

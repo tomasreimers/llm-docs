@@ -1,0 +1,217 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+import { Excalidraw } from "../components/excalidraw"
+import { Image } from "../components/image"
+import ChromeProfiler from "../public/images/content/profiling-and-testing/chrome-profiler.png"
+import ReactDevtoolsFlamechart from "../public/images/content/profiling-and-testing/flamechart.png"
+import Lighthouse from "../public/images/content/profiling-and-testing/lighthouse.png"
+import ReactDevtools from "../public/images/content/profiling-and-testing/react-devtools.png"
+import ReactDevtoolsTimeline from "../public/images/content/profiling-and-testing/timeline.png"
+import VirtualizationJSON from "../public/images/content/profiling-and-testing/virtualization.excalidraw.json"
+
+<Breadcrumbs />
+
+# Profiling and testing: Productionizing apps
+
+<ByLine />
+
+As you get ready to deploy your application, you probably start to think about performance and stability.
+
+## Profiling
+
+Profilers are how we can reliably achieve and debug performance. Chrome devtools ships with a [profiler](https://developer.chrome.com/docs/devtools/performance) that helps you debug slow parts of your JavaScript, and hopefully looks familiar to anyone who's previously worked with profilers or had to read [flame charts](https://medium.com/performance-engineering-for-the-ordinary-barbie/profiling-flame-chart-vs-flame-graph-7b212ddf3a83). 
+
+<Image src={ChromeProfiler} alt="The devtools profiler" />
+
+In many ways, profiling is the same regardless of what language you're working in; however, something specific to rendering UI is profiling code that renders and rerenders UI. While the core technologies are the same, the implications and what you optimize are very different; for example, does it matter if Chrome takes a while to render something that's not visible until the user scrolls? 
+
+(For webpages, which scroll vertically, content that is visible before scrolling is referred to as "above the fold" and content that needs to be scrolled to is referred to as "below the fold". This language is borrowed from newspapers, which are typically folded in half, and where the headlines want to be "above the fold".) 
+
+### Lighthouse
+
+While the answer to that question depends on your specific application, there are a few metrics that the developer community has decided should matter generally: 
+
+- [First contentful paint (FCP)](https://web.dev/articles/fcp): Time until any content is rendered on the screen. 
+- [Largest contentful paint (LCP)](https://web.dev/articles/lcp): Time until the render that paints the most content above the fold.
+- [Cumulative layout shift (CLS)](https://web.dev/articles/cls): A burst of renders that meaningfully move page content.
+- [First input delay (FID)](https://web.dev/articles/fid): The delay between a user's first interaction and its event handler running.
+- [Interaction to Next Paint (INP)](https://web.dev/articles/inp): Time from user interaction until the page rerenders. 
+
+I'll caution you against over-indexing on these metrics. Over time they've evolved, and like most things in the JavaScript ecosystem "over time" is short. The "most important" metrics change every 2-4 years. 
+
+Computing these metrics yourself can be tedious, and Chrome ships with [Lighthouse](https://developer.chrome.com/docs/lighthouse/overview#devtools): a tool that scores websites across a variety of metrics, including performance (as well as for SEO, accessibility, best practices, and other important things.) Lighthouse can be accessed directly from Chrome devtools.
+
+<Image src={Lighthouse} alt="Lighthouse" />
+
+### React devtools 
+
+Profiling is wonderful, but can be limiting when profiling applications using a framework: as suboptimal code is more likely to generate flamecharts pointing at React internals than the actual problem. 
+
+Fortunately, React ships with its own profiler that can help you identify problematic code: [React devtools](https://react.dev/learn/react-developer-tools).
+
+<Image src={ReactDevtools} alt="React devtools" />
+
+React devtools are embedded within Chrome devtools and can inspect the React tree (much like the elements panel in Chrome devtools allows you to inspect the DOM). 
+
+Additionally, React can expose hooks for devtools to be able to profile performance of React apps. Because these hooks add some overhead to the app, they are opt-in. There are three common builds of React: 
+
+ - Development: the version you build with when developing locally.
+ - Production: the version that gets deployed to users. 
+ - Profiling: Production with additional hooks for profiling. 
+
+Typically, switching between these versions is handled by whatever scaffolder or meta-framework you used to generate your application, but can be [manually defined](fb.me/react-profiling). 
+
+If you're using the development or profiling builds of React, React devtools can capture a profile and generate a timeline showing you the various tasks React was doing over time:
+
+<Image src={ReactDevtoolsTimeline} alt="React devtools timeline" />
+
+React devtools can also generate a flamechart of a render, and what caused certain components to rerender:
+
+<Image src={ReactDevtoolsFlamechart} alt="React devtools flamechart" />
+
+### Optimizations
+
+Because browser JavaScript is single-threaded, you want to make sure your render function doesn't take too long; for example, if you want your app to update in response to user input at 30 frames per second (video games tend to target 60fps) render can take a maximum of `33ms - time react needs to reconcile + commit` (~16ms as a rule of thumb).
+
+Once you have identified any slow parts of your app, there are a few common tactics to speed them up.
+
+#### Memoizing data
+
+By far, the easiest thing to speed up is a single component that takes a long time to render. This is probably because that component's render function is doing some non-trivial compute; for a contrived example:
+
+```tsx
+function Fibonacci({ n }: { n: number }) {
+  const value = computeFibonacci(n);
+
+  return <div>
+    The {n} value in the fibonacci sequence is {value}!
+  </div>;
+}
+```
+
+Every time this component renders, it will recompute the nth fibonacci number, even though it's previously computed it. The [`useMemo`](https://react.dev/reference/react/useMemo) hook allows you to memoize expensive compute:
+
+```tsx
+function Fibonacci({ n }: { n: number }) {
+  const value = useMemo(() => {
+    return computeFibonacci(n)
+  }, [n]);
+
+  return <div>
+    The {n} value in the fibonacci sequence is {value}!
+  </div>;
+}
+```
+
+`useMemo` takes in a lambda whose return value to memoize, and an array of props. Whenever one of the values in the array changes, the value is recomputed (similar to the array of props for `useEffect`).
+
+#### Memoizing components
+
+Sometimes, you don't want to memoize data, but entire components. If you've poked around the React devtools profiler, you'll notice that every time a component rerenders, so do all of its children. 
+
+This is the default behavior of React, and can lead to problems if state is held too high up in the tree; for example, imagine you have a very long list of items, stored as state in a parent component, and the user changes a single item. By default, React will re-render the entire list, but as the developer you know only the changed item needs to be rerendered. React provides [`memo`](https://react.dev/reference/react/memo) to handle this case. 
+
+```jsx
+import { memo } from 'react';
+
+const SomeComponent = memo(function SomeComponent(props) {
+  // ...
+});
+```
+
+When a component is wrapped in `memo` it will only rerender if its props change (defined as are no-longer pointer equal). In the event you're passing complex objects to your component (functions, objects, classes, anything where pointer equality is insufficient to determine equality), you can pass a second parameter to `memo` which takes in new props and old props and returns whether they're equal.
+
+#### List virtualization
+
+Sometimes simply rendering that many items in the browser (or having that many nodes in the DOM) will cause your app to be slow. This is commonly the case with really long lists (imagine a spreadsheet application viewing a sheet with 10,000 rows). In these cases, memoization won't solve the problem because the mere existence of those rows is causing a problem. 
+
+The solution is to not render all of the rows, a technique known as list virtualization. In list virtualization, you compute which rows would be on screen (either because you measure the height of each row, or--even better--you know the height of each row ahead of time, for example, in the spreadsheet where all rows are the same height) and you only render those rows. For rows which are not rendered, you either replace them with a large empty box (that consumes equivalent space) or absolutely position all of the displayed rows at the location they would have been anyway. 
+
+<Excalidraw contents={VirtualizationJSON} />
+
+You rarely have to implement list virtualization yourself, consider using [react-virtualized](https://github.com/bvaughn/react-virtualized) and [react-window](https://github.com/bvaughn/react-window).
+
+## Testing
+
+As your app gets more complex, you will want to test it.
+
+### Unit tests 
+
+Customarily, if you have any significant logic, you should break that out into its own package (for example, if you're writing a calendar app, I would expect a lot of the date manipulation logic to be its own package). As a package implementing pure logic (without UI), you can test it using any JavaScript testing framework. Some common options are [Jest](https://jestjs.io/) and [Mocha](https://mochajs.org/) (Mocha is a test runner typically used with [Chai](https://www.chaijs.com/) which provides syntactic sugar over `assert`). Code coverage can be computed with [`nyc`](https://github.com/istanbuljs/nyc).
+
+```tsx 
+// An example using Jest
+import { sum } from "./sum"
+
+test('adds 1 + 2 to equal 3', () => {
+  expect(sum(1, 2)).toBe(3);
+});
+```
+
+For people that come from untyped / weakly typed languages (e.g. Python and Ruby) and are now working in a TypeScript codebase, a word of caution: I've noticed a heavy reliance on unit tests for things that can, or should, probably be typed instead. For example, there is no need to test that `sum()` will return a number, or even that `zip()` works, both of these can be fully checked by the type system.
+
+The type system is a really powerful way to reduce (or eliminate) the space you have to test; in the same way you don't rely on asserts for things you can test, and shouldn't rely on tests for things you could type.
+
+### Integration tests 
+
+While logic should be pulled out of your app as much as it can be, there will still be components, and those components will still have logic (if nothing else, there are probably event handlers to test). 
+
+[`react-testing-library`](https://testing-library.com/docs/react-testing-library/intro) works by actually rendering components, and providing utilities to query those components and interact with them (firing event handlers). 
+
+```tsx
+import {render, screen} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom'
+
+test('Can increment counter', async () => {
+  render(<Counter />);
+
+  expect(screen.getByRole('heading')).toHaveTextContent('0');
+
+  await userEvent.click(screen.getByText('Increment counter'));
+
+  expect(screen.getByRole('heading')).toHaveTextContent('1');
+});
+```
+
+Because it actually renders components, it requires a DOM: the simplest way to run it is in the browser, which already has a DOM. You can also run it in Jest, which mocks the DOM automatically using [`jsdom`](https://www.npmjs.com/package/jsdom) and [`global-jsdom`](https://www.npmjs.com/package/global-jsdom) to define global variables for `window` and `document`. For any other environments, you'll need to [mock the dom yourself](https://testing-library.com/docs/react-testing-library/setup#using-without-jest).
+
+### End-to-end tests 
+
+While integration tests are great, they aren't bulletproof in the world of UI. For example, while you can still technically click a button, and that button may do what you expect, it's exceptionally hard to do if the button is off-screen or has a width of 0. 
+
+For this reason, many frontend projects have some level of end-to-end testing: where they load their application in a literal browser, and attempt to interact with it (a simple example would be: find the X/Y coordinates of a button, move the mouse to that X/Y coordinates, and click). Because they rely on loading your application and browser state, end-to-end tests (E2E tests) can be notoriously flaky. 
+
+Some common libraries are [Cypress](https://www.cypress.io/) and [Playwright](https://playwright.dev/).
+
+```tsx
+describe('My First Test', () => {
+  it('clicking "type" navigates to a new url', () => {
+    cy.visit('http://localhost:3000/')
+
+    cy.contains('Link to new URL').click()
+
+    // Should be on a new URL which
+    // includes '/commands/actions'
+    cy.url().should('include', '/commands/actions')
+  })
+})
+```
+
+Frontend testing often inverts the traditional "test pyramid" - prioritizing end-to-end tests over unit tests. Frontend and backend codebases often differ in shape: backend tends to be deep and narrow (complex pieces with direct dependencies), while frontend tends to be wide and shallow (simple pieces with loose connections). This means frontend failures usually come from components interfering with each other, not internal bugs, and are better found with integration or end-to-end tests. (The exception is pure computational logic, which is typically isolated into packages and unit tested like backend code.)
+
+### Visual tests
+
+Lastly, when working with components where design and visual layout matter a lot (and definitely when testing a design system), it is common to do visual testing. In visual testing, you render a component, take a screenshot, and compare that screenshot against some stored value. 
+
+As you might imagine, this can be incredibly fragile, and it's critical to mock out all data; if your component includes any networked-fetched data or relative time ("N days since...") it will likely fail. However, this type of testing can be useful to ensure you don't have regressions in critical components (for example, for a seemingly harmless CSS change causes all buttons to triple in size). 
+
+There are plenty of services to help with visual testing, and some examples are [BrowserStack](https://www.browserstack.com/) and [Percy](https://percy.io/).
+
+An alternative to this is [snapshot testing](https://jestjs.io/docs/snapshot-testing) where the rendered HTML is stored (instead of a screenshot).
+
+## Reporting 
+
+Profiling and testing are great, but sometimes there are bugs that only happen in production. 
+
+There are plenty of services that will help add observability to your frontend application (including [Datadog](https://www.datadoghq.com/dg/real-user-monitoring/ux-monitoring/), [Senty](https://sentry.io/welcome/), and [LogRocket](https://logrocket.com/)). But if you want to roll your own, consider [`web-vitals`](https://github.com/GoogleChrome/web-vitals) the technology behind Lighthouse and [`<Profiler>`](https://react.dev/reference/react/Profiler) which gives you programmatic access to React renders.
