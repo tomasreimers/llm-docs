@@ -16,13 +16,13 @@ const config = {
     return (
       <>
         <meta property="og:url" content={url} />
-        <meta property="og:title" content={title || 'Frontend docs'} />
-        <title>{title || 'Frontend docs'}</title>
+        <meta property="og:title" content={title || 'LLM docs'} />
+        <title>{title || 'LLM docs'}</title>
         <meta
           property="og:description"
           content={
             frontMatter?.description ||
-            'A ~20-page, front-to-back-readable guide on writing frontend for experienced developers.'
+            'A ~12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.'
           }
         />
         <meta name="twitter:card" content="summary_large_image" />

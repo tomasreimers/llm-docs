@@ -1,0 +1,73 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Hardware: The physics of tokens
+
+<ByLine />
+
+It is one of history's better jokes that the machine underneath the most important technology of the decade was built for video games. GPUs exist because rendering pixels is millions of small, independent, identical calculations — and by lucky coincidence (nudged along by a decade of co-evolution), so is a neural network. Chapter 1 showed you that a model is essentially a pile of matrix multiplies; this chapter is about the machine that does them, because its physics — not the math — sets the price of every token you buy.
+
+## A GPU, for people who know computers
+
+A CPU is a few dozen brilliant cores optimized to make *one* thread fast: caches, branch prediction, speculative execution. A GPU inverts every priority: tens of thousands of simple cores that are individually slow but collectively enormous, organized (on an NVIDIA H100) into ~132 **streaming multiprocessors**, each containing **tensor cores** — silicon whose only job is multiplying small matrices. If your workload is "do the same arithmetic on huge regular arrays," nothing else comes close. If it has branches and pointer-chasing, keep your CPU.
+
+The numbers that matter, using the H100 as the reference machine of the era:
+
+- **Compute**: on the order of 1,000 teraFLOPs (10¹⁵ operations/sec) at 16-bit precision.
+- **Memory**: 80 GB of high-bandwidth memory (**HBM**) at ~3.35 TB/s.
+- **On-chip SRAM**: tens of megabytes, ~10× faster than HBM — the cache level FlashAttention (Chapter 5) lives in.
+
+Do the division and you get the single most important ratio in this book: roughly **300 floating-point operations per byte** moved from memory. The silicon can compute ~300 times faster than it can be fed.
+
+## The roofline: are you feeding the beast?
+
+That ratio gives you a one-line performance model that explains almost everything in Part IV. For any computation, count its **arithmetic intensity** — FLOPs performed per byte of memory traffic. Above ~300, you're **compute-bound**: the tensor cores are the bottleneck and you're getting your money's worth. Below it, you're **memory-bound**: the cores idle, waiting on bytes, and adding FLOPs is free because you weren't using the ones you had. (Horace He's [Making Deep Learning Brrrr From First Principles](https://horace.io/brrr_intro.html) is the canonical tour of this mental model — most "why is my model slow" questions die on its first page.)
+
+Now apply it to the transformer's two lives:
+
+**Training is compute-bound.** You process billions of tokens in huge batches; every weight fetched from memory is reused across the whole batch, so arithmetic intensity is high. Efficiency is reported as **MFU** (model FLOPs utilization — the fraction of theoretical FLOPs doing useful work); frontier runs fight for 40–50%.
+
+**Inference — specifically, generating — is memory-bound.** Chapter 2's confession comes due: generation is one token at a time. To emit a single token, *every parameter must travel from HBM to the cores* — for a 70B model in 16-bit, ~140 GB moved to produce a handful of FLOPs per weight. Arithmetic intensity: ~1. The GPU that trained at 50% utilization generates at ~1%. **The speed at which a model talks to you is set by memory bandwidth, not compute** — 3.35 TB/s ÷ 140 GB explains why a lone user sees a couple dozen tokens per second, and why the serving tricks of the next chapter are all, at heart, schemes to raise arithmetic intensity.
+
+One refinement to file: processing your *prompt* (**prefill**) handles all input tokens in parallel — that's a big batch, so it's compute-bound and fast. Generating the *response* (**decode**) is the memory-bound crawl. This asymmetry is why long inputs are cheap relative to long outputs, and why APIs price them differently.
+
+## Memory math: why one GPU is never enough
+
+The other physical constraint is capacity. Count a training run's residents, at mixed precision with Adam (Chapter 1's foreshadowing pays off):
+
+| Resident | Bytes per parameter |
+|---|---|
+| Weights (bf16) | 2 |
+| Gradients (bf16) | 2 |
+| Adam moments + master weights (fp32) | ~12 |
+
+Roughly **16 bytes per parameter** — a 70B model needs ~1.1 TB before a single activation is stored, versus 80 GB on the card. Training a frontier model on one GPU isn't slow; it's *impossible*. Hence parallelism, in four standard flavors:
+
+- **Data parallel**: replicate the model, split the batch, average gradients. Simplest — and the memory-hungriest, tamed by sharding optimizer state across replicas (ZeRO/FSDP).
+- **Tensor parallel**: split individual matrices across GPUs; every layer becomes a collective communication. Bandwidth-brutal — kept within a tightly-coupled node (NVLink, ~900 GB/s).
+- **Pipeline parallel**: put different layers on different GPUs; keep the assembly line full with micro-batches.
+- **Expert parallel**: MoE's gift (Chapter 5) — experts live on different GPUs and tokens are *routed* over the network to whichever experts they need.
+
+A frontier run composes all four across tens of thousands of GPUs — which is why the interconnects (NVLink within a node, InfiniBand across the cluster) are as much the computer as the GPUs are, and why "the network is the bottleneck" is a sentence you'll hear in both datacenter engineering and MoE papers.
+
+Inference memory is a smaller but sharper story: the weights (140 GB for our 70B model — already two GPUs before anyone connects) plus the **KV cache** — Chapter 5's monster, which grows linearly with every token of every concurrent conversation and competes with the weights for the same 80 GB. Managing that competition is half of the next chapter.
+
+## The numbers to carry in your head
+
+Every LLM engineer eventually internalizes a small table; here's a starter (order-of-magnitude, per the H100 era):
+
+- Weights in 16-bit: **2 bytes/param** → a model needs ~2× its parameter count in GB just to exist.
+- Decode speed ceiling: **memory bandwidth ÷ bytes-of-active-weights** (MoE's "active" distinction now cashes out: DeepSeek-V3 reads 37B parameters per token, not 671B).
+- Training cost: **~6 FLOPs per parameter per token** (the classic estimate: 2 forward + 4 backward) — multiply by N params and D tokens, divide by cluster FLOPs × MFU, and you can sanity-check any lab's claimed training time from your armchair.
+- Failure rate: at 16K GPUs, expect an interruption **every few hours** (Chapter 7).
+
+The meta-lesson, before we climb back up the stack: in this field the constraint is almost never "can we compute it" but "can we *feed* it" — bytes, not FLOPs. Hold onto that; the entire next chapter is the art of moving fewer bytes.
+
+## Further reading
+
+- [Making Deep Learning Go Brrrr From First Principles](https://horace.io/brrr_intro.html) — the roofline mental model, delightfully written. The most engineer-native document in this book's bibliography.
+- [Transformer Inference Arithmetic](https://kipp.ly/transformer-inference-arithmetic/) — kipply's back-of-envelope guide; derives this chapter's inference math with real numbers.
+- [Navigating the High Cost of AI Compute](https://a16z.com/navigating-the-high-cost-of-ai-compute/) — the economics layer: what GPUs cost, why they're scarce, how to think about buying vs. renting.
+- [The Llama 3 Herd of Models](https://arxiv.org/abs/2407.21783) — the infrastructure sections read as a field report from a 16K-GPU run: parallelism layout, failure statistics, all of it.

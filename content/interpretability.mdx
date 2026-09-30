@@ -1,0 +1,60 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Interpretability: What did it learn?
+
+<ByLine />
+
+Here is the uncomfortable fact at the center of this book: we do not write these models, we *grow* them. A frontier LLM is on the order of a trillion floating-point numbers, arranged by gradient descent into something that writes poetry and finds bugs in your code — and no one can point to where any of it lives. The weights are, in the standard phrase, *inscrutable*.
+
+**Mechanistic interpretability** is the young field trying to fix that: to reverse-engineer trained networks the way you'd reverse-engineer a binary without source. I've given it a full chapter for two reasons. First, it has produced the best mental models we have for *thinking* about what happens inside a transformer — useful even if you never read another interpretability paper. Second, it's the part of LLM theory that feels most like natural science: experiments, microscopes, genuine surprises. If any chapter of this book makes someone quit their job to do research, I'd bet on this one.
+
+## Features: the units of meaning
+
+The field's founding bet is that networks are not homogeneous soup — that they contain **features**: directions in activation space that correspond to meaningful concepts. Chapter 2 already showed you the prototype: word2vec's `king − man + woman ≈ queen` demonstrated that a *direction* can encode a concept like gender.
+
+The bet has paid out. Researchers have found — first in vision models (the [Circuits thread](https://distill.pub/2020/circuits/zoom-in/) at Distill), then in LLMs — activation directions that fire for curve detection, for base64-encoded text, for Python type errors, for sycophancy, for the Golden Gate Bridge. The residual stream framing from Chapter 3 now completes: the stream is a bus, and what travels on the bus is a sparse combination of features.
+
+## Superposition: why you can't just look
+
+If features were assigned one-per-dimension — neuron 4,721 means "cats" — interpretability would be easy. It isn't, and the reason is a genuinely beautiful result from Anthropic's [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html).
+
+A model has vastly more things worth representing than it has dimensions. But high-dimensional geometry offers a loophole: while an $n$-dimensional space has only $n$ perfectly orthogonal directions, it has *exponentially many* directions that are **almost** orthogonal. Since real-world features are sparse (most concepts are absent from most inputs), the model can pack far more features than dimensions into the space, accepting a little interference between them — like a lossy compression scheme, or Bloom-filter-style overlap. This is **superposition**, and it has a sharp consequence: individual neurons are *polysemantic* — one neuron fires for cats, and car grilles, and a particular Korean suffix — not because the model is confused, but because that's the compressed encoding. You cannot read the code by looking at one wire.
+
+## Sparse autoencoders: the decompressor
+
+If superposition is compression, the countermove is to learn the decompressor. A **sparse autoencoder** (SAE) is a wide, simple network trained to re-express a layer's activations as a sparse combination of a much larger dictionary of directions — millions of candidate features, only a handful active at a time.
+
+Anthropic's [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/) ran this on a production model (Claude 3 Sonnet) and extracted millions of features that are strikingly *interpretable*: a feature for the Golden Gate Bridge that fires on the text in any language, on photos of it, on descriptions of driving across it. Features for security vulnerabilities in code. Features for deception, flattery, and hidden agendas.
+
+The killer demo was **steering**: clamp a feature's activation up, and the model's behavior changes accordingly. Anthropic briefly released [Golden Gate Claude](https://www.anthropic.com/news/golden-gate-claude), a version of Claude with the bridge feature pinned high, which worked mentions of the bridge into literally any answer — a wonderful, absurd proof that the extracted features are *causal handles*, not just correlations. Reading the model and editing the model are two sides of the same discovery.
+
+## Circuits: the algorithms
+
+Features are the variables; **circuits** are the programs — patterns of attention heads and MLP neurons that implement identifiable algorithms across layers.
+
+The best-understood example is the **induction head** ([in-context learning and induction heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html)): a two-head circuit that implements, roughly, *"find the last time this token appeared in the context, look at what followed it, and predict that again."* A fuzzy grep. Induction heads snap into existence at a specific, visible bump in every training run's loss curve, and their appearance coincides with the model getting dramatically better at in-context learning — Chapter 4's headline "emergent" capability, here with a *mechanistic explanation*. Grander behaviors are still mostly unmapped, but the existence proof matters: emergence isn't magic; it's circuits forming, and at least sometimes we can catch them doing it.
+
+The division of labor mirrors Chapter 3's slogan (attention routes, MLPs compute): attention-based circuits move and copy information; MLP layers act as the model's key-value memory of *facts* — which is why "where does a model store 'Paris is the capital of France'" has an actual answer (mid-layer MLPs, distributed but localizable enough that targeted edits can overwrite specific facts).
+
+A related cheap trick worth knowing: the [logit lens](https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens) — take the residual stream at *any* layer, project it through the final output head, and watch the prediction sharpen layer by layer. It's `printf` debugging for transformers, and it makes the "stream refines toward an answer" picture vividly concrete.
+
+## What this buys us
+
+Beyond satisfying curiosity, three practical stakes:
+
+- **Steering and debugging.** Feature-level handles offer a path to controlling models that's more surgical than prompting and cheaper than retraining — suppress the sycophancy feature, boost the caution one. Early days, but the demos are real.
+- **Auditing.** The safety question "is the model being deceptive?" becomes empirical if you can check whether deception features are active. This is a major reason frontier labs fund this work.
+- **Trusting (or not) the chain of thought.** Reasoning models (Chapter 8) show their work — but interpretability research has documented cases where the stated reasoning and the mechanistic cause of the answer *diverge*. The transcript is evidence, not ground truth. Remember this when you're tempted to treat a model's self-explanation as an audit log.
+
+Honest scorecard: the field can fully explain toy models, extract features and some circuits from frontier models, and steer with them — but a complete mechanistic account of "why did the model say *that*" remains out of reach. It is biology in the decade after the microscope: we can finally see cells; we cannot yet cure much. I know of no other open problem in computer science with a higher ratio of importance to number of people working on it.
+
+## Further reading
+
+- [Zoom In: An Introduction to Circuits](https://distill.pub/2020/circuits/zoom-in/) — the field's founding document, and (on distill.pub) the aesthetic this book aspires to.
+- [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html) — the best paper in the field; the toy models are simple enough to reimplement in an afternoon.
+- [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/) — SAEs on a production model, and the Golden Gate Claude story.
+- [In-context Learning and Induction Heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) — the most complete story we have connecting a circuit to a capability.
+- [Interpreting GPT: the Logit Lens](https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens) — a two-page trick that will permanently improve your mental model of the residual stream.

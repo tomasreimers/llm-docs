@@ -1,0 +1,56 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Sampling & beyond: The model in the loop
+
+<ByLine />
+
+Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision — sampling — is the last mile between the frozen artifact of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack — structured output, tool use, agents — stops being magic and becomes control flow.
+
+## Temperature and friends
+
+The distribution arrives as logits; softmax turns them into probabilities. The knobs you've seen in every API reshape that distribution before drawing from it:
+
+**Temperature** divides the logits by $T$ before the softmax: $p_i \propto e^{y_i / T}$. At $T \to 0$ the distribution collapses onto the argmax (greedy decoding); at $T = 1$ you sample the model's honest beliefs; above 1 you flatten toward uniform. Low temperature is *not* "more accurate" — it's more *conservative*: you're trading away diversity for mode-seeking, the right trade for extraction tasks and often the wrong one for writing and brainstorming.
+
+Why not always take the argmax? Because pure greed degenerates: models fall into repetition loops ("I really really really really…") — each repetition making the next more probable. And why not sample honestly? Because of the **long tail**: the bottom 90,000 tokens each have tiny probability but *collectively* enough mass that an occasional catastrophic token gets drawn, and one bad token compounds — it enters the context and conditions everything after (the autoregressive original sin). The fix, from [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751), is to amputate the tail: **top-k** keeps the k most likely tokens; **top-p** ("nucleus") keeps the smallest set whose probabilities sum to p — adaptively narrow when the model is confident, wide when it isn't. Modern defaults — temperature ~0.7–1.0 with top-p ~0.9–0.95 — are the field's accumulated scar tissue, not theory.
+
+One myth to retire: temperature 0 does not make an API deterministic. Your request gets continuously batched (Chapter 11) with strangers' traffic, batch composition changes floating-point reduction orders, and floating-point addition isn't associative. Bit-identical reruns are a systems guarantee, not a sampling setting.
+
+## Structured output: sampling with a seatbelt
+
+You want JSON matching a schema; the model wants to emit prose. The robust fix isn't prompting harder — it's **constrained decoding**: compile your schema or grammar into a token-level automaton, and at each step *mask the logits* of every token that would violate it (set them to $-\infty$; softmax renormalizes over what's legal). The model's distribution proposes; your grammar disposes. Malformed output becomes *impossible*, not just unlikely — this is what "JSON mode" and schema-enforced APIs do under the hood. It's the cleanest illustration of this chapter's theme: the distribution is an interface, and you're allowed to program against it. (Same interface powers observability: the **logprobs** an API returns are a per-token confidence channel — a poor calibration oracle, but a fine anomaly detector for retrieval failures and hallucination-prone spans.)
+
+## Chain of thought: buying compute with tokens
+
+[Chain-of-thought prompting](https://arxiv.org/abs/2201.11903) began as a curiosity — ask the model to "think step by step" and accuracy on math jumps. Chapter 3 explains why it *works*: a transformer spends a fixed forward pass per token, so the only way to get more computation on a hard problem is **more tokens**. The chain of thought is scratch space — intermediate state serialized into the context, where attention can retrieve it.
+
+Follow the idea through the book's arc: a prompt trick (2022), then a trained behavior via RLVR (Chapter 8), then a *pricing model* — reasoning models bill you for thinking tokens, converting inference dollars into accuracy along Chapter 4's third scaling axis. And carry Chapter 6's caveat: the transcript is scratch work that *helped produce* the answer, not a faithful log of the mechanism.
+
+## Tool use: tokens as system calls
+
+The model can't browse, compute, or query your database. It can only emit tokens — so the stack made tokens *executable*. **Function calling**: describe your APIs in the prompt; the model (post-trained specifically for this — Chapter 8's fingerprints) emits a structured call like `{"name": "get_weather", "arguments": {"city": "Paris"}}`; **your code** — not the model — executes it; the result is appended to the context; generation resumes, now conditioned on real data.
+
+Squint and it's a syscall interface: an untrusted process (the model) requests privileged operations from a runtime (your code) that mediates everything. The model never *does* anything — it writes requests, and the blast radius is exactly what your runtime chooses to honor. Retrieval-augmented generation (RAG), the most deployed pattern of the era, is this loop with a search tool, built on Chapter 2's embeddings: index your documents as vectors, fetch what's near the query, paste it into the context. Fine-tune for behavior, retrieve for knowledge (Chapter 8's advice, now with its mechanism).
+
+## Agents: the loop, closed
+
+Put everything in this chapter in a `while` loop and you have an **agent**: model proposes an action ([ReAct](https://arxiv.org/abs/2210.03629) established the reason-act-observe cadence; [Toolformer](https://arxiv.org/abs/2302.04761) showed models could learn tool use), runtime executes, observation enters the context, repeat until done. That's the whole trick — the coding agents and computer-using assistants of 2026 are this loop plus enormous post-training investment in not derailing over long horizons.
+
+The engineering discipline that emerged around it is **context engineering** — the recognition that the context window is the agent's *entire working memory*, and curating it (what to retrieve, summarize, evict; note how agent transcripts hit Chapter 11's prefix cache) is the systems half of agent quality. The security discipline it demands is less mature, and you should hear it as this book's one alarm bell: **prompt injection**. Instructions and data share one channel — the context — so any text an agent reads (a webpage, an email, a README) can *try to reprogram it*, and an agent with tools turns that into real-world side effects. There is no reliable fix yet; Simon Willison's [running series](https://simonwillison.net/series/prompt-injection/) is the essential literature. Design like it's the '90s web: least privilege, human confirmation on irreversible actions, and never let untrusted input and powerful tools share a context without a plan.
+
+## Where this leaves you
+
+The stack, assembled one last time, bottom to top: gradient descent tunes matrices (1) that predict tokens (2) through attention and MLPs (3), made capable by scale (4), efficient by architecture (5), partially legible by interpretability (6); trained on the internet (7), shaped into a character (8), measured imperfectly (9); run on memory-bound silicon (10), served through borrowed systems ideas (11), and finally — this chapter — wrapped in a loop that samples, constrains, and acts.
+
+Two closing convictions, honestly held. First: the bitter lesson keeps winning, so hold your clever scaffolding loosely — a surprising amount of 2024's agent engineering became 2026's post-training, absorbed into the weights (test-time compute, better RL, longer horizons are the current frontier, and they will eat some of this chapter too). Second: everything in this book was built by people reasoning from a handful of primitives you now have — prediction, gradients, attention, scale, and a loop. The field is young, the papers are public, and the distance from "read the primer" to "contribute" has never been shorter. Go build something.
+
+## Further reading
+
+- [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751) — nucleus sampling, and the best analysis of why naive decoding fails.
+- [Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/abs/2201.11903) — the trick that became a paradigm.
+- [ReAct](https://arxiv.org/abs/2210.03629) and [Toolformer](https://arxiv.org/abs/2302.04761) — the agent loop's founding documents.
+- [Prompt injection](https://simonwillison.net/series/prompt-injection/) — Willison's series; required reading before you ship an agent with tools.
+- [State of GPT](https://www.youtube.com/watch?v=bZQun8Y4L2A) — Karpathy's full-pipeline talk; a fine 40-minute recap of this entire book.

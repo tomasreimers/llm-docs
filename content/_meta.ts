@@ -6,50 +6,59 @@ export default {
       breadcrumb: false,
     },
   },
-  '-- Platform': {
+  '-- Foundations': {
     type: 'separator',
-    title: 'WEB FUNDAMENTALS',
+    title: 'FOUNDATIONS',
   },
-  html: { title: 'Chapter 1: HTML', theme: { breadcrumb: false } },
-  css: { title: 'Chapter 2: CSS', theme: { breadcrumb: false } },
-  javascript: { title: 'Chapter 3: JavaScript', theme: { breadcrumb: false } },
-  '-- React': {
+  'neural-networks': {
+    title: 'Chapter 1: Neural networks',
+    theme: { breadcrumb: false },
+  },
+  'language-modeling': {
+    title: 'Chapter 2: Language modeling',
+    theme: { breadcrumb: false },
+  },
+  transformers: {
+    title: 'Chapter 3: The transformer',
+    theme: { breadcrumb: false },
+  },
+  '-- Architecture': {
     type: 'separator',
-    title: 'REACT ESSENTIALS',
+    title: 'MODEL ARCHITECTURE',
   },
-  components: { title: 'Chapter 4: Components', theme: { breadcrumb: false } },
-  applications: {
-    title: 'Chapter 5: Applications',
+  scaling: { title: 'Chapter 4: Scaling', theme: { breadcrumb: false } },
+  'modern-variants': {
+    title: 'Chapter 5: Modern variants',
     theme: { breadcrumb: false },
   },
-  'build-tooling': {
-    title: 'Chapter 6: Build tooling',
+  interpretability: {
+    title: 'Chapter 6: Interpretability',
     theme: { breadcrumb: false },
   },
-  'profiling-and-testing': {
-    title: 'Chapter 7: Profiling & testing',
-    theme: { breadcrumb: false },
-  },
-  '-- Design': {
+  '-- Training': {
     type: 'separator',
-    title: 'DESIGN PRINCIPLES',
+    title: 'TRAINING',
   },
-  'design-systems': {
-    title: 'Chapter 8: Design systems',
+  'pre-training': {
+    title: 'Chapter 7: Pre-training',
     theme: { breadcrumb: false },
   },
-  graphics: { title: 'Chapter 9: Graphics', theme: { breadcrumb: false } },
-  '-- Data': {
+  'post-training': {
+    title: 'Chapter 8: Post-training',
+    theme: { breadcrumb: false },
+  },
+  evaluation: {
+    title: 'Chapter 9: Evaluation',
+    theme: { breadcrumb: false },
+  },
+  '-- Inference': {
     type: 'separator',
-    title: 'DATA ARCHITECTURE',
+    title: 'INFERENCE',
   },
-  state: { title: 'Chapter 10: Managing state', theme: { breadcrumb: false } },
-  network: {
-    title: 'Chapter 11: Network & sync',
-    theme: { breadcrumb: false },
-  },
-  'client-compute': {
-    title: 'Chapter 12: Client compute',
+  hardware: { title: 'Chapter 10: Hardware', theme: { breadcrumb: false } },
+  serving: { title: 'Chapter 11: Serving', theme: { breadcrumb: false } },
+  sampling: {
+    title: 'Chapter 12: Sampling & beyond',
     theme: { breadcrumb: false },
   },
 };

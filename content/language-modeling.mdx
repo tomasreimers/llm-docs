@@ -1,0 +1,74 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Language modeling: Predicting the next token
+
+<ByLine />
+
+In 1951, [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon) published a paper in which he asked people to guess the next letter of a sentence, one letter at a time, and used their guesses to estimate the entropy of English. Buried in that paper is the entire premise of this book: **language has statistical structure, and predicting the next symbol is a way to measure how well you've captured it.**
+
+A *language model* is exactly that — a function that takes a sequence of text and returns a probability distribution over what comes next. Everything an LLM does — write code, answer questions, call your APIs — is, mechanically, repeated next-token prediction. This chapter is about taking that idea seriously.
+
+## Why prediction is enough
+
+It's worth pausing on why such a humble objective produces such capable systems, because it trips up almost everyone at first.
+
+To predict the next word of arbitrary internet text *well*, you need to model an enormous amount of the process that generated the text. Predicting the next token of `The capital of France is` requires knowing facts. Predicting the next token of a half-finished Python function requires modeling the author's intent. Predicting the next line of a murder mystery's final chapter requires having tracked every clue. Prediction isn't a proxy for understanding — pushed to sufficiently low loss, it *demands* it. (Whether it demands it in the same form humans have it is a fun debate for Chapter 6.)
+
+## Before neural networks: n-grams
+
+The oldest language models were lookup tables. An **n-gram model** estimates the probability of the next word from counts: of all the times "the cat sat on the" appeared in the corpus, what fraction were followed by "mat"?
+
+N-grams power the autocomplete on your old flip phone, and they fail in an instructive way: the table explodes combinatorially with context length, and almost every sufficiently-long context has *never appeared before*, even in a corpus of trillions of words. Counting can't generalize. What you want is a model where similar contexts *share statistical strength* — where having seen "the dog sat on the" helps you with "the cat sat on the." That requires representing words as something richer than table indices, which brings us to the two ideas this chapter is really about: tokens and embeddings.
+
+## Tokens: the atoms of an LLM
+
+First, what should the unit of prediction be? Characters make sequences enormously long. Whole words can't handle typos, code, or German compound nouns — the vocabulary is effectively unbounded.
+
+Every modern LLM uses a compromise: **subword tokens**, learned by an algorithm called [byte-pair encoding](https://arxiv.org/abs/1508.07909) (BPE). BPE starts from raw bytes and repeatedly merges the most frequent adjacent pair into a new token, until it reaches a target vocabulary size (typically 50,000–250,000). The effect is elegant: common words ("the", " function") become single tokens, rare words get split into meaningful chunks ("tokenization" → "token" + "ization"), and *anything* — any typo, any language, any binary blob — can still be encoded, because in the worst case it falls back to bytes.
+
+Tokenization is also the source of a shocking fraction of LLM weirdness, so it's worth internalizing:
+
+- **Models see token IDs, not letters.** "strawberry" may be a single opaque token — the model has no direct access to its spelling, which is why counting the r's is famously hard.
+- **Numbers get chopped arbitrarily.** `12345` might tokenize as `123` + `45`, which is part of why arithmetic is unnatural for these models.
+- **Whitespace matters.** ` function` (with a leading space) and `function` are different tokens; code models are exquisitely sensitive to this.
+- **Non-English pays a tax.** Text in less common languages splits into many more tokens per word — it's literally more expensive (in both context and API dollars) to use.
+
+Karpathy has a [two-hour video](https://www.youtube.com/watch?v=zduSFxRajkE) building a GPT tokenizer from scratch, which he opens by noting that most "weird LLM behavior" traces back to tokenization. He's right.
+
+## Embeddings: meaning as geometry
+
+A token ID is just an integer — token 5,072 isn't "closer" to token 5,073 in any meaningful way. The model's first act is to look each token up in an **embedding matrix**: a learned table mapping each vocabulary entry to a vector (in a frontier model, with dimension in the thousands).
+
+The magic is that these vectors are *learned* under the pressure of the prediction objective, and prediction forces geometry to mirror meaning: words used in similar contexts end up with similar vectors, because giving them similar vectors is the efficient way to share what the model knows about them. This was demonstrated spectacularly by [word2vec](https://arxiv.org/abs/1301.3781) in 2013, where directions in the space turned out to encode *relationships* — the famous `king − man + woman ≈ queen`.
+
+For an engineer, the right frame is: **embeddings are the type system of neural networks.** Everything — words, images, sounds, whole documents — gets converted into vectors in a shared space, where "semantically similar" becomes "geometrically close." This one idea also powers embedding search and retrieval systems (which we'll meet in Chapter 12), and it's the foundation the transformer builds on in the next chapter.
+
+## The output side: a distribution over everything
+
+The output end mirrors the input end. After all its internal processing, the model produces a score (a logit) for every token in the vocabulary, and a softmax — the same one from Chapter 1 — turns those into a probability distribution. Training minimizes cross-entropy against the token that actually came next.
+
+Note what this means: the model never outputs *text*. It outputs a distribution over ~100,000 possible next tokens, every single time. Something outside the model has to decide what to do with that distribution — take the max, sample from it, constrain it to valid JSON. That decision (sampling) matters so much it gets its own chapter at the end of the book.
+
+One consequence to internalize now: generation is one-token-at-a-time. The model predicts a token, that token is appended to the context, and the whole thing runs again. There is no plan sitting in a buffer — any appearance of planning is implicit in the distribution at each step.
+
+## Measuring a language model: perplexity
+
+Cross-entropy loss has an interpretable cousin. **Perplexity** is the exponential of the average cross-entropy, and it means: "on average, the model is as uncertain as if it were choosing uniformly among *k* options." A perplexity of 1 is omniscience; a model with perplexity 10 on English text is, roughly, hesitating between 10 plausible next tokens at each step.
+
+There's a deep connection lurking here: cross-entropy is measured in bits, and a model that predicts text well can *compress* it well (arithmetic coding turns any language model into a compressor). "Training a model" and "building a better compressor for the internet" are, mathematically, the same activity — a framing we'll lean on in Chapter 7.
+
+## A paragraph of history: the RNN era
+
+Between roughly 2014 and 2018, the dominant neural language models were **recurrent neural networks**: they read text one token at a time, maintaining a running "hidden state" vector that summarized everything seen so far. Karpathy's 2015 post [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/) captures the era's excitement.
+
+RNNs had two fatal flaws. Squeezing an arbitrarily long past into a fixed-size vector meant long-range information got crushed. And processing tokens *sequentially* meant training couldn't be parallelized — token 1,000 couldn't be processed until tokens 1–999 had been, no matter how many chips you owned. The architecture that fixed both problems is the subject of the next chapter, and the reason this book exists.
+
+## Further reading
+
+- [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781) — the word2vec paper; the clearest demonstration that geometry can encode meaning.
+- [Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909) — the BPE paper.
+- [Let's build the GPT Tokenizer](https://www.youtube.com/watch?v=zduSFxRajkE) — Karpathy building a real tokenizer, and cataloguing the weirdness it causes.
+- [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/) — a time capsule from the pre-transformer era; the samples that felt like magic in 2015 are a lovely calibration for how far things have come.

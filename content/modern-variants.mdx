@@ -1,0 +1,71 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Modern variants: What's in a frontier model
+
+<ByLine />
+
+If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the KV cache* or *the cost of the MLPs*. This chapter is a guided tour of a modern model's spec sheet.
+
+## Mixture of experts: sparse MLPs
+
+Chapter 3 established that MLPs hold most of the parameters, and Chapter 4 established that more parameters mean lower loss. The tension: every parameter you add makes *every token* more expensive, because dense models use all their weights all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
+
+**Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (say, 8 to 256) — the "experts" — plus a small learned **router** that picks the top-k (often 2 to 8) experts for each token. Only the chosen experts run:
+
+- **Total parameters** (what the model *knows*) can be enormous.
+- **Active parameters** (what each token *pays for*) stay small.
+
+DeepSeek-V3 has 671B total parameters but only ~37B active per token: GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
+
+The catch is engineering, not math. Routing is learned end-to-end and will happily collapse onto a few favorite experts unless you add load-balancing pressure; and since experts must be sharded across GPUs, every MoE layer becomes a network problem — tokens physically travel to their experts and back (a preview of Chapter 10). A useful demystification: despite the name, experts don't specialize into "the biology expert" — specialization is mostly syntactic and token-level, discovered rather than assigned.
+
+## Taming the KV cache: MQA, GQA, MLA
+
+Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. At modern context lengths that **KV cache** becomes a monster — at hundreds of thousands of tokens of context, a naive cache runs to hundreds of gigabytes *per conversation*. Since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, KV cache size is the direct limiter of context length, batch size, and cost.
+
+The fixes form a tidy progression:
+
+- **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): all query heads share a single key/value head. Cache shrinks ~100×; quality dips.
+- **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads (e.g., 64 query heads, 8 KV heads). This is what Llama-class models use.
+- **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of the keys and values, and decompress on the fly. Trades a little compute (abundant) for a lot of memory bandwidth (scarce), which is the right direction of trade.
+
+If you only remember one thing from this section: when a model card advertises some attention variant, it is almost always really an announcement about *KV cache economics*.
+
+## Long context: RoPE and its stretching exercises
+
+Frontier context windows went from 2K tokens (2020) to 1M+ (2025). Two things made it possible.
+
+First, **positions had to generalize.** [RoPE](https://arxiv.org/abs/2104.09864) (Chapter 3) encodes *relative* position as rotation angles, which turns "extend the context" into a geometry problem: methods like [YaRN](https://arxiv.org/abs/2309.00071) rescale the rotation frequencies so a model trained at 8K can operate at 128K after a comparatively cheap fine-tune (this happens in "mid-training" — Chapter 7). This is why long context arrived as point releases rather than retrains.
+
+Second, **the quadratic had to be survivable.** [FlashAttention](https://arxiv.org/abs/2205.14135) computes *exact* attention but reorders the computation so the big seq×seq score matrix never hits slow GPU memory — a pure systems win (arguably the most influential systems paper of the era; the full why belongs to Chapter 10). Long-context models also interleave **sliding-window layers**, where most layers attend only to a local window of recent tokens and only some layers attend globally.
+
+A consumer warning from the evals world: "supports 1M tokens" means the model *runs* at 1M tokens. Whether it can actually *use* information spread across that window (measured by needle-in-a-haystack and multi-hop retrieval evals) is a separate and often disappointing question — see Chapter 9.
+
+## The little diffs: norms and activations
+
+Read any modern model card and a few recurring renames from the 2017 original will appear. None change the story, but for decoding purposes: **RMSNorm** replaces LayerNorm (same stabilizing job, cheaper), applied *before* each block rather than after (pre-norm; trains more stably), and **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). File under: the field ran an enormous ablation study for a decade, and these won.
+
+## Multimodality: everything becomes a token
+
+Frontier models see images, hear audio, and increasingly emit both. The remarkable fact is how little new machinery this required — the recipe is to convert other modalities *into tokens* and reuse the entire apparatus:
+
+1. A **vision encoder** — a [Vision Transformer](https://arxiv.org/abs/2010.11929), which chops an image into a grid of patches (e.g. 16×16 pixels) and treats each patch exactly like a token embedding. No convolutions; the same blocks from Chapter 3.
+2. A small **adapter** projects the encoder's output vectors into the language model's embedding space.
+3. The LLM proceeds as if the image were a few hundred words it had read. ([CLIP](https://arxiv.org/abs/2103.00020) established the shared text-image space that makes this alignment work; audio follows the same pattern with a speech encoder.)
+
+Early multimodal systems bolted encoders onto finished LLMs; current frontier models are *natively multimodal* — trained on mixed text/image/audio streams from the start. But the deep point stands: the transformer never knew it was a language model. It's a sequence model, and everything — prose, code, screenshots, speech — is sequences of embeddings to it.
+
+## Sidebar: the road not (yet) taken
+
+The transformer's quadratic attention keeps inspiring challengers — most prominently **state-space models** like [Mamba](https://arxiv.org/abs/2312.00752), which are, with real irony, a modernized recurrence: constant-size state, linear-time inference. They now match transformers at moderate scale, and ideas from them show up in production as *hybrids* (a few attention layers among many linear-time layers). Worth watching; not yet worth reorganizing your mental model around. The transformer's real moat is nine years of tooling, kernels, and hardware co-evolution — a lesson any engineer who has tried to replace a battle-tested system will recognize.
+
+## Further reading
+
+- [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437) — the best single artifact of this chapter: MoE, MLA, and frontier training economics in one openly documented model. ([DeepSeek-V2](https://arxiv.org/abs/2405.04434) introduces MLA in more detail.)
+- [Mixtral of Experts](https://arxiv.org/abs/2401.04088) and the [Switch Transformer](https://arxiv.org/abs/2101.03961) — MoE, readable versions.
+- [GQA](https://arxiv.org/abs/2305.13245) and [RoFormer (RoPE)](https://arxiv.org/abs/2104.09864) — the two config-file entries you'll see most often.
+- [FlashAttention](https://arxiv.org/abs/2205.14135) — read the intro even if you skip the tiling details; it's the clearest statement of "memory movement, not math, is the bottleneck," which is half of Part IV.
+- [An Image is Worth 16x16 Words (ViT)](https://arxiv.org/abs/2010.11929) — how vision became a token stream.

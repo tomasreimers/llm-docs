@@ -1,0 +1,120 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Neural networks: Functions that learn
+
+<ByLine />
+
+In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too.
+
+The reason to start here, rather than with language, is that every idea in this chapter survives unchanged inside a frontier LLM. A trillion-parameter model is trained with the same loop we're about to write: make a prediction, measure how wrong it was, nudge the parameters to be less wrong, repeat.
+
+## Programming with data
+
+Andrej Karpathy calls this paradigm [Software 2.0](https://karpathy.medium.com/software-2-0-a64152b37c35), and I think it's the right mental model for an engineer: instead of writing the function yourself, you write a *template* for the function (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm search for the parameters that produce it.
+
+Classifying a handwritten digit is a perfect example. Nobody can write the rules for what makes a scribble a "7" — but everybody can label examples of one. When the rules are unwritable but the examples are cheap, you learn the function from data.
+
+## The model: from a matrix to an MLP
+
+An MNIST image is 28×28 pixels. Flatten it and you get a vector $x$ of 784 numbers between 0 (white) and 1 (black). We want a function that maps that vector to 10 numbers — one score per digit.
+
+The simplest candidate is a linear function:
+
+$$y = Wx + b$$
+
+where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST, which tells you something important: a matrix multiply is already a primitive form of pattern matching.
+
+To do better, you might try stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses). The fix is to insert a simple nonlinearity between them, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29): $\mathrm{relu}(x) = \max(0, x)$.
+
+Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
+
+$$y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2$$
+
+With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits. The nonlinearity is what lets the network make *decisions* — "this feature is present or it isn't" — rather than just re-weighting the input.
+
+Hold onto the MLP. It is not a stepping stone we discard later: it is, by parameter count, roughly two-thirds of every transformer, and we'll meet it again in Chapter 3.
+
+## The loss: measuring wrongness
+
+The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
+
+$$p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}$$
+
+Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1.
+
+Then we score the prediction with **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
+
+$$L = -\log(p_{\text{correct}})$$
+
+If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is ~4.6. Averaged over the dataset, this single number summarizes how wrong the model is — and turns "learn to read digits" into "minimize this function."
+
+This exact loss — softmax over possible outputs, negative log-likelihood of the correct one — is also *the* loss used to train LLMs. The only thing that changes is that the 10 digits become ~100,000 tokens.
+
+## The learning: gradient descent
+
+So we have a function with hundreds of thousands of parameters and a loss we want to minimize. The search algorithm is almost embarrassingly greedy: compute the gradient of the loss with respect to every parameter — the direction that increases the loss fastest — and take a small step the other way.
+
+$$\theta \leftarrow \theta - \eta \nabla_\theta L$$
+
+The step size $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and the parameters ricochet around and diverge.
+
+Two practical modifications matter:
+
+- **Stochastic** gradient descent: computing the loss over all 60,000 images per step is wasteful. Instead, estimate the gradient on a random **batch** (say, 128 images) per step. The gradient is noisier, but you take 500× more steps for the same compute.
+- **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
+
+## Backpropagation: the chain rule, industrialized
+
+How do you compute a gradient with respect to a million parameters? You could nudge each parameter, re-run the model, and see how the loss changes — but that requires a million forward passes per step.
+
+[Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. It's the chain rule from multivariate calculus, applied with dynamic programming: run the network forward, remember the intermediate values, then walk backward from the loss, multiplying local derivatives as you go. The gradient of the loss with respect to any weight is the product of the derivatives along the path from that weight to the loss.
+
+In practice you never write this by hand. Frameworks like PyTorch record the **computational graph** as your code runs and derive the backward pass automatically (this is "autograd"). Here is the entire training loop, for real:
+
+```python
+model = nn.Sequential(
+    nn.Linear(784, 512),
+    nn.ReLU(),
+    nn.Linear(512, 10),
+)
+opt = torch.optim.SGD(model.parameters(), lr=0.1)
+
+for images, labels in dataloader:          # batches of 128
+    logits = model(images.view(-1, 784))   # forward pass
+    loss = F.cross_entropy(logits, labels) # softmax + neg-log-likelihood
+    opt.zero_grad()
+    loss.backward()                        # backprop: fills in .grad
+    opt.step()                             # gradient descent step
+```
+
+Every model in this book — up to and including the frontier ones — is trained by a scaled-up version of these ten lines.
+
+## Better optimizers: momentum and Adam
+
+Vanilla SGD works, but the loss landscape of a real network is a mess of ravines and plateaus, and two refinements are so universal you should know them by name.
+
+**Momentum** keeps a running average of recent gradients and steps in that direction — like a ball rolling downhill, it smooths over noise and powers through small bumps.
+
+**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how weight decay (a regularization term) interacts with the adaptivity.
+
+When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. One consequence worth filing away for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
+
+## Generalization: the point of all this
+
+One last concept, because it's the difference between machine learning and curve fitting. A model with enough parameters can *memorize* its training set — and score 100% on it while being useless on new data. This is **overfitting**, and it's why we always hold out a **test set** the model never trains on, and report accuracy there.
+
+The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
+
+## What we're skipping (and why)
+
+If this book had been written in 2016, the next chapter would be convolutional networks — the architecture that dominated computer vision for a decade. We're skipping them entirely: modern LLMs don't use them, and even the vision encoders bolted onto multimodal models are transformers now (Chapter 5). Same for recurrent networks, which get exactly one paragraph of history in the next chapter. This is a book about the ideas that survived.
+
+## Further reading
+
+- [Neural Networks: Zero to Hero](https://karpathy.ai/zero-to-hero.html) — Karpathy's video series building all of this (including autograd) from scratch in Python. The single best resource for making this chapter concrete.
+- [Yes you should understand backprop](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) — why backprop is a leaky abstraction worth understanding even though frameworks do it for you.
+- [3Blue1Brown's neural network series](https://www.3blue1brown.com/topics/neural-networks) — the best visual intuition for gradient descent and backprop ever produced.
+- [Adam](https://arxiv.org/abs/1412.6980) and [AdamW](https://arxiv.org/abs/1711.05101) — the optimizer papers; skimmable, and useful for decoding the hyperparameter tables in every LLM technical report.

@@ -187,13 +187,13 @@ export function Hero() {
                 zIndex: scrollProgressCappedAtOne === 1 ? 1 : 1001,
               }}
             >
-              <div className={s.heroTitle}>Frontend development</div>
+              <div className={s.heroTitle}>Large language models</div>
               <div className={s.heroFor}>
                 <div className={s.heroForFlair} />
                 <div className={cursive.className}>For</div>
                 <div className={s.heroForFlair} />
               </div>
-              <div className={s.heroTitle}>Backend developers</div>
+              <div className={s.heroTitle}>Software engineers</div>
             </div>
             <Chevrons
               style={{

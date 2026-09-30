@@ -10,6 +10,7 @@ const withNextra = nextra({
   search: {
     codeblocks: false
   },
+  latex: true,
   mdxOptions: {
     remarkPlugins: [wordCountPlugin]
   }

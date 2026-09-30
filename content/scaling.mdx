@@ -1,0 +1,57 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Scaling: Bigger is different
+
+<ByLine />
+
+In 2019, Rich Sutton — one of the fathers of reinforcement learning — published a short, grumpy essay called [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html). Its thesis: seventy years of AI history show that general methods that leverage more computation always, eventually, beat clever methods that encode human knowledge. Researchers hate this, because it means the craft they love loses to whoever buys more compute. They have also, repeatedly, been unable to refute it.
+
+The transformer era is the bitter lesson's greatest vindication. The previous chapter's architecture is almost aggressively generic — identical blocks, no linguistic structure baked in. This chapter is about the discovery that made "just make it bigger" a *quantitative engineering discipline* rather than a hope: scaling laws.
+
+## The straight lines
+
+In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI trained transformers across many sizes and measured how the loss fell. The result is arguably the most consequential set of graphs in modern computing: model loss, plotted against **parameters** ($N$), **training tokens** ($D$), or **compute** ($C$), forms a straight line on a log-log plot — a power law — spanning many orders of magnitude.
+
+$$L(N) \approx \left(\frac{N_c}{N}\right)^{\alpha_N}$$
+
+Read that the way an engineer should: **capability became predictable.** If you know the loss at 10M, 100M, and 1B parameters, you can extrapolate the loss at 100B *before spending the money*. No plateau was in sight; the line just kept going. GPT-3 — a 175B-parameter model that cost millions to train — was not a gamble. It was an interpolation along a line OpenAI had already measured. (Gwern's [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) is the best contemporaneous account of why this was such a shock to the field's self-image.)
+
+Two properties of these laws matter for everything downstream:
+
+- **Power laws are brutal.** Each constant-factor improvement in loss costs roughly 10× more compute. This single fact explains the shape of the industry: the GPU shortages, the $100B datacenter announcements, the concentration of frontier training into a handful of labs.
+- **The exponents are gentle but relentless.** Loss falls slowly — but it falls *reliably*, and (as we'll see below) fixed decrements of loss keep unlocking qualitatively new behavior.
+
+## Chinchilla: the exchange rate between size and data
+
+Kaplan's paper also offered a recipe for splitting a compute budget between model size and training data — and the recipe was wrong. In 2022, DeepMind's [Chinchilla paper](https://arxiv.org/abs/2203.15556) redid the measurement and found that the field had been training models that were far too large on far too little data. Their compute-optimal rule of thumb: **about 20 tokens of training data per parameter.** Chinchilla, a 70B model trained on 1.4T tokens, beat DeepMind's own 280B Gopher while costing the same to train.
+
+But the more important lesson is the one the field internalized *after* Chinchilla: compute-optimal is only the right target if training cost is all you care about. Every *served* model has a second budget — inference — and a smaller model is cheaper on every single token it ever generates. So the industry now deliberately **over-trains**: Llama 3 trained an 8B model on ~15 *trillion* tokens (nearly 100× the Chinchilla ratio), happily paying extra training compute to buy a small model that punches above its size forever after. When you see a cheap, fast, surprisingly good small model, you are looking at this trade. ([Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) is a great meditation on the corollary: once data is the binding constraint, where does more *data* come from?)
+
+## Emergence: when quantity reads as quality
+
+Scaling laws describe the smooth decline of *loss*. But users don't experience loss; they experience capabilities — and capabilities arrive in a lurchier way.
+
+GPT-3's paper was titled [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165) because of its headline surprise: show the model a few examples of a task *in its prompt*, and it performs the task — no training, no gradient updates. Nobody designed **in-context learning**; it emerged. Smaller models mostly couldn't do it; bigger ones could. Likewise multi-digit arithmetic, translation, and code generation seemed to snap from "can't" to "can" at particular scales — a phenomenon catalogued in [Emergent Abilities of Large Language Models](https://arxiv.org/abs/2206.07682).
+
+You should hold this idea with some skepticism, because the sharpest version of it may be an artifact of how we grade. [Are Emergent Abilities a Mirage?](https://arxiv.org/abs/2304.15004) showed that many "discontinuous" jumps come from all-or-nothing metrics: score arithmetic as "every digit correct" and improvement looks like a cliff; score partial credit and it looks like the smooth curve the loss predicted all along. The truth seems to be: *underlying competence improves smoothly; thresholded, real-world usefulness arrives suddenly.* Both halves matter. The smooth part is why labs can forecast; the sudden part is why each model generation feels categorically different — and why nobody can tell you with confidence what the next 10× will unlock.
+
+## The data wall, and what came after
+
+Power laws don't repeal themselves, but their inputs can run short. By 2024 the frontier labs were training on a meaningful fraction of *all usable public text* — you cannot 10× a dataset that is most of the internet. This "data wall" reshaped the field's direction in three visible ways:
+
+- **Data quality became the frontier.** If you can't get more tokens, get better ones — aggressive filtering, deduplication, and curriculum design (Chapter 7).
+- **Synthetic data went mainstream.** Models generating, grading, and filtering training data for the next model — with the obvious snake-eating-its-tail risks carefully managed.
+- **A third scaling axis opened: test-time compute.** If you can't profitably make the model much bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws. That story belongs to post-training, and it's the climax of Chapter 8.
+
+The meta-lesson of this chapter for an engineer: in this field, the boring, general, scalable thing wins. Keep that in mind whenever you're tempted to bet against it.
+
+## Further reading
+
+- [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) — seven paragraphs; the ideological foundation of the scaling era.
+- [Scaling Laws for Neural Language Models](https://arxiv.org/abs/2001.08361) — the Kaplan paper. Skim for the figures.
+- [Training Compute-Optimal Large Language Models](https://arxiv.org/abs/2203.15556) — Chinchilla; plus [Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) for what it means that data is the constraint.
+- [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) — Gwern's sprawling, opinionated history of the bet nobody wanted to believe.
+- [Emergent Abilities of Large Language Models](https://arxiv.org/abs/2206.07682) vs. [Are Emergent Abilities of Large Language Models a Mirage?](https://arxiv.org/abs/2304.15004) — read as a pair; a model case study in how this field argues with itself.

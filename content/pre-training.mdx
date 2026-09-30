@@ -1,0 +1,67 @@
+import { Breadcrumbs } from "../components/breadcrumbs"
+import { ByLine } from "../components/byline"
+
+<Breadcrumbs />
+
+# Pre-training: Compressing the internet
+
+<ByLine />
+
+Everything so far has been about the *function*. This part of the book is about how the function gets made — and it starts with the strangest industrial process of our era: take a rough copy of the internet, and spend months of time on tens of thousands of GPUs compressing it into weights.
+
+The framing is not a metaphor. Chapter 2 noted that cross-entropy loss is measured in bits: a model that predicts text well literally compresses it well. Pre-training is lossy compression of humanity's written output into a few terabytes of parameters — and the "loss" in this lossy compression is exactly the stuff the model gets wrong.
+
+## The data: most of the work
+
+The romantic image of pre-training is the GPU cluster. Practitioners will tell you the real product is the *dataset*, and the pipeline that produces it is where frontier labs guard their edge most jealously.
+
+The raw material is web crawl — [Common Crawl](https://commoncrawl.org/) alone is petabytes of scraped HTML — plus code, books, papers, and licensed corpora. Between raw crawl and training corpus sits a brutal funnel:
+
+- **Extraction**: strip the HTML boilerplate — nav bars, cookie banners, SEO sludge — to get at actual prose. Harder than it sounds; extraction quality measurably moves final model quality.
+- **Filtering**: heuristics (language ID, length, symbol ratios) followed by *model-based* quality classifiers — small models trained to score "is this page educational/informative?", used to grade every document. Each generation of models curates data for the next.
+- **Deduplication**: the web is mostly copies. Near-duplicate removal at scale matters because repeated data wastes compute and — worse — encourages memorization over generalization (Chapter 1's overfitting, at internet scale).
+- **Decontamination**: scrub the test sets of public benchmarks out of the training data. Imperfect, consequential, and the reason Chapter 9 exists.
+
+The open [FineWeb](https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1) project documents this funnel end-to-end (from 96 Common Crawl snapshots down to 15T curated tokens) and is the best public look at decisions labs usually keep private. For the historical baseline, [The Pile](https://arxiv.org/abs/2101.00027) was the canonical open corpus of the GPT-3 era.
+
+What remains after the funnel gets composed into a **data mix**: what fraction code, what fraction multilingual, how much math. These ratios are product decisions as much as research ones — the reason every 2026 model is good at code is that its makers *chose* code to be a large slice of the mix (it also appears to improve reasoning generally). Unlike MNIST's many epochs, LLMs see this data roughly **once** — with the highest-quality slices sometimes repeated a handful of times, and research consistently showing that many repetitions hurt.
+
+## The objective: unchanged
+
+Amid all this scale, the training loop is *identical* to Chapter 1's ten lines: predict the next token everywhere in a batch, take the cross-entropy loss, backprop, step. A frontier run is that loop executed a few million times over a few trillion tokens. There is no curriculum of tasks, no labels, no grades — the internet is its own supervision. That's the trick that unlocked everything: labeled data is scarce and expensive, but *text that continues* is free and unlimited.
+
+## Keeping a months-long run alive
+
+What separates pre-training from every other computation you've operated is that it's a *single, stateful, months-long job* on hardware that fails constantly. During Llama 3's training, Meta [reported](https://arxiv.org/abs/2407.21783) unexpected interruptions roughly every three hours across a 16K-GPU cluster — mostly GPU and memory failures. At that scale, checkpointing strategy, fast restart, and failure detection are as much a part of "training a model" as the math is. A few load-bearing practices:
+
+- **The learning-rate schedule.** Runs begin with a **warmup** (ramping the learning rate from zero, so the violent early gradients don't wreck the initialization) and then decay it — classically along a cosine curve, increasingly with **WSD** (warmup–stable–decay: hold it flat for most of the run, then decay sharply at the end, which conveniently lets you branch a finished model off a mid-run checkpoint without committing to a total token count up front).
+- **Loss spikes.** Every practitioner's scar tissue: the loss curve occasionally jumps violently, from a bad data batch or numerical instability. Defenses: **gradient clipping** (cap the gradient norm per step), skipping bad batches, and sometimes rewinding to a checkpoint.
+- **Precision.** Weights and activations are kept in 16-bit floats (bf16), with the newest hardware pushing parts of the computation to 8-bit (fp8) — halving memory and doubling throughput again, at the cost of numerical-stability engineering. (Why memory is the thing being economized is Chapter 10.)
+
+## The optimizer wars, finally interesting again
+
+For a decade, the optimizer slot in every config file said AdamW (Chapter 1) and nobody debated it. Worth knowing *why* it held: at scale, an optimizer must be boring — a 2% efficiency win is worthless if it adds instability risk to a $500M run. AdamW's cost is memory: two moment buffers make optimizer state ~2× the model's own size, a fact that shapes the parallelism strategies in Chapter 10.
+
+Then, in 2024–25, the slot actually changed for the first time. **[Muon](https://kellerjordan.github.io/posts/muon/)** emerged not from a lab but from the **nanoGPT speedrun** community — an open competition to train a small GPT-2 as fast as possible, which became a proving ground for training tricks. Muon's idea, stripped of detail: for the matrix-shaped parameters, take the momentum-averaged gradient and *orthogonalize* it (roughly, equalize its action across directions) before stepping — yielding meaningfully better loss per token. Moonshot AI then [demonstrated it scales](https://arxiv.org/abs/2502.16982) and trained Kimi K2 — a trillion-parameter frontier model — with a Muon variant. Hobbyist speedrun to frontier run in about a year: the most encouraging possible datapoint that individual researchers outside the big labs can still move the field's foundations. (The optimizer zoo beyond this — Shampoo, whose lineage Muon descends from; Sophia; Lion — you can safely file under "a sentence each.")
+
+## Mid-training: the director's cut
+
+Between the big run and the post-training of Chapter 8 sits an increasingly important phase with a mumbled name — **mid-training**: continued pre-training on curated data to reshape a finished base model.
+
+- **Context extension**: train briefly on long documents with RoPE frequencies rescaled (Chapter 5) to stretch 8K into 128K+.
+- **Domain infusion**: continued training on a domain corpus (medical, legal, your company's stack) — same loop, targeted data.
+- **Annealing on quality**: end training with a pass over the highest-quality data (textbooks, verified solutions) while the learning rate decays — the model's final impression is disproportionately formed by what it saw last.
+
+## What you get: the base model
+
+The artifact at the end is a **base model**, and it is not an assistant. It's a *document completer* — ask it "What's the capital of France?" and it may answer, or continue with nine more geography questions, because both are plausible internet documents. All the knowledge is in there; what's missing is any notion that it should be *helpful*, or that it's in a conversation at all.
+
+The base model is the compressed internet. Turning it into something you'd want to talk to costs less than 1% of the compute and is the subject of the next chapter — which should strike you as remarkable: almost all the *capability* comes from here; almost all the *behavior* comes from what's next.
+
+## Further reading
+
+- [The FineWeb blog post](https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1) — the whole data funnel, with ablations. The single best read on this chapter's real subject.
+- [The Llama 3 Herd of Models](https://arxiv.org/abs/2407.21783) — the most detailed public account of a frontier-scale run: data mix, infrastructure, failure statistics.
+- [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165) — GPT-3; the paper that established the pre-train-at-scale recipe.
+- [Muon](https://kellerjordan.github.io/posts/muon/) and [Muon is Scalable for LLM Training](https://arxiv.org/abs/2502.16982) — the speedrun-to-frontier story, firsthand.
+- [State of GPT](https://www.youtube.com/watch?v=bZQun8Y4L2A) — Karpathy's talk walking the full pipeline from this chapter through the next.
