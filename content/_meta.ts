@@ -1,6 +1,6 @@
 export default {
   index: {
-    title: 'Home',
+    display: 'hidden',
     theme: {
       navbar: true,
       breadcrumb: false,
