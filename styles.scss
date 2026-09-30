@@ -33,3 +33,17 @@
     }
   }
 }
+
+// Distraction-free reading: IdleChrome (components/idle-chrome.tsx) adds
+// .chrome-hidden to <html> when the mouse has been still for a couple of
+// seconds; the sidebar and TOC fade out until it moves again.
+.nextra-sidebar,
+.nextra-toc {
+  transition: opacity 0.5s ease;
+}
+
+html.chrome-hidden .nextra-sidebar,
+html.chrome-hidden .nextra-toc {
+  opacity: 0;
+  pointer-events: none;
+}

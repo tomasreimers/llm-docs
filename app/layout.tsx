@@ -7,6 +7,8 @@ import { Head } from 'nextra/components';
 import { getPageMap } from 'nextra/page-map';
 import { Layout, Navbar } from 'nextra-theme-docs';
 
+import { IdleChrome } from '../components/idle-chrome';
+
 // If loading a variable font, you don't need to specify the font weight
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
@@ -43,6 +45,7 @@ export default async function RootLayout({ children }) {
         />
       </Head>
       <body className={inter.className}>
+        <IdleChrome />
         <Layout
           navbar={navbar}
           feedback={{ content: 'Questions? Leave me feedback' }}
