@@ -34,7 +34,11 @@ $$y = Wx + b$$
 
 where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST, which tells you something important: a matrix multiply is already a primitive form of pattern matching.
 
-To do better, you might try stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses). The fix is to insert a simple nonlinearity between them, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29): $\mathrm{relu}(x) = \max(0, x)$.
+Why does a linear model top out at 92%? Because of what linearity *means*: each pixel gets one fixed weight, votes independently, and the votes are simply added up. A linear model cannot express "this pixel is evidence for an 8 — but only if this *other* region is dark too." The pixels of a 5 and a 2 overlap heavily; what distinguishes them is the *combination* of strokes, and combinations are exactly what a weighted sum can't see. In programming terms: a linear function is a program with no `if` statements — one pass of weighted arithmetic, no decisions that depend on the input.
+
+You might try to fix this by stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses into one matrix). However many layers you stack, you've written a longer program with still no `if` statements.
+
+The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29): $\mathrm{relu}(x) = \max(0, x)$. Look at what it does: below zero the unit outputs nothing; above zero it passes its signal through. That's a branch — the smallest possible `if`. With a nonlinearity between them, the layers stop collapsing: the first layer can compute features, the ReLU can *decide* which ones are present, and the second layer can weigh combinations of those decisions.
 
 Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
 
