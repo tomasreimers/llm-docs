@@ -1,4 +1,5 @@
 import '../styles.scss';
+import 'katex/dist/katex.min.css';
 
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
