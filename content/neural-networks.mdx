@@ -1,6 +1,8 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
+import { LinearScoresFigure } from "../components/figures/linear-scores"
 import { MlpFigure } from "../components/figures/mlp"
 import { Image } from "../components/image"
 import MnistPng from "../public/images/content/neural-networks/mnist.png"
@@ -33,6 +35,8 @@ Classifying a handwritten digit is a perfect example. Try writing the rules for 
 
 An MNIST image is 28×28 pixels. Flatten it and you get a vector $x$ of 784 numbers between 0 (white) and 1 (black). We want a function that maps that vector to an answer: which digit is this?
 
+<FlattenFigure />
+
 Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, which we can treat as (and will shortly convert into) probabilities. We're doing statistics, not logic.
 
 And the simplest mechanism in all of statistics for turning many weighted pieces of evidence into a score is a regression — a linear function of the input:
@@ -40,6 +44,8 @@ And the simplest mechanism in all of statistics for turning many weighted pieces
 $$y = Wx + b$$
 
 where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST, which tells you something important: a matrix multiply is already a primitive form of pattern matching.
+
+<LinearScoresFigure />
 
 Why does a linear model top out at 92%? Because of what linearity *means*: each pixel gets one fixed weight, votes independently, and the votes are simply added up. A linear model cannot express "this pixel is evidence for an 8 — but only if this *other* region is dark too." The pixels of a 5 and a 2 overlap heavily; what distinguishes them is the *combination* of strokes, and combinations are exactly what a weighted sum can't see. In programming terms: a linear function is a program with no `if` statements — one pass of weighted arithmetic, no decisions that depend on the input.
 
