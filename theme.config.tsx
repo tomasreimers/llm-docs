@@ -10,7 +10,7 @@ const config = {
     const frontMatter = normalizePagesResult.activePath.at(-1)?.frontMatter;
 
     const url =
-      'https://frontenddocs.com' +
+      'https://llmdocs.com' +
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`);
 
     return (
@@ -29,7 +29,7 @@ const config = {
         <meta name="twitter:creator" content="@tomasreimers" />
         <meta
           property="og:image"
-          content={`https://frontenddocs.com/api/og${asPath === '/' ? '/default/' : asPath}image.png`}
+          content={`https://llmdocs.com/api/og${asPath === '/' ? '/default/' : asPath}image.png`}
         />
       </>
     );

@@ -1,7 +1,7 @@
 {
-  "name": "frontend-docs",
+  "name": "llm-docs",
   "version": "0.0.1",
-  "description": "frontenddocs.com",
+  "description": "llmdocs.com",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -12,13 +12,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tomasreimers/frontend-docs.git"
+    "url": "git+https://github.com/tomasreimers/ai-docs.git"
   },
   "author": "Tomas Reimers",
   "bugs": {
-    "url": "https://github.com/tomasreimers/frontend-docs/issues"
+    "url": "https://github.com/tomasreimers/ai-docs/issues"
   },
-  "homepage": "https://frontenddocs.com",
+  "homepage": "https://llmdocs.com",
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.10.0",
     "@excalidraw/excalidraw": "^0.17.2",

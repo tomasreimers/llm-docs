@@ -10,19 +10,19 @@ export async function generateMetadata(props) {
 
   const { metadata: frontMatter } = data;
   const title = frontMatter?.title;
-  const url = 'https://frontenddocs.com/' + (params.mdxPath || '');
+  const url = 'https://llmdocs.com/' + (params.mdxPath || '');
 
   return {
     title: title,
     openGraph: {
       url,
-      title: title || 'Frontend docs',
+      title: title || 'LLM docs',
       description:
         frontMatter?.description ||
-        'A ~20-page, front-to-back-readable guide on writing frontend for experienced developers.',
+        'A ~12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
       images: [
         {
-          url: `https://frontenddocs.com/api/og/${!params.mdxPath ? 'default' : params.mdxPath}/image.png`,
+          url: `https://llmdocs.com/api/og/${!params.mdxPath ? 'default' : params.mdxPath}/image.png`,
         },
       ],
     },

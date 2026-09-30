@@ -10,25 +10,26 @@ import { Layout, Navbar } from 'nextra-theme-docs';
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata = {
-  metadataBase: new URL('https://frontenddocs.com'),
+  // TODO: replace llmdocs.com with the real domain once chosen
+  metadataBase: new URL('https://llmdocs.com'),
   title: {
-    template: '%s - Frontend Docs',
+    template: '%s - LLM Docs',
   },
   description:
-    'A ~20-page, front-to-back-readable guide on writing frontend for experienced developers.',
-  applicationName: 'Frontend Docs',
+    'A ~12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
+  applicationName: 'LLM Docs',
   generator: 'Next.js',
   appleWebApp: {
-    title: 'Frontend Docs',
+    title: 'LLM Docs',
   },
   twitter: {
-    site: 'https://frontenddocs.com',
+    site: 'https://llmdocs.com',
   },
 };
 
 export default async function RootLayout({ children }) {
   const navbar = (
-    <Navbar logo={<span className="font-black">FRONTEND DOCS</span>} />
+    <Navbar logo={<span className="font-black">LLM DOCS</span>} />
   );
   const pageMap = await getPageMap();
   return (
@@ -46,7 +47,7 @@ export default async function RootLayout({ children }) {
           feedback={{ content: 'Questions? Leave me feedback' }}
           editLink={'Opinions? Suggest an edit'}
           footer={null}
-          docsRepositoryBase="https://github.com/tomasreimers/frontend-docs/tree/main"
+          docsRepositoryBase="https://github.com/tomasreimers/ai-docs/tree/main"
           sidebar={{ defaultMenuCollapseLevel: 1 }}
           pageMap={pageMap}
           nextThemes={{ defaultTheme: 'dark' }}
@@ -54,8 +55,9 @@ export default async function RootLayout({ children }) {
             extraContent: (
               <div className="my-4 text-xs text-gray-500 dark:text-gray-400 contrast-more:text-gray-800 contrast-more:dark:text-gray-50">
                 <p>
-                  This site is a ~20-page, front-to-back-readable guide for
-                  backend developers learning frontend development.
+                  This site is a ~12-chapter, front-to-back-readable guide on
+                  how modern large language models work, for experienced
+                  engineers.
                 </p>
               </div>
             ),

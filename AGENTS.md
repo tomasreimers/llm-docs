@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-This is a **static documentation site** (Frontend Docs) built with Next.js 14 + Nextra + MDX. No backend, no database, no Docker.
+This is a **static documentation site** (LLM Docs) built with Next.js 14 + Nextra + MDX. No backend, no database, no Docker.
 
 ### Key commands
 
