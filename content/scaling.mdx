@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { ScalingLawsFigure } from "../components/figures/scaling-laws"
 
 <Breadcrumbs />
 
@@ -18,6 +19,8 @@ In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI trained tra
 $$L(N) \approx \left(\frac{N_c}{N}\right)^{\alpha_N}$$
 
 Read that the way an engineer should: **capability became predictable.** If you know the loss at 10M, 100M, and 1B parameters, you can extrapolate the loss at 100B *before spending the money*. No plateau was in sight; the line just kept going. GPT-3 — a 175B-parameter model that cost millions to train — was not a gamble. It was an interpolation along a line OpenAI had already measured. (Gwern's [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) is the best contemporaneous account of why this was such a shock to the field's self-image.)
+
+<ScalingLawsFigure />
 
 Two properties of these laws matter for everything downstream:
 

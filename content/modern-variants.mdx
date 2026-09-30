@@ -1,5 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { KvVariantsFigure } from "../components/figures/kv-variants"
+import { MoeFigure } from "../components/figures/moe"
 
 <Breadcrumbs />
 
@@ -20,6 +22,8 @@ Chapter 3 established that MLPs hold most of the parameters, and Chapter 4 estab
 
 DeepSeek-V3 has 671B total parameters but only ~37B active per token: GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
 
+<MoeFigure />
+
 The catch is engineering, not math. Routing is learned end-to-end and will happily collapse onto a few favorite experts unless you add load-balancing pressure; and since experts must be sharded across GPUs, every MoE layer becomes a network problem — tokens physically travel to their experts and back (a preview of Chapter 10). A useful demystification: despite the name, experts don't specialize into "the biology expert" — specialization is mostly syntactic and token-level, discovered rather than assigned.
 
 ## Taming the KV cache: MQA, GQA, MLA
@@ -31,6 +35,8 @@ The fixes form a tidy progression:
 - **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): all query heads share a single key/value head. Cache shrinks ~100×; quality dips.
 - **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads (e.g., 64 query heads, 8 KV heads). This is what Llama-class models use.
 - **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of the keys and values, and decompress on the fly. Trades a little compute (abundant) for a lot of memory bandwidth (scarce), which is the right direction of trade.
+
+<KvVariantsFigure />
 
 If you only remember one thing from this section: when a model card advertises some attention variant, it is almost always really an announcement about *KV cache economics*.
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { KvCalculatorFigure } from "../components/figures/kv-calculator"
 
 <Breadcrumbs />
 
@@ -26,6 +27,8 @@ Batching's limiter is memory: every concurrent conversation carries its KV cache
 The fix, from the [vLLM paper](https://arxiv.org/abs/2309.06180), is called **PagedAttention** and it is exactly what its name promises: chop KV caches into fixed-size blocks (~16 tokens), allocate on demand from a shared pool, and translate through a per-request block table. Virtual memory, reinvented for attention — fragmentation vanishes, effective batch size jumps, and — just as page tables enabled shared memory — two requests with the same prefix can *map the same physical blocks*.
 
 That last trick matters more than it sounds, because real traffic is wildly prefix-heavy: every request from your app shares the same long system prompt; every turn of a chat shares all previous turns; every step of an agent loop (next chapter) re-sends a growing transcript. **Prefix caching** — keeping hot prefixes' KV blocks resident and skipping their prefill entirely — is why providers bill "cached input tokens" at a steep discount, and why you should structure prompts with the stable parts first (a genuinely actionable takeaway: put the variable parts of your prompt at the *end*).
+
+<KvCalculatorFigure />
 
 At the frontier, serving splits further: **prefill/decode disaggregation** runs the compute-bound prefill and memory-bound decode on *separate GPU pools*, so neither workload's utilization profile poisons the other's.
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { BenchmarkSaturationFigure } from "../components/figures/benchmark-saturation"
 
 <Breadcrumbs />
 
@@ -30,6 +31,8 @@ Four systematic rots, in ascending order of subtlety:
 **Contamination.** Benchmarks are text on the internet; models train on the internet (Chapter 7's decontamination is regex-vs-adversary and imperfect — a rephrased test question sails through). A model can "know" the test the way a student who found the answer key does. This is Chapter 1's overfitting, resurrected at civilizational scale: the held-out set isn't held out anymore. Partial defenses — private test sets, canary strings, continuously refreshed problems — all trade away reproducibility.
 
 **Saturation.** Frontier models cluster in the high 80s and 90s on MMLU, where remaining gains are noise and mislabeled questions. A saturated benchmark ranks nothing; the canon has a shelf life, and the field must keep minting harder tests (GPQA exists precisely because MMLU died).
+
+<BenchmarkSaturationFigure />
 
 **Goodhart's law.** The moment a benchmark appears in marketing, it stops measuring and starts steering. Labs tune data mixes with benchmarks in view; "benchmark-tuned" is a real slur for models that top leaderboards and disappoint users. The number was a proxy for capability; optimize the proxy and the gap between them widens — the exact reward-hacking dynamic of Chapter 8, one level up.
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { RooflineFigure } from "../components/figures/roofline"
 
 <Breadcrumbs />
 
@@ -24,6 +25,8 @@ Do the division and you get the single most important ratio in this book: roughl
 ## The roofline: are you feeding the beast?
 
 That ratio gives you a one-line performance model that explains almost everything in Part IV. For any computation, count its **arithmetic intensity** — FLOPs performed per byte of memory traffic. Above ~300, you're **compute-bound**: the tensor cores are the bottleneck and you're getting your money's worth. Below it, you're **memory-bound**: the cores idle, waiting on bytes, and adding FLOPs is free because you weren't using the ones you had. (Horace He's [Making Deep Learning Brrrr From First Principles](https://horace.io/brrr_intro.html) is the canonical tour of this mental model — most "why is my model slow" questions die on its first page.)
+
+<RooflineFigure />
 
 Now apply it to the transformer's two lives:
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { SuperpositionFigure } from "../components/figures/superposition"
 
 <Breadcrumbs />
 
@@ -22,6 +23,8 @@ The bet has paid out. Researchers have found — first in vision models (the [Ci
 If features were assigned one-per-dimension — neuron 4,721 means "cats" — interpretability would be easy. It isn't, and the reason is a genuinely beautiful result from Anthropic's [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html).
 
 A model has vastly more things worth representing than it has dimensions. But high-dimensional geometry offers a loophole: while an $n$-dimensional space has only $n$ perfectly orthogonal directions, it has *exponentially many* directions that are **almost** orthogonal. Since real-world features are sparse (most concepts are absent from most inputs), the model can pack far more features than dimensions into the space, accepting a little interference between them — like a lossy compression scheme, or Bloom-filter-style overlap. This is **superposition**, and it has a sharp consequence: individual neurons are *polysemantic* — one neuron fires for cats, and car grilles, and a particular Korean suffix — not because the model is confused, but because that's the compressed encoding. You cannot read the code by looking at one wire.
+
+<SuperpositionFigure />
 
 ## Sparse autoencoders: the decompressor
 

@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { RlhfPipelineFigure } from "../components/figures/rlhf-pipeline"
 
 <Breadcrumbs />
 
@@ -33,6 +34,8 @@ The insight that unlocked ChatGPT-level behavior, from the [InstructGPT](https:/
 
 1. **Train a reward model.** Sample pairs of model outputs, have humans pick the better one, and train a separate model (typically a clone of the LLM with the token-prediction head swapped for a single score output) to predict human preference. You've now *compressed human judgment into a function* you can call millions of times.
 2. **Optimize against it with RL.** The LLM generates responses, the reward model scores them, and an algorithm — classically PPO — adjusts the LLM to make high-scoring responses more probable. Unlike SFT's "reproduce this exact text," RL says "produce *whatever* scores well" — the model can discover behaviors no human demonstrated. (This is reinforcement learning's original lineage: the same family of ideas from [learning Atari and robot control from human preferences](https://arxiv.org/abs/1706.03741), repurposed.)
+
+<RlhfPipelineFigure />
 
 One guardrail matters enough to name: a **KL penalty** tethers the updated model to its pre-RL self, punishing it for drifting too far. Without the leash, the model finds the reward model's bugs — because the reward model is a lossy proxy for what humans want, and a sufficiently strong optimizer will exploit the gap. This failure mode, **reward hacking**, is post-training's central demon: optimize "answers humans rate highly" hard enough and you get confident-sounding, agreeable, flattering answers — the well-documented **sycophancy** of chat models is widely attributed to exactly this. Goodhart's law, running at a million samples an hour.
 

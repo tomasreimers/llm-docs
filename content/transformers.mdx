@@ -1,5 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { AttentionFigure } from "../components/figures/attention"
+import { ResidualStreamFigure } from "../components/figures/residual-stream"
 
 <Breadcrumbs />
 
@@ -32,6 +34,8 @@ $$\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k
 (The $\sqrt{d_k}$ just keeps dot products from growing with vector dimension and saturating the softmax.)
 
 The analogy I find most useful: attention is a **hash map with soft lookups**. A normal map retrieves exactly one value for a key. Attention retrieves *every* value at once, weighted by how well the query matches each key — and because the whole thing is differentiable, gradient descent can learn what to ask for, what to advertise, and what to carry. When the model processes `it` in "the cat sat on the mat because it was tired," some attention head is emitting a query like "what noun am I about?" that matches the key advertised by `cat`, and pulls in cat's information.
+
+<AttentionFigure />
 
 Because queries, keys, and values are all just matrices, the entire operation is a handful of matrix multiplies:
 
@@ -71,6 +75,8 @@ Crucially, each block doesn't *replace* the token's vector; it computes a modifi
 $$x \leftarrow x + \mathrm{Attention}(x); \qquad x \leftarrow x + \mathrm{MLP}(x)$$
 
 These additive shortcuts ("residual connections") were invented to keep gradients flowing through deep networks, but they enable a mental model that the interpretability field (Chapter 6) has made standard: each token has a **residual stream** — a vector flowing up through the layers, acting like a shared memory bus. Every attention head and MLP *reads* from the stream, computes something, and *writes* its result back by addition. Early layers write low-level features, middle layers write concepts and facts, late layers convert it all into a concrete next-token prediction.
+
+<ResidualStreamFigure />
 
 So here is the entire architecture, end to end:
 

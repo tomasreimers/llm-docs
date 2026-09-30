@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { TokenizationFigure } from "../components/figures/tokenization"
 
 <Breadcrumbs />
 
@@ -28,6 +29,8 @@ N-grams power the autocomplete on your old flip phone, and they fail in an instr
 First, what should the unit of prediction be? Characters make sequences enormously long. Whole words can't handle typos, code, or German compound nouns — the vocabulary is effectively unbounded.
 
 Every modern LLM uses a compromise: **subword tokens**, learned by an algorithm called [byte-pair encoding](https://arxiv.org/abs/1508.07909) (BPE). BPE starts from raw bytes and repeatedly merges the most frequent adjacent pair into a new token, until it reaches a target vocabulary size (typically 50,000–250,000). The effect is elegant: common words ("the", " function") become single tokens, rare words get split into meaningful chunks ("tokenization" → "token" + "ization"), and *anything* — any typo, any language, any binary blob — can still be encoded, because in the worst case it falls back to bytes.
+
+<TokenizationFigure />
 
 Tokenization is also the source of a shocking fraction of LLM weirdness, so it's worth internalizing:
 

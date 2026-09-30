@@ -1,5 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
+import { DataFunnelFigure } from "../components/figures/data-funnel"
+import { LrScheduleFigure } from "../components/figures/lr-schedule"
 
 <Breadcrumbs />
 
@@ -22,6 +24,8 @@ The raw material is web crawl — [Common Crawl](https://commoncrawl.org/) alone
 - **Deduplication**: the web is mostly copies. Near-duplicate removal at scale matters because repeated data wastes compute and — worse — encourages memorization over generalization (Chapter 1's overfitting, at internet scale).
 - **Decontamination**: scrub the test sets of public benchmarks out of the training data. Imperfect, consequential, and the reason Chapter 9 exists.
 
+<DataFunnelFigure />
+
 The open [FineWeb](https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1) project documents this funnel end-to-end (from 96 Common Crawl snapshots down to 15T curated tokens) and is the best public look at decisions labs usually keep private. For the historical baseline, [The Pile](https://arxiv.org/abs/2101.00027) was the canonical open corpus of the GPT-3 era.
 
 What remains after the funnel gets composed into a **data mix**: what fraction code, what fraction multilingual, how much math. These ratios are product decisions as much as research ones — the reason every 2026 model is good at code is that its makers *chose* code to be a large slice of the mix (it also appears to improve reasoning generally). Unlike MNIST's many epochs, LLMs see this data roughly **once** — with the highest-quality slices sometimes repeated a handful of times, and research consistently showing that many repetitions hurt.
@@ -35,6 +39,8 @@ Amid all this scale, the training loop is *identical* to Chapter 1's ten lines: 
 What separates pre-training from every other computation you've operated is that it's a *single, stateful, months-long job* on hardware that fails constantly. During Llama 3's training, Meta [reported](https://arxiv.org/abs/2407.21783) unexpected interruptions roughly every three hours across a 16K-GPU cluster — mostly GPU and memory failures. At that scale, checkpointing strategy, fast restart, and failure detection are as much a part of "training a model" as the math is. A few load-bearing practices:
 
 - **The learning-rate schedule.** Runs begin with a **warmup** (ramping the learning rate from zero, so the violent early gradients don't wreck the initialization) and then decay it — classically along a cosine curve, increasingly with **WSD** (warmup–stable–decay: hold it flat for most of the run, then decay sharply at the end, which conveniently lets you branch a finished model off a mid-run checkpoint without committing to a total token count up front).
+
+<LrScheduleFigure />
 - **Loss spikes.** Every practitioner's scar tissue: the loss curve occasionally jumps violently, from a bad data batch or numerical instability. Defenses: **gradient clipping** (cap the gradient norm per step), skipping bad batches, and sometimes rewinding to a checkpoint.
 - **Precision.** Weights and activations are kept in 16-bit floats (bf16), with the newest hardware pushing parts of the computation to 8-bit (fp8) — halving memory and doubling throughput again, at the cost of numerical-stability engineering. (Why memory is the thing being economized is Chapter 10.)
 
