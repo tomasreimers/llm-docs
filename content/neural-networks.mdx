@@ -25,9 +25,9 @@ Programming a computer to read these scribbles is brutally hard with classical l
 
 That's the thread this chapter pulls on, in three steps:
 
-1. We treat digit-reading as a statistics problem — starting with the simplest tool, a regression.
-2. Regression works surprisingly well, but it's linear; neural networks let us learn arbitrary functions.
-3. We learn them with gradient descent, powered by the chain rule.
+1. We treat digit-reading as a statistics problem. The simplest statistical tool is a regression — give every pixel a weight, add up the evidence — and this alone reads 92% of digits correctly.
+2. But a regression is linear: it can weigh each pixel, but it can't see *combinations* of strokes. Stacking regressions with small decisions between them — a neural network — lets us learn arbitrary functions, not just linear ones.
+3. "Learning" means searching for good values of the weights. Gradient descent does the searching — measure how wrong the current weights are and follow the slope downhill — and the chain rule (backpropagation) is what makes computing that slope cheap, even for millions of weights.
 
 Seen this way, machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
 
