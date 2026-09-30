@@ -81,7 +81,7 @@ The step size $\eta$ is the **learning rate**, and it is the single most finicky
 
 Two practical modifications matter:
 
-- **Stochastic** gradient descent: computing the loss over all 60,000 images per step is wasteful. Instead, estimate the gradient on a random **batch** (say, 128 images) per step. The gradient is noisier, but you take 500× more steps for the same compute.
+- **Stochastic** gradient descent: you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an unbiased estimate of the full gradient, and its accuracy improves only with the square root of the sample size, while its cost grows linearly. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones, and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
 - **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
 
 ## Backpropagation: the chain rule, industrialized
