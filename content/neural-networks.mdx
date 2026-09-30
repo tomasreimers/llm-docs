@@ -1,6 +1,8 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ByLine } from "../components/byline"
 import { MlpFigure } from "../components/figures/mlp"
+import { Image } from "../components/image"
+import MnistPng from "../public/images/content/neural-networks/mnist.png"
 
 <Breadcrumbs />
 
@@ -9,6 +11,10 @@ import { MlpFigure } from "../components/figures/mlp"
 <ByLine />
 
 In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too.
+
+<Image src={MnistPng} alt="A grid of sample handwritten digits from the MNIST dataset, ten examples each of 0 through 9" />
+
+<span className="mt-2 block text-center text-sm text-gray-500 dark:text-gray-400">Samples from MNIST. Image by [Josef Steppan](https://commons.wikimedia.org/wiki/File:MnistExamples.png), CC BY-SA 4.0.</span>
 
 The reason to start here, rather than with language, is that every idea in this chapter survives unchanged inside a frontier LLM. A trillion-parameter model is trained with the same loop we're about to write: make a prediction, measure how wrong it was, nudge the parameters to be less wrong, repeat.
 
