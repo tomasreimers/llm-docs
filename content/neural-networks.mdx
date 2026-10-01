@@ -149,7 +149,7 @@ $$
 
 Nudge $w$: the effect on $y$ is scaled by $\partial y/\partial w$, and that effect on $L$ is scaled again by $\partial L/\partial y$ — two links in a chain, two factors in a product. A deep network is just a longer chain.
 
-Here is what backpropagation actually does with that rule. First, the headline: **nothing gets nudged, and nothing gets re-run.** Backprop doesn't estimate derivatives by perturbing weights — it computes all of them, exactly, in one sweep:
+Backprop computes every weight's derivative — exactly, not by estimate — in one sweep:
 
 1. **One forward pass**, keeping every intermediate value ($h$, $a$, $y$, $L$) in memory instead of discarding them.
 2. **One backward sweep.** Start at the loss and walk the network back to front. At each value, compute "how much does the loss change if *this* changes" — which is cheap, because it's just the answer already computed for the value *after* it, times one local derivative. And the local derivatives are known analytically: every operation in the network is simple (multiply, add, relu, softmax), and calculus gives each one's derivative as a formula — evaluated instantly using the values remembered from the forward pass. No $\varepsilon$ anywhere.
