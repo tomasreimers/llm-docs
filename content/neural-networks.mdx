@@ -191,6 +191,17 @@ Vanilla SGD — gradient descent on random batches, exactly as we've described i
 
 **[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how weight decay (a regularization term) interacts with the adaptivity.
 
+<details>
+<summary>What's weight decay, and what exactly did AdamW fix?</summary>
+
+**Weight decay** is a gentle pressure that shrinks every weight slightly toward zero on each step — multiply each one by, say, 0.9999 before the update. Why want that? Large weights make a network twitchy: small changes in the input swing the output hard, which is the signature of a model contorting itself to memorize. Keeping weights small unless the data genuinely earns them is a classic guard against overfitting.
+
+The subtle bug AdamW fixed: the traditional implementation of weight decay adds the shrinking pressure *into the gradient*. Under plain SGD those two formulations are mathematically identical. Under Adam they are not — Adam divides every gradient by its running magnitude, and the decay term gets divided along with it. The result: weights with large, active gradients barely decay, while quiet weights decay hard. The regularization strength you set silently varies from parameter to parameter.
+
+AdamW *decouples* the two (the paper is literally titled "Decoupled Weight Decay Regularization"): the gradient goes through Adam's adaptive machinery, and the decay is applied to the weights directly, outside it. Same ingredients, consistent regularization — and the default optimizer of every LLM config since.
+
+</details>
+
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. One consequence worth filing away for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
 
 ## What training actually looks like
