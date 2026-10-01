@@ -1,5 +1,4 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
-import { ByLine } from "../components/byline"
 import { KvVariantsFigure } from "../components/figures/kv-variants"
 import { MoeFigure } from "../components/figures/moe"
 
@@ -7,7 +6,6 @@ import { MoeFigure } from "../components/figures/moe"
 
 # Modern variants: What's in a frontier model
 
-<ByLine />
 
 If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the KV cache* or *the cost of the MLPs*. This chapter is a guided tour of a modern model's spec sheet.
 

@@ -8,21 +8,23 @@ export function Breadcrumbs() {
   } = useConfig();
 
   const frontMatter = activePath.at(-1)?.frontMatter;
+  // Sidebar titles look like "Chapter 1: Neural networks"; the kicker only
+  // needs the chapter part — the h1 right below carries the name.
+  const chapter = (activePath[0]?.title || '').split(':')[0];
 
   return (
-    <div className="nextra-breadcrumb mt-1.5 flex items-center gap-1 overflow-hidden text-sm text-gray-500 dark:text-gray-400 contrast-more:text-current">
+    <div className="mt-1.5 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 contrast-more:text-current">
       <span
-        className="whitespace-nowrap transition-colors font-medium text-gray-700 contrast-more:font-bold contrast-more:text-current dark:text-gray-100 contrast-more:dark:text-current"
-        title={activePath[0].title}
+        className="inline-block rounded-[3px] px-2 py-0.5 text-[0.7rem] tracking-wider uppercase text-[#3f3a1a] dark:text-[#f5edc0]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--brand), var(--brand-alt))',
+        }}
       >
-        {activePath[0].title}
+        {chapter}
       </span>
-      <span
-        className="whitespace-nowrap font-medium contrast-more:font-bold text-gray-500 dark:text-gray-400 contrast-more:text-gray-800 contrast-more:dark:text-gray-50"
-        title={activePath[0].title}
-      >
-        · {frontMatter?.readingTime} minute read (
-        {frontMatter?.wordCount?.toLocaleString() || '?'} words)
+      <span className="whitespace-nowrap">
+        {frontMatter?.readingTime} minute read
       </span>
     </div>
   );

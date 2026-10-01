@@ -1,12 +1,10 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
-import { ByLine } from "../components/byline"
 import { TemperatureFigure } from "../components/figures/temperature"
 
 <Breadcrumbs />
 
 # Sampling & beyond: The model in the loop
 
-<ByLine />
 
 Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision — sampling — is the last mile between the frozen artifact of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack — structured output, tool use, agents — stops being magic and becomes control flow.
 
