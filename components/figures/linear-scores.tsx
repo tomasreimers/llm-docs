@@ -30,8 +30,8 @@ export function LinearScoresFigure() {
   const h10 = 10 * rowH + 4;
 
   return (
-    <Figure caption="Continuing from the figure above: the same 784-number vector, multiplied by a weight matrix W (one row of 784 learned weights per digit) plus a bias vector b, yields the score vector y. The one-hot vector on the right is the label it will be graded against.">
-      <svg viewBox="0 0 700 235" className="w-full max-w-2xl">
+    <Figure caption="Continuing from the figure above: the same 784-number vector, multiplied by a weight matrix W (one row of 784 learned weights per digit) plus a bias vector b, yields the score vector y — one score per digit.">
+      <svg viewBox="0 0 590 235" className="w-full max-w-2xl">
         {/* x */}
         <Brackets x={40} w={40} top={top + 12} h={8 * rowH + 4} />
         {VEC.map((v, i) => (
@@ -108,23 +108,6 @@ export function LinearScoresFigure() {
         <text x={504} y={top + h10 + 38} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55}>
           one score per digit
         </text>
-
-        {/* one-hot label */}
-        <text x={620} y={top - 14} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.7}>
-          the label, one-hot:
-        </text>
-        <Brackets x={600} w={40} top={top - 4} h={h10} />
-        {SCORES.map((_, d) => {
-          const hot = d === 7;
-          return (
-            <g key={d}>
-              {hot && <rect x={600} y={top - 2 + d * rowH} width={40} height={rowH - 3} rx={2} fill="currentColor" fillOpacity={0.1} />}
-              <text x={620} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={hot ? 700 : 400} fill="currentColor" opacity={hot ? 1 : 0.5}>
-                {hot ? 1 : 0}
-              </text>
-            </g>
-          );
-        })}
         <text x={620} y={top + h10 + 22} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
           (10 × 1)
         </text>
