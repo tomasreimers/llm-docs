@@ -115,19 +115,3 @@ html.chrome-hidden .nextra-toc {
   opacity: 0;
   pointer-events: none;
 }
-
-// Part separators in the sidebar (the only li elements with no child
-// elements) become brand pills.
-.nextra-sidebar li:not(:has(*)) {
-  display: inline-block;
-  background-image: linear-gradient(to right, var(--brand), var(--brand-alt));
-  border-radius: 3px;
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-  padding: 0.15rem 0.5rem;
-  color: #3f3a1a;
-}
-
-html.dark .nextra-sidebar li:not(:has(*)) {
-  color: #f5edc0;
-}
