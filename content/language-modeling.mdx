@@ -72,7 +72,13 @@ Karpathy has a [two-hour video](https://www.youtube.com/watch?v=zduSFxRajkE) bui
 
 ## Embeddings: meaning as geometry
 
-A token ID is just an integer — token 5,072 isn't "closer" to token 5,073 in any meaningful sense. The model's first act is to trade the integer for something it can compute with: look the token up in an **embedding matrix** — a learned table with one row per vocabulary entry, each row a vector of a few thousand numbers. That matrix is parameters like any others: initialized randomly, shaped by backpropagation, exactly the loop from Chapter 1.
+A token ID is just an integer — token 5,072 isn't "closer" to token 5,073 in any meaningful sense. The model's first act is to trade the integer for something it can compute with, and the mechanism could not be simpler. The model owns an **embedding matrix**:
+
+$$
+\tip{the embedding matrix}{E} \in \mathbb{R}^{\tip{one row per token in the vocabulary}{|V|} \times \tip{the embedding dimension — a few thousand in a frontier model}{d}}
+$$
+
+To embed token 5,072, take row 5,072 of $E$. That's the whole operation — a table lookup. (If you prefer Chapter 1's vocabulary: write the token as a one-hot vector and multiply it by $E$; a lookup *is* a matrix multiply by a one-hot.) And the rows of $E$ are parameters like any others: initialized to random numbers, and nudged by backpropagation — every time a token appears in training, the gradient flows into its row — exactly the loop from Chapter 1.
 
 Here is why this solves counting's sharing problem. Under the pressure of next-token prediction, the cheapest way for the model to handle "cat" and "dog" — which appear in nearly identical contexts — is to give them nearly identical vectors, so all the machinery downstream of the embedding handles both for the price of one. Similarity isn't programmed in; it's the *economical solution* gradient descent keeps finding. Evidence about dog-sentences now genuinely transfers to cat-sentences, because to the rest of the network they look almost alike.
 
