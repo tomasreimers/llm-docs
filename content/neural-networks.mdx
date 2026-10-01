@@ -75,17 +75,17 @@ Since we can't solve for them, we iterate: nudge the weights, check whether the 
 
 Here's the situation for any single weight. Somewhere out there is its *optimal* value — the setting that makes the model least wrong. We don't know how to find it; that's the closed-form door that slammed shut a section ago. What we *do* know how to compute, for whatever value we currently have, is how bad it is (the loss) — and, because the loss is smooth, which direction makes it worse (the derivative). That suggests a humble strategy: repeatedly move in whichever direction makes things less bad, and stop when no direction helps. You may never learn where the best value was, but you'll settle somewhere *least bad*.
 
+<GradientDescentFigure />
+
 Scaled up to all 400,000 weights at once, this is **gradient descent**: compute the gradient of the loss — the direction that increases it fastest — and take a small step the other way.
 
 $$
 \theta \leftarrow \theta - \eta \nabla_\theta L
 $$
 
-Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive. You can see it in the trajectory below.
+Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows.
 
 The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and even shrinking steps can't save you — the parameters ricochet around and diverge.
-
-<GradientDescentFigure />
 
 Two practical modifications matter:
 
