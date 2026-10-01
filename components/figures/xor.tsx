@@ -16,7 +16,7 @@ const DATA: Array<[number, number, number]> = [
 
 const LR = 2;
 const STEPS = 60;
-const PHASE_MS = 2400;
+const PHASE_MS = 3800;
 
 type Params = Record<string, number>;
 
