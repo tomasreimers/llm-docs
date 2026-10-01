@@ -53,11 +53,11 @@ The failure is deeper than size, and it's worth naming precisely: **counting can
 
 ## Tokens: the atoms of an LLM
 
-What should the unit of prediction be? Characters make sequences enormously long. Whole words can't handle typos, code, or German compound nouns — the vocabulary is effectively unbounded. Every modern LLM uses the compromise in between: **subword tokens**, discovered by an algorithm called [byte-pair encoding](https://arxiv.org/abs/1508.07909) (BPE) that is pure Chapter-1 spirit — don't hand-design the units, learn them from data by counting:
+What should the unit of prediction be? Characters make sequences enormously long. Whole words can't handle typos, code, or German compound nouns — the vocabulary is effectively unbounded. Every modern LLM uses the compromise in between: **subword tokens**, discovered by an algorithm called [byte-pair encoding](https://arxiv.org/abs/1508.07909) (BPE) that is pure Chapter-1 spirit — don't hand-design the units, learn them from data by counting. It works bottom-up. Start with the smallest possible vocabulary: individual characters (in practice raw bytes, so nothing is ever unrepresentable). Then repeat one move: count every adjacent pair of tokens in the corpus, and merge the most frequent pair into a single new token. Each merge grows the vocabulary by one, and frequent fragments assemble themselves:
 
 <BpeFigure />
 
-Run to a target vocabulary size (typically 50,000–250,000 merges), the effect is elegant: common words ("the", " function") end up as single tokens, rare words split into meaningful chunks, and *anything* — any typo, any language, any binary blob — can still be encoded, because in the worst case it falls back to raw bytes. Here's a real GPT-style tokenizer on a real sentence; note that the model never sees the letters, only the integer IDs:
+Run until the vocabulary hits a target size (typically 50,000–250,000 merges), and the effect is elegant: common words ("the", " function") end up as single tokens, rare words split into meaningful chunks — and *anything* can still be encoded, any typo, any language, any binary blob, because the original characters never left the vocabulary. The worst case is simply falling all the way back down to them. Here's a real GPT-style tokenizer on a real sentence; note that the model never sees the letters, only the integer IDs:
 
 <TokenizationFigure />
 
