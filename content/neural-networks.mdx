@@ -113,7 +113,7 @@ Softmax exponentiates each score (making everything positive, and amplifying dif
 
 <SoftmaxFigure />
 
-Then we score the prediction with **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
+The target it's graded against is the label written as a **one-hot** vector — all zeros except a 1 on the correct digit: a probability distribution with all of its mass on the truth. The grading rule is **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
 
 $$
 \tip{the loss — what gradient descent minimizes}{L} = \tip{negated so that more confidence means less loss}{-\log}(\tip{the probability the model gave the right answer}{p_{\text{correct}}})

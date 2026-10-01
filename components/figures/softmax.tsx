@@ -21,8 +21,8 @@ export function SoftmaxFigure() {
   const h10 = 10 * rowH + 4;
 
   return (
-    <Figure caption="The scores from our linear classifier, before and after softmax. Unbounded reals in; positive numbers summing to 1 out. Note how the exponential amplifies gaps: 3.4 beats 1.6 by less than 2× as a score, but gets six times the probability.">
-      <svg viewBox="0 0 460 225" className="w-full max-w-md">
+    <Figure caption="The scores from our linear classifier, before and after softmax — and the one-hot label they'll be graded against. Note how the exponential amplifies gaps: 3.4 beats 1.6 by less than 2× as a score, but gets six times the probability.">
+      <svg viewBox="0 0 580 225" className="w-full max-w-lg">
         {/* digit labels */}
         {LOGITS.map((_, d) => (
           <text key={d} x={88} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9} fill="currentColor" opacity={0.5}>
@@ -65,6 +65,26 @@ export function SoftmaxFigure() {
         </text>
         <text x={311} y={top + h10 + 36} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55}>
           positive, sums to 1
+        </text>
+
+        {/* graded against the one-hot label */}
+        <text x={412} y={top + 84} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.7}>
+          vs.
+        </text>
+        <Brackets x={462} w={44} top={top - 4} h={h10} />
+        {PROBS.map((_, d) => (
+          <g key={d}>
+            {d === 7 && <rect x={462} y={top - 2 + d * rowH} width={44} height={rowH - 3} rx={2} fill="currentColor" fillOpacity={0.1} />}
+            <text x={484} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={d === 7 ? 700 : 400} fill="currentColor" opacity={d === 7 ? 1 : 0.5}>
+              {d === 7 ? 1 : 0}
+            </text>
+          </g>
+        ))}
+        <text x={484} y={top + h10 + 20} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
+          the label: one-hot
+        </text>
+        <text x={484} y={top + h10 + 36} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55}>
+          all mass on the truth
         </text>
       </svg>
     </Figure>
