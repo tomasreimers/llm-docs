@@ -42,7 +42,7 @@ Notice that the problem itself isn't deterministic. A sloppily written 5 shades 
 The simplest mechanism in all of statistics for turning many weighted pieces of evidence into a score is a regression — a linear function of the input:
 
 $$
-y = Wx + b
+\tip{10 scores — one per digit}{y} = \tip{a 10×784 matrix of learned weights}{W}\tip{the image as a vector of 784 pixel values}{x} + \tip{10 learned offsets — one per digit}{b}
 $$
 
 where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST, which tells you something important: a matrix multiply is already a primitive form of pattern matching.
@@ -58,7 +58,7 @@ The fix is to insert a nonlinearity between the layers, and the field has settle
 Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
 
 $$
-y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2
+y = \tip{second layer: weighs combinations of features into digit scores}{W_2} \, \tip{the branch: zeroes out features that aren't present}{\mathrm{relu}}(\tip{first layer: detects 512 features in the pixels}{W_1 x + b_1}) + b_2
 $$
 
 With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
@@ -80,7 +80,7 @@ Here's the situation for any single weight. Somewhere out there is its *optimal*
 Scaled up to all 400,000 weights at once, this is **gradient descent**: compute the gradient of the loss — the direction that increases it fastest — and take a small step the other way.
 
 $$
-\theta \leftarrow \theta - \eta \nabla_\theta L
+\tip{the parameters — all of the weights at once}{\theta} \leftarrow \theta - \tip{the learning rate: how big a step to take}{\eta} \tip{the gradient: the direction that increases the loss fastest}{\nabla_\theta L}
 $$
 
 Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows.
@@ -101,7 +101,7 @@ Those requirements immediately disqualify the obvious candidate: accuracy, perce
 The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
 
 $$
-p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}
+\tip{the probability assigned to digit i}{p_i} = \frac{\tip{exponentiate: always positive and amplifies gaps}{e^{y_i}}}{\tip{normalize: divide by the total so everything sums to 1}{\sum_j e^{y_j}}}
 $$
 
 Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1. Here it is applied to the scores our linear classifier produced for the 7:
@@ -111,7 +111,7 @@ Softmax exponentiates each score (making everything positive, and amplifying dif
 Then we score the prediction with **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
 
 $$
-L = -\log(p_{\text{correct}})
+\tip{the loss — what gradient descent minimizes}{L} = \tip{negated so that more confidence means less loss}{-\log}(\tip{the probability the model gave the right answer}{p_{\text{correct}}})
 $$
 
 If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is ~4.6. Averaged over the dataset, this single number summarizes how wrong the model is — smooth, differentiable, and falling steadily as confidence shifts toward the right answers. "Learn to read digits" has become "minimize this function."

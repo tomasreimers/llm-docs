@@ -15,7 +15,7 @@ The transformer era is the bitter lesson's greatest vindication. The previous ch
 In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI trained transformers across many sizes and measured how the loss fell. The result is arguably the most consequential set of graphs in modern computing: model loss, plotted against **parameters** ($N$), **training tokens** ($D$), or **compute** ($C$), forms a straight line on a log-log plot — a power law — spanning many orders of magnitude.
 
 $$
-L(N) \approx \left(\frac{N_c}{N}\right)^{\alpha_N}
+\tip{the loss you can expect at a given model size}{L(N)} \approx \left(\frac{\tip{a constant measured empirically}{N_c}}{\tip{the number of parameters}{N}}\right)^{\tip{the slope of the line — around 0.08 for parameters}{\alpha_N}}
 $$
 
 Read that the way an engineer should: **capability became predictable.** If you know the loss at 10M, 100M, and 1B parameters, you can extrapolate the loss at 100B *before spending the money*. No plateau was in sight; the line just kept going. GPT-3 — a 175B-parameter model that cost millions to train — was not a gamble. It was an interpolation along a line OpenAI had already measured. (Gwern's [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) is the best contemporaneous account of why this was such a shock to the field's self-image.)

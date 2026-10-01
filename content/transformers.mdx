@@ -28,7 +28,7 @@ Each token's current vector produces three new vectors via learned linear projec
 To update a given token, take its query and dot-product it against the key of every preceding token. A big dot product means "this token is relevant to me." Softmax those scores into weights that sum to 1, then take the weighted average of the corresponding *values*. That average gets added into the token's representation:
 
 $$
-\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V
+\mathrm{Attention}(Q, K, V) = \tip{turn relevance scores into weights that sum to 1}{\mathrm{softmax}}\!\left(\frac{\tip{every query dotted with every key: how relevant is each token to each other token}{QK^\top}}{\tip{keeps scores from growing with vector size and saturating the softmax}{\sqrt{d_k}}}\right) \tip{the weighted average of the values — what actually gets retrieved}{V}
 $$
 
 (The $\sqrt{d_k}$ just keeps dot products from growing with vector dimension and saturating the softmax.)
@@ -73,7 +73,7 @@ One attention step plus one MLP (each preceded by a normalization step that keep
 Crucially, each block doesn't *replace* the token's vector; it computes a modification and **adds** it:
 
 $$
-x \leftarrow x + \mathrm{Attention}(x); \qquad x \leftarrow x + \mathrm{MLP}(x)
+\tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
 $$
 
 These additive shortcuts ("residual connections") were invented to keep gradients flowing through deep networks, but they enable a mental model that the interpretability field (Chapter 6) has made standard: each token has a **residual stream** — a vector flowing up through the layers, acting like a shared memory bus. Every attention head and MLP *reads* from the stream, computes something, and *writes* its result back by addition. Early layers write low-level features, middle layers write concepts and facts, late layers convert it all into a concrete next-token prediction.

@@ -10,7 +10,19 @@ const withNextra = nextra({
   search: {
     codeblocks: false
   },
-  latex: true,
+  latex: {
+    renderer: 'katex',
+    options: {
+      strict: false,
+      trust: (context) => context.command === '\\htmlData',
+      macros: {
+        // \tip{explanation}{term} — hoverable annotation on a math term.
+        // The explanation must avoid commas and equals signs (KaTeX parses
+        // htmlData attributes as comma-separated key=value pairs).
+        '\\tip': '\\htmlData{tip=#1}{#2}',
+      },
+    },
+  },
   mdxOptions: {
     remarkPlugins: [wordCountPlugin]
   }
