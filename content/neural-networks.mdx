@@ -137,7 +137,16 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 ## Backpropagation: the chain rule, industrialized
 
-How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss). Now, the naive way to get the gradient: nudge one parameter, run a forward pass, and see how the loss moved. That works — it's literally the definition of a derivative — but it costs one forward pass *per parameter*: a million forward passes to take a single step.
+How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
+
+With that, there's an obvious recipe, straight from the definition of a derivative:
+
+1. Run a forward pass and record the loss, $L$.
+2. Nudge one weight $w$ up by a tiny amount $\varepsilon$.
+3. Run a *second* forward pass and record the new loss, $L'$.
+4. The slope of the change is the derivative estimate: $\frac{\partial L}{\partial w} \approx \frac{L' - L}{\varepsilon}$. Undo the nudge, move to the next weight, repeat.
+
+This genuinely works — it's how practitioners *verify* gradients to this day ("gradient checking"). But look at the price: two forward passes bought you the slope for exactly *one* weight. Our little MLP needs ~400,000 of them, a frontier model a trillion — one full forward pass per weight, per training step. The entire history of deep learning hinges on doing better than this.
 
 [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. If $L$ depends on $y$, and $y$ depends on $w$, then
 
