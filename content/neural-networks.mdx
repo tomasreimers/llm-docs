@@ -7,6 +7,7 @@ import { LinearScoresFigure } from "../components/figures/linear-scores"
 import { LossCurvesFigure } from "../components/figures/loss-curves"
 import { MlpFigure } from "../components/figures/mlp"
 import { SoftmaxFigure } from "../components/figures/softmax"
+import { XorFigure } from "../components/figures/xor"
 import { Image } from "../components/image"
 import MnistPng from "../public/images/content/neural-networks/mnist.png"
 
@@ -203,6 +204,16 @@ AdamW *decouples* the two (the paper is literally titled "Decoupled Weight Decay
 </details>
 
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. One consequence worth filing away for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
+
+## Putting it together: learning XOR
+
+Every piece is now on the table, so let's watch a complete training run — on a problem a linear model provably cannot solve. **XOR** ("exactly one of the two inputs is on") is the famous one: no single weighted sum separates its positives from its negatives, a fact that stalled neural network research for a decade. Two hidden neurons and a ReLU handle it.
+
+The network below is as small as they come — two inputs, two hidden units, one output squashed through a *sigmoid* (softmax's two-option sibling, turning the score into a probability between 0 and 1). It trains on all four cases of XOR at once, by plain gradient descent:
+
+<XorFigure />
+
+Early on, the gradients are large and the weights move fast; by the end, the predictions hug their targets and the gradients fade toward zero — the walk settling into the bottom of the bowl, visible as a table of numbers instead of a curve.
 
 ## What training actually looks like
 
