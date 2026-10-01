@@ -1,87 +1,174 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 import { Figure } from './figure';
 
-const BOXES = [
-  { label: 'x', sub: 'pixels', x: 25, w: 70 },
-  { label: 'h = W₁x + b₁', sub: 'layer 1', x: 125, w: 120 },
-  { label: 'a = relu(h)', sub: 'the branch', x: 275, w: 110 },
-  { label: 'y = W₂a + b₂', sub: 'layer 2', x: 415, w: 120 },
-  { label: 'L', sub: 'the loss', x: 565, w: 70 },
+// A two-weight network, with concrete numbers:
+//   x = 2, w₁ = 0.5  →  h = 1;  w₂ = 3  →  y = 3;  target = 1  →  L = 4
+// Backward: ∂L/∂y = 4;  ∂L/∂w₂ = 4;  ∂L/∂h = 12;  ∂L/∂w₁ = 24
+const PHASE_MS = 1900;
+const N_STEPS = 6;
+
+const STEP_TEXT = [
+  'forward: h = w₁ · x = 0.5 × 2 = 1',
+  'forward: y = w₂ · h = 3 × 1 = 3',
+  'forward: L = (y − target)² = (3 − 1)² = 4',
+  'backward: ∂L/∂y = 2 · (y − target) = 4',
+  'backward: ∂L/∂w₂ = ∂L/∂y · h = 4 · 1 = 4, and ∂L/∂h = ∂L/∂y · w₂ = 4 · 3 = 12',
+  'backward: ∂L/∂w₁ = ∂L/∂h · x = 12 × 2 = 24 — the product of every local derivative on the path',
 ];
 
-const BACK = ['∂L/∂y', '∂y/∂a', '∂a/∂h', '∂h/∂x'];
+const NODES = [
+  { id: 'x', x: 70, name: 'x', value: '2', from: -1 },
+  { id: 'h', x: 210, name: 'h', value: '1', from: 0 },
+  { id: 'y', x: 350, name: 'y', value: '3', from: 1 },
+  { id: 'L', x: 490, name: 'L', value: '4', from: 2 },
+];
+
+const CY = 62;
+const R = 20;
 
 export function BackpropFigure() {
-  const boxY = 95;
-  const boxH = 44;
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(
+      () => setTick((t) => (t + 1) % (N_STEPS + 2)),
+      PHASE_MS,
+    );
+    return () => window.clearInterval(id);
+  }, []);
+
+  const s = Math.min(tick, N_STEPS - 1);
+
+  const grads: Array<{ x: number; text: string; step: number }> = [
+    { x: 350, text: '∂L/∂y = 4', step: 3 },
+    { x: 280, text: '∂L/∂w₂ = 4', step: 4 },
+    { x: 210, text: '∂L/∂h = 12', step: 4 },
+    { x: 140, text: '∂L/∂w₁ = 24', step: 5 },
+  ];
 
   return (
-    <Figure caption="Backpropagation on our MLP. Forward: compute left to right, remembering every intermediate value. Backward: walk right to left from the loss, multiplying each step's local derivative — the gradient for any weight is the product of the local derivatives on the path between it and the loss.">
-      <svg viewBox="0 0 660 250" className="w-full max-w-2xl">
-        <defs>
-          <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.65} />
-          </marker>
-        </defs>
+    <Figure caption="Backpropagation on a two-weight network, one calculation per step. Forward: compute and remember h, y, and L. Backward: walk from the loss toward the input, multiplying local derivatives — each weight's gradient is the product of everything on the path between it and the loss.">
+      <div className="flex w-full flex-col items-center">
+        <svg viewBox="0 0 560 160" className="w-full max-w-xl">
+          <defs>
+            <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.65} />
+            </marker>
+          </defs>
 
-        {/* forward sweep label */}
-        <text x={330} y={32} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.8}>
-          1 — forward pass: compute and remember each value
-        </text>
-        <line x1={60} y1={48} x2={600} y2={48} stroke="currentColor" strokeOpacity={0.5} markerEnd="url(#bp-arrow)" />
+          {/* edges with weight labels */}
+          {NODES.slice(0, -1).map((n, i) => {
+            const next = NODES[i + 1];
+            const active = s === i;
+            return (
+              <g key={n.id}>
+                <line
+                  x1={n.x + R}
+                  y1={CY}
+                  x2={next.x - R - 2}
+                  y2={CY}
+                  stroke="currentColor"
+                  strokeOpacity={active ? 0.9 : 0.35}
+                  strokeWidth={active ? 2 : 1.5}
+                  markerEnd="url(#bp-arrow)"
+                />
+                <text x={(n.x + next.x) / 2} y={CY - 12} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.75}>
+                  {i === 0 ? 'w₁ = 0.5' : i === 1 ? 'w₂ = 3' : 'target = 1'}
+                </text>
+              </g>
+            );
+          })}
 
-        {/* boxes */}
-        {BOXES.map((b) => (
-          <g key={b.label}>
-            <rect x={b.x} y={boxY} width={b.w} height={boxH} rx={3} fill="currentColor" fillOpacity={0.06} stroke="currentColor" strokeOpacity={0.6} />
-            <text x={b.x + b.w / 2} y={boxY + 19} textAnchor="middle" fontSize={12} fill="currentColor">
-              {b.label}
-            </text>
-            <text x={b.x + b.w / 2} y={boxY + 35} textAnchor="middle" fontSize={10} fill="currentColor" opacity={0.55}>
-              {b.sub}
-            </text>
-          </g>
-        ))}
+          {/* nodes with values appearing as the forward pass reaches them */}
+          {NODES.map((n) => {
+            const computed = n.from < 0 || s >= n.from;
+            const active = s === n.from;
+            return (
+              <g key={n.id}>
+                <circle
+                  cx={n.x}
+                  cy={CY}
+                  r={R}
+                  fill="currentColor"
+                  fillOpacity={active ? 0.12 : 0.04}
+                  stroke="currentColor"
+                  strokeOpacity={computed ? 0.8 : 0.3}
+                  strokeWidth={active ? 2 : 1.5}
+                />
+                <text x={n.x} y={CY - 4} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.75}>
+                  {n.name}
+                </text>
+                <text x={n.x} y={CY + 11} textAnchor="middle" fontSize={11.5} fontWeight={700} fill="currentColor" opacity={computed ? 0.95 : 0}>
+                  {n.value}
+                </text>
+              </g>
+            );
+          })}
 
-        {/* forward arrows between boxes */}
-        {BOXES.slice(0, -1).map((b, i) => (
-          <line
-            key={i}
-            x1={b.x + b.w}
-            y1={boxY + boxH / 2}
-            x2={BOXES[i + 1].x - 2}
-            y2={boxY + boxH / 2}
-            stroke="currentColor"
-            strokeOpacity={0.6}
-            markerEnd="url(#bp-arrow)"
-          />
-        ))}
-
-        {/* backward sweep */}
-        <text x={330} y={238} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.8}>
-          2 — backward pass: multiply the local derivatives as you go
-        </text>
-        {BOXES.slice(0, -1).map((b, i) => {
-          const from = BOXES[i + 1].x;
-          const to = b.x + b.w;
-          return (
-            <g key={i}>
-              <line
-                x1={from}
-                y1={boxY + boxH + 28}
-                x2={to + 2}
-                y2={boxY + boxH + 28}
-                stroke="currentColor"
-                strokeOpacity={0.6}
-                strokeDasharray="5 4"
-                markerEnd="url(#bp-arrow)"
-              />
-              <text x={(from + to) / 2} y={boxY + boxH + 46} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.75}>
-                × {BACK[3 - i]}
+          {/* backward arrows and gradients */}
+          {s >= 3 &&
+            NODES.slice(0, 3).map((n, i) => {
+              const visible = s >= 5 - i; // h→x needs step 5, y→h step 4, L→y step 3
+              if (!visible) return null;
+              const next = NODES[i + 1];
+              return (
+                <line
+                  key={n.id}
+                  x1={next.x - R}
+                  y1={CY + 34}
+                  x2={n.x + R}
+                  y2={CY + 34}
+                  stroke="currentColor"
+                  strokeOpacity={0.5}
+                  strokeDasharray="5 4"
+                  markerEnd="url(#bp-arrow)"
+                />
+              );
+            })}
+          {grads.map((g) => {
+            if (s < g.step) return null;
+            const active = s === g.step;
+            return (
+              <text key={g.text} x={g.x} y={CY + 58} textAnchor="middle" fontSize={10.5} fontWeight={active ? 700 : 400} fill="currentColor" opacity={active ? 0.95 : 0.6}>
+                {g.text}
               </text>
-            </g>
-          );
-        })}
-      </svg>
+            );
+          })}
+        </svg>
+
+        {/* the calculation at this step */}
+        <div className="mt-1 flex h-5 items-center justify-center font-mono text-[11.5px] opacity-80">
+          {STEP_TEXT[s]}
+        </div>
+
+        {/* stepper */}
+        <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
+          {STEP_TEXT.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Jump to step ${i + 1}`}
+              onClick={() => setTick(i)}
+              className="h-1.5 w-7 overflow-hidden rounded-full"
+              style={{ background: 'color-mix(in srgb, currentColor 15%, transparent)' }}
+            >
+              <div
+                key={`${i}-${i === s ? s : 'static'}`}
+                className="h-full rounded-full"
+                style={{
+                  background: 'currentColor',
+                  opacity: 0.65,
+                  width: i < s ? '100%' : i > s ? '0%' : undefined,
+                  animation:
+                    i === s ? `gd-fill ${PHASE_MS}ms linear forwards` : undefined,
+                }}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
     </Figure>
   );
 }
