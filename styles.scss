@@ -20,6 +20,18 @@ body {
     Georgia, serif;
 }
 
+// Brand highlight (after manuelmoreale.com): a pale marker-yellow used for
+// link underlines and pills. Dimmed in dark mode to keep text readable.
+:root {
+  --brand: #fff7b1;
+  --brand-alt: #ffee50;
+}
+
+html.dark {
+  --brand: rgba(255, 238, 80, 0.28);
+  --brand-alt: rgba(255, 238, 80, 0.45);
+}
+
 main[data-pagefind-body] {
   font-size: 1.0625rem;
   line-height: 1.8;
@@ -27,6 +39,39 @@ main[data-pagefind-body] {
   p {
     text-align: justify;
     hyphens: auto;
+  }
+
+  // Highlighter links: a thick underline pulled up behind the text, like a
+  // marker stroke. Link text keeps the ink color.
+  :where(p, li, figcaption) a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-skip-ink: none;
+    text-decoration-thickness: 0.5em;
+    text-underline-offset: -0.25em;
+    text-decoration-color: var(--brand);
+
+    &:hover {
+      text-decoration-color: var(--brand-alt);
+    }
+  }
+
+  // Book-scale titles: modest sizes, no rules under section headings.
+  h1 {
+    font-size: 1.6rem;
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    line-height: 1.6;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    line-height: 1.7;
   }
 
   ul {
@@ -69,4 +114,20 @@ html.chrome-hidden .nextra-sidebar,
 html.chrome-hidden .nextra-toc {
   opacity: 0;
   pointer-events: none;
+}
+
+// Part separators in the sidebar (the only li elements with no child
+// elements) become brand pills.
+.nextra-sidebar li:not(:has(*)) {
+  display: inline-block;
+  background-image: linear-gradient(to right, var(--brand), var(--brand-alt));
+  border-radius: 3px;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  color: #3f3a1a;
+}
+
+html.dark .nextra-sidebar li:not(:has(*)) {
+  color: #f5edc0;
 }
