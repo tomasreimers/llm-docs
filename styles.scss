@@ -124,9 +124,24 @@ main[data-pagefind-body] {
   cursor: help;
   position: relative;
 
-  &:hover {
+  // The highlight: drawn by a pseudo-element rather than the span's own
+  // background, because KaTeX spans carry extra font ascent above the glyph
+  // and the box reads as vertically off-center.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0.18em;
+    right: -0.1em;
+    bottom: -0.1em;
+    left: -0.1em;
     background: var(--brand);
     border-radius: 2px;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  &:hover::before {
+    opacity: 1;
   }
 
   &::after {
