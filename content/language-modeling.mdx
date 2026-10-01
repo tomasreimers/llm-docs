@@ -47,7 +47,7 @@ $$
 \tip{vocabulary size}{|V|}^{\,\tip{context length}{n}} = 50{,}000^{10} \approx 10^{47}
 $$
 
-possible rows in the table — more than there are atoms in the Earth. Almost every context you'll ever encounter *has never occurred before*, even with the whole internet as your corpus. The table has no entry; the model has nothing to say.
+possible rows in the table — more than there are atoms in the Earth. And no corpus can keep up. Be as ambitious as you like: take every page of the public internet — tens of trillions of words, the largest body of text our species has produced — and you have fewer than $10^{14}$ examples with which to fill a $10^{47}$-row table. Almost every context you'll ever encounter *has never occurred before, anywhere*. The table has no entry; the model has nothing to say.
 
 The failure is deeper than size, and it's worth naming precisely: **counting can't share.** Having seen "the dog sat on the ___" a thousand times tells a counting model *nothing* about "the cat sat on the ___" — the contexts differ, so they're different rows, full stop. Yet any English speaker knows those contexts are nearly the same. What we need is for *similar words to have similar representations*, so that evidence about one flows to the other. Chapter 1 gave us exactly one tool for learning useful representations under pressure of a loss. We'll need it — but first we have to decide what the atoms are.
 
