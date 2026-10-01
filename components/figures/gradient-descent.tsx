@@ -59,14 +59,16 @@ function TangentArrow({ x }: { x: number }) {
 
 export function GradientDescentFigure() {
   const [tick, setTick] = useState(0);
+  const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
+    if (!playing) return;
     const id = window.setInterval(
       () => setTick((t) => (t + 1) % (TOTAL_TICKS + 1)),
       PHASE_MS,
     );
     return () => window.clearInterval(id);
-  }, []);
+  }, [playing]);
 
   const s = Math.min(Math.floor(tick / 2), LAST);
   const measuring = tick % 2 === 0 && s < LAST;
@@ -75,7 +77,8 @@ export function GradientDescentFigure() {
 
   return (
     <Figure caption="Gradient descent, one iterate at a time: measure the slope at the current point (the arrow points uphill, and is longer where the slope is steeper), step the other way, repeat. The steps shrink on their own as the slope fades toward the minimum.">
-      <svg viewBox="0 0 590 320" className="w-full max-w-xl">
+      <div className="flex w-full flex-col items-center">
+        <svg viewBox="0 0 590 320" className="w-full max-w-xl">
         <defs>
           <marker id="gd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.8} />
@@ -132,6 +135,37 @@ export function GradientDescentFigure() {
           θ ← θ − η · slope
         </text>
       </svg>
+      <div className="mt-1 flex w-full max-w-xl items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <button
+          onClick={() => setPlaying((p) => !p)}
+          aria-label={playing ? 'Pause' : 'Play'}
+          className="w-5 text-sm leading-none opacity-70 hover:opacity-100"
+        >
+          {playing ? '⏸' : '▶'}
+        </button>
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Jump to iteration ${i}`}
+              onClick={() => {
+                setTick(i * 2);
+                setPlaying(false);
+              }}
+              className="h-3.5 w-3.5 rounded-full transition-all"
+              style={{
+                background: 'currentColor',
+                opacity: i === s ? 0.9 : i < s ? 0.45 : 0.15,
+                transform: i === s ? 'scale(1.25)' : 'scale(1)',
+              }}
+            />
+          ))}
+        </div>
+        <span className="w-24 whitespace-nowrap tabular-nums">
+          iteration {s} / {LAST}
+        </span>
+        </div>
+      </div>
     </Figure>
   );
 }
