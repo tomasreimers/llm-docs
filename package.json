@@ -12,11 +12,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tomasreimers/ai-docs.git"
+    "url": "git+https://github.com/tomasreimers/llm-docs.git"
   },
   "author": "Tomas Reimers",
   "bugs": {
-    "url": "https://github.com/tomasreimers/ai-docs/issues"
+    "url": "https://github.com/tomasreimers/llm-docs/issues"
   },
   "homepage": "https://llmdocs.com",
   "dependencies": {

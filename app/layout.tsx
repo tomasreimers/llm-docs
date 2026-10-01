@@ -49,7 +49,7 @@ export default async function RootLayout({ children }) {
           feedback={{ content: 'Questions? Leave me feedback' }}
           editLink={'Opinions? Suggest an edit'}
           footer={null}
-          docsRepositoryBase="https://github.com/tomasreimers/ai-docs/tree/main"
+          docsRepositoryBase="https://github.com/tomasreimers/llm-docs/tree/main"
           sidebar={{ defaultMenuCollapseLevel: 1 }}
           pageMap={pageMap}
           nextThemes={{ defaultTheme: 'dark' }}
