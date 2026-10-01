@@ -83,10 +83,6 @@ export function FixedStepFigure() {
           <circle r={6.5} fill="currentColor" />
         </g>
 
-        <text x={X(5)} y={Y(f(5)) + 26} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.7}>
-          the minimum — never reached
-        </text>
-        <line x1={X(5)} y1={Y(f(5)) - 4} x2={X(5)} y2={Y(f(5)) + 14} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="3 3" />
         </svg>
         <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
           {STEPS.slice(0, LAST).map((_, i) => (

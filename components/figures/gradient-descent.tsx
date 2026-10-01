@@ -50,9 +50,6 @@ function TangentArrow({ x }: { x: number }) {
         strokeWidth={2}
         markerEnd="url(#gd-arrow)"
       />
-      <text x={X(x) + 12} y={Y(f(x)) - 16} fontSize={11} fill="currentColor" opacity={0.75}>
-        slope (uphill)
-      </text>
     </g>
   );
 }
@@ -123,15 +120,6 @@ export function GradientDescentFigure() {
           <circle r={6.5} fill="currentColor" />
         </g>
 
-        <text x={X(STEPS[0]) + 12} y={Y(f(STEPS[0])) + 22} fontSize={11} fill="currentColor" opacity={0.7}>
-          start (random init)
-        </text>
-        <text x={X(STEPS[LAST])} y={Y(f(STEPS[LAST])) + 26} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.7}>
-          minimum
-        </text>
-        <text x={X(7.6)} y={Y(f(8.6))} fontSize={11.5} fill="currentColor" opacity={0.7}>
-          θ ← θ − η · slope
-        </text>
       </svg>
       <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
         {STEPS.slice(0, LAST).map((_, i) => (
