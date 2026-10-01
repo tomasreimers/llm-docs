@@ -4,30 +4,82 @@ import { useEffect, useState } from 'react';
 
 import { Figure } from './figure';
 
-// A two-weight network, with concrete numbers:
-//   x = 2, w₁ = 0.5  →  h = 1;  w₂ = 3  →  y = 3;  target = 1  →  L = 4
-// Backward: ∂L/∂y = 4;  ∂L/∂w₂ = 4;  ∂L/∂h = 12;  ∂L/∂w₁ = 24
-const PHASE_MS = 1900;
-const N_STEPS = 6;
+// A [2, 2, 1] network with concrete numbers, stepped through one calculation
+// at a time. Both hidden units end up active, so relu′ = 1 throughout and is
+// omitted from the arithmetic.
+//
+//   x₁ = 2, x₂ = 1
+//   h₁ = relu(0.5·2 + 1·1) = 2      h₂ = relu(1·2 − 1·1) = 1
+//   ŷ  = 1·2 + 2·1 = 4              L = (4 − 2)² = 4
+//   ∂L/∂ŷ = 4;  ∂L/∂v = 8, 4;  ∂L/∂h = 4, 8;  ∂L/∂w = 8, 4, 16, 8
+
+const PHASE_MS = 2100;
 
 const STEP_TEXT = [
-  'forward: h = w₁ · x = 0.5 × 2 = 1',
-  'forward: y = w₂ · h = 3 × 1 = 3',
-  'forward: L = (y − target)² = (3 − 1)² = 4',
-  'backward: ∂L/∂y = 2 · (y − target) = 4',
-  'backward: ∂L/∂w₂ = ∂L/∂y · h = 4 · 1 = 4, and ∂L/∂h = ∂L/∂y · w₂ = 4 · 3 = 12',
-  'backward: ∂L/∂w₁ = ∂L/∂h · x = 12 × 2 = 24 — the product of every local derivative on the path',
+  'forward: h₁ = relu(w₁₁·x₁ + w₂₁·x₂) = relu(0.5·2 + 1·1) = 2',
+  'forward: h₂ = relu(w₁₂·x₁ + w₂₂·x₂) = relu(1·2 − 1·1) = 1',
+  'forward: ŷ = v₁·h₁ + v₂·h₂ = 1·2 + 2·1 = 4',
+  'forward: L = (ŷ − target)² = (4 − 2)² = 4',
+  'backward: ∂L/∂ŷ = 2 · (ŷ − target) = 4 — computed once, reused by every step below',
+  'backward: ∂L/∂v₁ = ∂L/∂ŷ · h₁ = 8    ∂L/∂v₂ = ∂L/∂ŷ · h₂ = 4',
+  'backward: ∂L/∂h₁ = ∂L/∂ŷ · v₁ = 4    ∂L/∂h₂ = ∂L/∂ŷ · v₂ = 8',
+  'backward: ∂L/∂w₁₁ = ∂L/∂h₁ · x₁ = 8    ∂L/∂w₂₁ = 4    ∂L/∂w₁₂ = 16    ∂L/∂w₂₂ = 8',
 ];
+const N_STEPS = STEP_TEXT.length;
 
-const NODES = [
-  { id: 'x', x: 70, name: 'x', value: '2', from: -1 },
-  { id: 'h', x: 210, name: 'h', value: '1', from: 0 },
-  { id: 'y', x: 350, name: 'y', value: '3', from: 1 },
-  { id: 'L', x: 490, name: 'L', value: '4', from: 2 },
-];
+const NODES: Record<
+  string,
+  { x: number; y: number; label: string; value: string; valueStep: number; grad?: string; gradStep?: number }
+> = {
+  x1: { x: 80, y: 55, label: 'x₁', value: '2', valueStep: -1 },
+  x2: { x: 80, y: 165, label: 'x₂', value: '1', valueStep: -1 },
+  h1: { x: 255, y: 55, label: 'h₁', value: '2', valueStep: 0, grad: '∂ = 4', gradStep: 6 },
+  h2: { x: 255, y: 165, label: 'h₂', value: '1', valueStep: 1, grad: '∂ = 8', gradStep: 6 },
+  y: { x: 420, y: 110, label: 'ŷ', value: '4', valueStep: 2, grad: '∂L/∂ŷ = 4', gradStep: 4 },
+};
 
-const CY = 62;
 const R = 20;
+const LOSS = { x: 530, y: 110 };
+
+const EDGES: Array<{
+  id: string;
+  from: string;
+  to: string;
+  label: string;
+  lt: number;
+  grad?: string;
+  gradStep?: number;
+}> = [
+  { id: 'w11', from: 'x1', to: 'h1', label: 'w₁₁ = 0.5', lt: 0.42, grad: '∂ = 8', gradStep: 7 },
+  { id: 'w12', from: 'x1', to: 'h2', label: 'w₁₂ = 1', lt: 0.22, grad: '∂ = 16', gradStep: 7 },
+  { id: 'w21', from: 'x2', to: 'h1', label: 'w₂₁ = 1', lt: 0.22, grad: '∂ = 4', gradStep: 7 },
+  { id: 'w22', from: 'x2', to: 'h2', label: 'w₂₂ = −1', lt: 0.42, grad: '∂ = 8', gradStep: 7 },
+  { id: 'v1', from: 'h1', to: 'y', label: 'v₁ = 1', lt: 0.45, grad: '∂ = 8', gradStep: 5 },
+  { id: 'v2', from: 'h2', to: 'y', label: 'v₂ = 2', lt: 0.45, grad: '∂ = 4', gradStep: 5 },
+  { id: 'yL', from: 'y', to: 'L', label: 'target = 2', lt: 0.5 },
+];
+
+const HOT_EDGES: string[][] = [
+  ['w11', 'w21'],
+  ['w12', 'w22'],
+  ['v1', 'v2'],
+  ['yL'],
+  ['yL'],
+  ['v1', 'v2'],
+  ['v1', 'v2'],
+  ['w11', 'w12', 'w21', 'w22'],
+];
+
+const HOT_NODES: string[][] = [
+  ['x1', 'x2', 'h1'],
+  ['x1', 'x2', 'h2'],
+  ['h1', 'h2', 'y'],
+  ['y'],
+  ['y'],
+  ['y', 'h1', 'h2'],
+  ['y', 'h1', 'h2'],
+  ['h1', 'h2', 'x1', 'x2'],
+];
 
 export function BackpropFigure() {
   const [tick, setTick] = useState(0);
@@ -41,106 +93,101 @@ export function BackpropFigure() {
   }, []);
 
   const s = Math.min(tick, N_STEPS - 1);
+  const backward = s >= 4;
 
-  const grads: Array<{ x: number; text: string; step: number }> = [
-    { x: 350, text: '∂L/∂y = 4', step: 3 },
-    { x: 280, text: '∂L/∂w₂ = 4', step: 4 },
-    { x: 210, text: '∂L/∂h = 12', step: 4 },
-    { x: 140, text: '∂L/∂w₁ = 24', step: 5 },
-  ];
+  const pos = (id: string) => (id === 'L' ? LOSS : NODES[id]);
 
   return (
-    <Figure caption="Backpropagation on a two-weight network, one calculation per step. Forward: compute and remember h, y, and L. Backward: walk from the loss toward the input, multiplying local derivatives — each weight's gradient is the product of everything on the path between it and the loss.">
+    <Figure caption="Backpropagation on a two-layer network, one calculation per step: forward to compute (and remember) every value, then backward from the loss, multiplying local derivatives. Both hidden units are active here, so relu′ = 1 and is left out of the arithmetic. Note the reuse: ∂L/∂ŷ is computed once and feeds everything; each ∂L/∂h feeds every weight into that unit.">
       <div className="flex w-full flex-col items-center">
-        <svg viewBox="0 0 560 160" className="w-full max-w-xl">
+        <svg viewBox="0 0 600 220" className="w-full max-w-xl">
           <defs>
-            <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.65} />
+            <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.7} />
             </marker>
           </defs>
 
-          {/* edges with weight labels */}
-          {NODES.slice(0, -1).map((n, i) => {
-            const next = NODES[i + 1];
-            const active = s === i;
+          {/* edges */}
+          {EDGES.map((e) => {
+            const na = pos(e.from);
+            const nb = pos(e.to);
+            const hot = HOT_EDGES[s].includes(e.id);
+            const dx = nb.x - na.x;
+            const dy = nb.y - na.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const sx = na.x + (dx / len) * R;
+            const sy = na.y + (dy / len) * R;
+            let ex = nb.x - (dx / len) * (R + 3);
+            let ey = nb.y - (dy / len) * (R + 3);
+            if (e.to === 'L') {
+              ex = LOSS.x - 46;
+              ey = LOSS.y;
+            }
+            const showGrad = e.grad && e.gradStep !== undefined && s >= e.gradStep;
+            const gradActive = e.gradStep === s;
             return (
-              <g key={n.id}>
+              <g key={e.id}>
                 <line
-                  x1={n.x + R}
-                  y1={CY}
-                  x2={next.x - R - 2}
-                  y2={CY}
+                  x1={sx}
+                  y1={sy}
+                  x2={ex}
+                  y2={ey}
                   stroke="currentColor"
-                  strokeOpacity={active ? 0.9 : 0.35}
-                  strokeWidth={active ? 2 : 1.5}
+                  strokeOpacity={hot ? 0.9 : 0.2}
+                  strokeWidth={hot ? 2.2 : 1.4}
+                  strokeDasharray={hot && backward ? '5 4' : undefined}
                   markerEnd="url(#bp-arrow)"
                 />
-                <text x={(n.x + next.x) / 2} y={CY - 12} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.75}>
-                  {i === 0 ? 'w₁ = 0.5' : i === 1 ? 'w₂ = 3' : 'target = 1'}
+                <text x={sx + dx * e.lt} y={sy + dy * e.lt - 6} textAnchor="middle" fontSize={10} fill="currentColor" opacity={hot ? 0.9 : 0.5}>
+                  {e.label}
                 </text>
+                {showGrad && (
+                  <text x={sx + dx * e.lt} y={sy + dy * e.lt + 13} textAnchor="middle" fontSize={9.5} fontWeight={gradActive ? 700 : 400} fill="currentColor" opacity={gradActive ? 0.95 : 0.55}>
+                    {e.grad}
+                  </text>
+                )}
               </g>
             );
           })}
 
-          {/* nodes with values appearing as the forward pass reaches them */}
-          {NODES.map((n) => {
-            const computed = n.from < 0 || s >= n.from;
-            const active = s === n.from;
+          {/* value nodes */}
+          {Object.entries(NODES).map(([id, n]) => {
+            const hot = HOT_NODES[s].includes(id);
+            const computed = n.valueStep < 0 || s >= n.valueStep;
+            const showGrad = n.grad && n.gradStep !== undefined && s >= n.gradStep;
+            const gradActive = n.gradStep === s;
             return (
-              <g key={n.id}>
-                <circle
-                  cx={n.x}
-                  cy={CY}
-                  r={R}
-                  fill="currentColor"
-                  fillOpacity={active ? 0.12 : 0.04}
-                  stroke="currentColor"
-                  strokeOpacity={computed ? 0.8 : 0.3}
-                  strokeWidth={active ? 2 : 1.5}
-                />
-                <text x={n.x} y={CY - 4} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.75}>
-                  {n.name}
+              <g key={id}>
+                <circle cx={n.x} cy={n.y} r={R} fill="currentColor" fillOpacity={hot ? 0.1 : 0.04} stroke="currentColor" strokeOpacity={hot ? 0.85 : 0.35} strokeWidth={hot ? 2 : 1.4} />
+                <text x={n.x} y={n.y - 3} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.7}>
+                  {n.label}
                 </text>
-                <text x={n.x} y={CY + 11} textAnchor="middle" fontSize={11.5} fontWeight={700} fill="currentColor" opacity={computed ? 0.95 : 0}>
+                <text x={n.x} y={n.y + 12} textAnchor="middle" fontSize={11.5} fontWeight={700} fill="currentColor" opacity={computed ? 0.95 : 0}>
                   {n.value}
                 </text>
+                {showGrad && (
+                  <text x={n.x} y={n.y + R + 15} textAnchor="middle" fontSize={9.5} fontWeight={gradActive ? 700 : 400} fill="currentColor" opacity={gradActive ? 0.95 : 0.55}>
+                    {n.grad}
+                  </text>
+                )}
               </g>
             );
           })}
 
-          {/* backward arrows and gradients */}
-          {s >= 3 &&
-            NODES.slice(0, 3).map((n, i) => {
-              const visible = s >= 5 - i; // h→x needs step 5, y→h step 4, L→y step 3
-              if (!visible) return null;
-              const next = NODES[i + 1];
-              return (
-                <line
-                  key={n.id}
-                  x1={next.x - R}
-                  y1={CY + 34}
-                  x2={n.x + R}
-                  y2={CY + 34}
-                  stroke="currentColor"
-                  strokeOpacity={0.5}
-                  strokeDasharray="5 4"
-                  markerEnd="url(#bp-arrow)"
-                />
-              );
-            })}
-          {grads.map((g) => {
-            if (s < g.step) return null;
-            const active = s === g.step;
-            return (
-              <text key={g.text} x={g.x} y={CY + 58} textAnchor="middle" fontSize={10.5} fontWeight={active ? 700 : 400} fill="currentColor" opacity={active ? 0.95 : 0.6}>
-                {g.text}
-              </text>
-            );
-          })}
+          {/* the loss box */}
+          <g>
+            <rect x={LOSS.x - 44} y={LOSS.y - 22} width={92} height={44} rx={3} fill="currentColor" fillOpacity={HOT_NODES[s].includes('y') && s >= 3 ? 0.08 : 0.04} stroke="currentColor" strokeOpacity={s === 3 || s === 4 ? 0.85 : 0.35} strokeWidth={s === 3 || s === 4 ? 2 : 1.4} />
+            <text x={LOSS.x + 2} y={LOSS.y - 2} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.9}>
+              loss L{s >= 3 ? ' = 4' : ''}
+            </text>
+            <text x={LOSS.x + 2} y={LOSS.y + 13} textAnchor="middle" fontSize={9} fill="currentColor" opacity={0.55}>
+              (ŷ − target)²
+            </text>
+          </g>
         </svg>
 
         {/* the calculation at this step */}
-        <div className="mt-1 flex h-5 items-center justify-center font-mono text-[11.5px] opacity-80">
+        <div className="mt-1 flex min-h-6 w-full max-w-2xl items-center justify-center text-center font-mono text-[11px] leading-tight opacity-80">
           {STEP_TEXT[s]}
         </div>
 

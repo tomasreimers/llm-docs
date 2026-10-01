@@ -1,6 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { BackpropFigure } from "../components/figures/backprop"
-import { ComputationalGraphFigure } from "../components/figures/computational-graph"
 import { FixedStepFigure } from "../components/figures/fixed-step"
 import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
@@ -144,11 +143,7 @@ How do you compute a gradient with respect to a million parameters? First, a ter
 
 <BackpropFigure />
 
-The chain above had one path, but a real network is a *graph* — and this is where backprop's dynamic programming pays off. Here's a full two-input network; follow any weight's gradient back from the loss:
-
-<ComputationalGraphFigure />
-
-Every formula begins with the same factors. Backprop computes $\partial L/\partial \hat{y}$ once, each $\partial L/\partial h$ once, and every weight upstream reuses them — which is how a million gradients cost about the same as two forward passes instead of a million.
+Watch what the backward pass reuses: $\partial L/\partial \hat{y}$ is computed once and feeds every gradient below it; each $\partial L/\partial h$ is computed once and feeds every weight into that unit. That reuse is the dynamic programming — and it's how a million gradients cost about the same as two forward passes instead of a million.
 
 In practice you never write this by hand. Frameworks like PyTorch record the **computational graph** as your code runs and derive the backward pass automatically (this is "autograd"). Here is the entire training loop, for real:
 
