@@ -13,7 +13,7 @@ const NODES: Record<string, { x: number; y: number; label: string }> = {
   h1: { x: 250, y: 55, label: 'h₁' },
   h2: { x: 250, y: 165, label: 'h₂' },
   y: { x: 410, y: 110, label: 'ŷ' },
-  L: { x: 505, y: 110, label: 'L' },
+  L: { x: 523, y: 110, label: 'L' },
 };
 
 const R = 18;
@@ -82,8 +82,13 @@ export function ComputationalGraphFigure() {
             const len = Math.sqrt(dx * dx + dy * dy);
             const sx = na.x + (dx / len) * R;
             const sy = na.y + (dy / len) * R;
-            const ex = nb.x - (dx / len) * (R + 3);
-            const ey = nb.y - (dy / len) * (R + 3);
+            let ex = nb.x - (dx / len) * (R + 3);
+            let ey = nb.y - (dy / len) * (R + 3);
+            if (b === 'L') {
+              // the loss is a box, not a circle
+              ex = nb.x - 45;
+              ey = nb.y;
+            }
             const w = i < WEIGHTS.length ? WEIGHTS[i] : null;
             return (
               <g key={`${a}-${b}`}>
@@ -122,21 +127,31 @@ export function ComputationalGraphFigure() {
             );
           })}
 
-          {/* nodes */}
-          {Object.entries(NODES).map(([id, n]) => {
-            const hot = path.includes(id);
-            return (
-              <g key={id}>
-                <circle cx={n.x} cy={n.y} r={R} fill="currentColor" fillOpacity={hot ? 0.1 : 0.04} stroke="currentColor" strokeOpacity={hot ? 0.85 : 0.35} strokeWidth={hot ? 2 : 1.5} />
-                <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize={12} fill="currentColor" opacity={hot ? 1 : 0.6}>
-                  {n.label}
-                </text>
-              </g>
-            );
-          })}
-          <text x={505} y={160} textAnchor="middle" fontSize={10} fill="currentColor" opacity={0.55}>
-            vs. target
-          </text>
+          {/* value nodes (circles) */}
+          {Object.entries(NODES)
+            .filter(([id]) => id !== 'L')
+            .map(([id, n]) => {
+              const hot = path.includes(id);
+              return (
+                <g key={id}>
+                  <circle cx={n.x} cy={n.y} r={R} fill="currentColor" fillOpacity={hot ? 0.1 : 0.04} stroke="currentColor" strokeOpacity={hot ? 0.85 : 0.35} strokeWidth={hot ? 2 : 1.5} />
+                  <text x={n.x} y={n.y + 4} textAnchor="middle" fontSize={12} fill="currentColor" opacity={hot ? 1 : 0.6}>
+                    {n.label}
+                  </text>
+                </g>
+              );
+            })}
+
+          {/* the loss, drawn as a box: an operation on ŷ, not another value */}
+          <g>
+            <rect x={NODES.L.x - 42} y={NODES.L.y - 22} width={84} height={44} rx={3} fill="currentColor" fillOpacity={path.includes('L') ? 0.1 : 0.04} stroke="currentColor" strokeOpacity={path.includes('L') ? 0.85 : 0.35} strokeWidth={path.includes('L') ? 2 : 1.5} />
+            <text x={NODES.L.x} y={NODES.L.y - 2} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.9}>
+              loss L
+            </text>
+            <text x={NODES.L.x} y={NODES.L.y + 13} textAnchor="middle" fontSize={9.5} fill="currentColor" opacity={0.55}>
+              ŷ vs. target
+            </text>
+          </g>
         </svg>
 
         <div className="mt-1 flex h-5 items-center justify-center font-mono text-[11.5px] opacity-80">
