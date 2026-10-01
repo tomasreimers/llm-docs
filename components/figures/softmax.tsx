@@ -84,7 +84,7 @@ export function SoftmaxFigure() {
           the label: one-hot
         </text>
         <text x={484} y={top + h10 + 36} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55}>
-          all mass on the truth
+          the correct answer
         </text>
       </svg>
     </Figure>
