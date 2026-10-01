@@ -68,13 +68,32 @@ With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the fi
 
 But stacking the layers broke something important. A lone regression can be *solved*: for a linear model, calculus hands you the best-fit weights directly — set the derivative of the error to zero and solve the equations (this is least squares, the same machinery that fits a trend line in a spreadsheet). The moment a nonlinearity sits between two matrices, that machinery dies. For a linear model the error surface is a smooth bowl — "set the derivative to zero" is a system of *linear* equations with one solution. Add the ReLUs and the surface shatters into an exponential number of pieces, and "set the derivative to zero" becomes a system of nonlinear equations nobody can solve in general. This isn't just empirical pessimism: [Blum and Rivest proved](https://people.csail.mit.edu/rivest/pubs/BR93.pdf) that optimally training even a three-neuron network is NP-complete, so a general-purpose recipe for the best $W_1$ and $W_2$ would, among other things, resolve P vs. NP. The best anyone knows how to do is start with random weights and improve them *iteratively* — which is exactly what the rest of this chapter is about.
 
-## The loss: measuring wrongness
+## The learning: gradient descent
 
 So here's where we are: an MLP with ~400,000 weights, every one of them initialized to a random number. Feed it our 7 and it reports something like 10% on every digit — of course it does; it's random. How do we get 400,000 random numbers to take on *useful* values?
 
-Since we can't solve for them, we iterate: nudge the weights, check whether the model got better, keep the nudges that help, repeat a few hundred thousand times. For that loop to work at all, "did the model get better?" has to be a number we can compute — a single score that any candidate set of weights can be graded by, so the search can tell whether a change helped or hurt. That number is the **loss**, and defining it well matters as much as the architecture does — it is, literally, the spec the model will be optimized against.
+Since we can't solve for them, we iterate: nudge the weights, check whether the model got better, keep the nudges that help, repeat a few hundred thousand times. For now, assume that "did the model get better?" is a single number we can compute — a score, called the **loss** $L$, that measures how wrong the model is on the training data, where lower is better. (Constructing it carefully is the next section's job; here we only need that it exists and is smooth.)
 
-The obvious candidate — accuracy, percent correct — turns out to be a terrible compass. Nudge one weight slightly and usually *no* prediction flips, so accuracy doesn't move at all: the search gets no signal about which direction is better. What we want instead is a number that improves *continuously* as the model gets less wrong — one that rewards moving from "99% sure it's a 3" to "60% sure it's a 3" on an image of a 5, even though both are, discretely, the same mistake. That means grading the model's *confidence*, not just its verdict — and for that, its outputs need to be probabilities.
+With a loss in hand, learning becomes a search problem — find weights with lower loss — and the search algorithm is almost embarrassingly greedy: compute the gradient of the loss with respect to every parameter — the direction that increases the loss fastest — and take a small step the other way.
+
+$$
+\theta \leftarrow \theta - \eta \nabla_\theta L
+$$
+
+The step size $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and the parameters ricochet around and diverge.
+
+<GradientDescentFigure />
+
+Two practical modifications matter:
+
+- **Stochastic** gradient descent: you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an unbiased estimate of the full gradient, and its accuracy improves only with the square root of the sample size, while its cost grows linearly. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones, and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
+- **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
+
+## The loss: measuring wrongness
+
+Now let's construct the number we've been assuming. Gradient descent quietly imposed two requirements on it: the loss must be *differentiable* (we take its gradient), and it should change *continuously* as the model improves (a compass that only moves in rare jumps gives the search no direction). Defining it well matters as much as the architecture does — it is, literally, the spec the model will be optimized against.
+
+Those requirements immediately disqualify the obvious candidate: accuracy, percent correct. Nudge one weight slightly and usually *no* prediction flips, so accuracy doesn't move at all — flat almost everywhere, gradient zero, no signal. What we want instead is a number that rewards moving from "99% sure it's a 3" to "60% sure it's a 3" on an image of a 5, even though both are, discretely, the same mistake. That means grading the model's *confidence*, not just its verdict — and for that, its outputs need to be probabilities.
 
 The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
 
@@ -92,26 +111,9 @@ $$
 L = -\log(p_{\text{correct}})
 $$
 
-If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is ~4.6. Averaged over the dataset, this single number summarizes how wrong the model is — and turns "learn to read digits" into "minimize this function."
+If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is ~4.6. Averaged over the dataset, this single number summarizes how wrong the model is — smooth, differentiable, and falling steadily as confidence shifts toward the right answers. "Learn to read digits" has become "minimize this function."
 
 This exact loss — softmax over possible outputs, negative log-likelihood of the correct one — is also *the* loss used to train LLMs. The only thing that changes is that the 10 digits become ~100,000 tokens.
-
-## The learning: gradient descent
-
-So we have a function with hundreds of thousands of parameters and a loss we want to minimize. The search algorithm is almost embarrassingly greedy: compute the gradient of the loss with respect to every parameter — the direction that increases the loss fastest — and take a small step the other way.
-
-$$
-\theta \leftarrow \theta - \eta \nabla_\theta L
-$$
-
-The step size $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and the parameters ricochet around and diverge.
-
-<GradientDescentFigure />
-
-Two practical modifications matter:
-
-- **Stochastic** gradient descent: you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an unbiased estimate of the full gradient, and its accuracy improves only with the square root of the sample size, while its cost grows linearly. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones, and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
-- **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
 
 ## Backpropagation: the chain rule, industrialized
 
