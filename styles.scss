@@ -258,6 +258,26 @@ html.dark .math-tip-bubble {
   color: #111827;
 }
 
+// Margin-note variant: sits in the empty flank left of the formula,
+// vertically centered on the hovered term.
+.math-tip-bubble--margin {
+  transform: translate(-100%, -50%);
+  white-space: normal;
+  text-align: right;
+  background: transparent;
+  color: var(--color-gray-500);
+  font-style: italic;
+  padding: 0;
+  border-radius: 0;
+  border-right: 2px solid var(--brand-alt);
+  padding-right: 0.6rem;
+}
+
+html.dark .math-tip-bubble--margin {
+  background: transparent;
+  color: var(--color-gray-400);
+}
+
 // Distraction-free reading: IdleChrome (components/idle-chrome.tsx) adds
 // .chrome-hidden to <html> when the mouse has been still for a couple of
 // seconds; the navbar, sidebar, and TOC fade out until it moves again.
