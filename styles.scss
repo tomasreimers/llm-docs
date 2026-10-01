@@ -234,19 +234,17 @@ main[data-pagefind-body] {
   pointer-events: auto;
 }
 
-// The shared tooltip bubble, positioned by components/math-tips.tsx above
-// the equation containing the hovered term.
+// The shared math-term note, positioned by components/math-tips.tsx: in the
+// flank left of the formula when there's room, under the equation otherwise.
+// Styled as printed marginalia in both cases.
 .math-tip-bubble {
   position: fixed;
-  transform: translate(-50%, -100%);
-  background: #1f2937;
-  color: #f9fafb;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  font-style: italic;
   font-weight: 400;
-  line-height: 1.4;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  white-space: nowrap;
+  line-height: 1.35;
+  color: var(--color-gray-500);
+  white-space: normal;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
@@ -254,28 +252,22 @@ main[data-pagefind-body] {
 }
 
 html.dark .math-tip-bubble {
-  background: #f3f4f6;
-  color: #111827;
+  color: var(--color-gray-400);
 }
 
-// Margin-note variant: sits in the empty flank left of the formula,
-// vertically centered on the hovered term.
+// In the flank: right-aligned against the formula's left edge, vertically
+// centered on the hovered term.
 .math-tip-bubble--margin {
   transform: translate(-100%, -50%);
-  white-space: normal;
   text-align: right;
-  background: transparent;
-  color: var(--color-gray-500);
-  font-style: italic;
-  padding: 0;
-  border-radius: 0;
   border-right: 2px solid var(--brand-alt);
   padding-right: 0.6rem;
 }
 
-html.dark .math-tip-bubble--margin {
-  background: transparent;
-  color: var(--color-gray-400);
+// Below the equation: centered, in the display margin.
+.math-tip-bubble--below {
+  transform: translate(-50%, 0);
+  text-align: center;
 }
 
 // Distraction-free reading: IdleChrome (components/idle-chrome.tsx) adds

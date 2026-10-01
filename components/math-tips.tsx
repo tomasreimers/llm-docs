@@ -72,18 +72,18 @@ export function MathTips() {
         : eqRect.left;
       const flank = formulaLeft - eqRect.left;
 
-      if (flank > 140) {
+      if (flank > 160) {
         bubble.className = 'math-tip-bubble math-tip-bubble--margin';
         bubble.style.maxWidth = `${Math.min(240, flank - 24)}px`;
         bubble.style.left = `${formulaLeft - 12}px`;
         bubble.style.top = `${termRect.top + termRect.height / 2}px`;
       } else {
-        bubble.className = 'math-tip-bubble';
-        bubble.style.maxWidth = '';
-        const half = bubble.offsetWidth / 2 || 100;
-        const cx = termRect.left + termRect.width / 2;
-        bubble.style.left = `${Math.max(half + 8, Math.min(cx, window.innerWidth - half - 8))}px`;
-        bubble.style.top = `${eqRect.top - 6}px`;
+        // No flank (narrow viewport or inline math): note below the equation,
+        // where the display margin leaves clear space.
+        bubble.className = 'math-tip-bubble math-tip-bubble--below';
+        bubble.style.maxWidth = `${Math.max(eqRect.width - 24, 200)}px`;
+        bubble.style.left = `${eqRect.left + eqRect.width / 2}px`;
+        bubble.style.top = `${eqRect.bottom + 4}px`;
       }
       bubble.style.opacity = '1';
     };
