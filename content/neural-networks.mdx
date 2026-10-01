@@ -4,6 +4,7 @@ import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { LinearScoresFigure } from "../components/figures/linear-scores"
 import { MlpFigure } from "../components/figures/mlp"
+import { SoftmaxFigure } from "../components/figures/softmax"
 import { Image } from "../components/image"
 import MnistPng from "../public/images/content/neural-networks/mnist.png"
 
@@ -81,7 +82,9 @@ $$
 p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}
 $$
 
-Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1.
+Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1. Here it is applied to the scores our linear classifier produced for the 7:
+
+<SoftmaxFigure />
 
 Then we score the prediction with **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
 
