@@ -139,7 +139,13 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
 
-With that, there's an obvious recipe, straight from the definition of a derivative:
+With that, recall the shape of a derivative — the slope of a function, measured with a vanishingly small nudge:
+
+$$
+\frac{\partial L}{\partial w} = \lim_{\varepsilon \to 0} \frac{\tip{how much the loss changed}{L(w + \varepsilon) - L(w)}}{\tip{divided by how much we nudged}{\varepsilon}}
+$$
+
+A computer can't take $\varepsilon$ all the way to zero, but it can make it very small — which turns the definition directly into a recipe:
 
 1. Run a forward pass and record the loss, $L$.
 2. Nudge one weight $w$ up by a tiny amount $\varepsilon$.
