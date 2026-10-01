@@ -140,6 +140,7 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 ## Backpropagation: the chain rule, industrialized
 
 How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
+
 [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. If $L$ depends on $y$, and $y$ depends on $w$, then
 
 $$
