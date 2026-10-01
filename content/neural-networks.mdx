@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { FixedStepFigure } from "../components/figures/fixed-step"
 import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { LinearScoresFigure } from "../components/figures/linear-scores"
@@ -83,7 +84,9 @@ $$
 \tip{the parameters — all of the weights at once}{\theta} \leftarrow \theta - \tip{the learning rate: how big a step to take}{\eta} \tip{the gradient: the direction that increases the loss fastest}{\nabla_\theta L}
 $$
 
-Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows.
+Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows. Here's the fixed-stride version for comparison:
+
+<FixedStepFigure />
 
 The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and even shrinking steps can't save you — the parameters ricochet around and diverge.
 
