@@ -139,7 +139,15 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss). Now, the naive way to get the gradient: nudge one parameter, run a forward pass, and see how the loss moved. That works — it's literally the definition of a derivative — but it costs one forward pass *per parameter*: a million forward passes to take a single step.
 
-[Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. It's the chain rule from multivariate calculus, applied with dynamic programming: run the network forward, remember the intermediate values, then walk backward from the loss, multiplying local derivatives as you go. The gradient of the loss with respect to any weight is the product of the derivatives along the path from that weight to the loss.
+[Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. If $L$ depends on $y$, and $y$ depends on $w$, then
+
+$$
+\frac{\partial L}{\partial w} = \tip{how much the loss moves when y moves}{\frac{\partial L}{\partial y}} \cdot \tip{how much y moves when the weight moves}{\frac{\partial y}{\partial w}}
+$$
+
+Nudge $w$: the effect on $y$ is scaled by $\partial y/\partial w$, and that effect on $L$ is scaled again by $\partial L/\partial y$ — two links in a chain, two factors in a product. A deep network is just a longer chain.
+
+Backprop is this rule applied with dynamic programming: run the network forward, remember the intermediate values, then walk backward from the loss, multiplying local derivatives as you go. The gradient of the loss with respect to any weight is the product of the derivatives along the path from that weight to the loss.
 
 <BackpropFigure />
 
