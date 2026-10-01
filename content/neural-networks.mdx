@@ -65,9 +65,13 @@ With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the fi
 
 <MlpFigure />
 
+But stacking the layers broke something important. A lone regression can be *solved*: for a linear model, calculus hands you the best-fit weights directly — set the derivative of the error to zero and solve the equations (this is least squares, the same machinery that fits a trend line in a spreadsheet). The moment a nonlinearity sits between two matrices, that machinery dies. There is no formula that returns the best $W_1$ and $W_2$; nobody has found one, and there's good reason to believe nobody will. The best anyone knows how to do is start with random weights and improve them *iteratively* — which is exactly what the rest of this chapter is about.
+
 ## The loss: measuring wrongness
 
-We now have a function template with ~400,000 tunable parameters — currently filled with random numbers, producing garbage. "Training" means searching for parameter values that classify digits well. And any search needs a compass: a single number that says how good the current parameters are, so the algorithm can tell whether a change made things better or worse. That number is the **loss**, and defining it well matters as much as the architecture does — it is, literally, the spec the model will be optimized against.
+So here's where we are: an MLP with ~400,000 weights, every one of them initialized to a random number. Feed it our 7 and it reports something like 10% on every digit — of course it does; it's random. How do we get 400,000 random numbers to take on *useful* values?
+
+Since we can't solve for them, we iterate: nudge the weights, check whether the model got better, keep the nudges that help, repeat a few hundred thousand times. For that loop to work at all, "did the model get better?" has to be a number we can compute — a single score that any candidate set of weights can be graded by, so the search can tell whether a change helped or hurt. That number is the **loss**, and defining it well matters as much as the architecture does — it is, literally, the spec the model will be optimized against.
 
 The obvious candidate — accuracy, percent correct — turns out to be a terrible compass. Nudge one weight slightly and usually *no* prediction flips, so accuracy doesn't move at all: the search gets no signal about which direction is better. What we want instead is a number that improves *continuously* as the model gets less wrong — one that rewards moving from "99% sure it's a 3" to "60% sure it's a 3" on an image of a 5, even though both are, discretely, the same mistake. That means grading the model's *confidence*, not just its verdict — and for that, its outputs need to be probabilities.
 
