@@ -39,9 +39,13 @@ export function MathTips() {
     const bubble = document.createElement('div');
     bubble.className = 'math-tip-bubble';
     document.body.appendChild(bubble);
+    const highlight = document.createElement('div');
+    highlight.className = 'math-tip-highlight';
+    document.body.appendChild(highlight);
 
     const hide = () => {
       bubble.style.opacity = '0';
+      highlight.style.opacity = '0';
     };
 
     const over = (e: MouseEvent) => {
@@ -55,7 +59,26 @@ export function MathTips() {
       fixSpacing(el);
       const eq = el.closest('.katex-display') || el.closest('.katex') || el;
       const eqRect = eq.getBoundingClientRect();
-      const termRect = el.getBoundingClientRect();
+
+      // The term's true visual extent: union of every descendant's box
+      // (KaTeX spans' own boxes exclude below-baseline depth and overhangs).
+      const t = el.getBoundingClientRect();
+      let [top, right, bottom, left] = [t.top, t.right, t.bottom, t.left];
+      el.querySelectorAll('*').forEach((c) => {
+        const r = c.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
+        top = Math.min(top, r.top);
+        right = Math.max(right, r.right);
+        bottom = Math.max(bottom, r.bottom);
+        left = Math.min(left, r.left);
+      });
+      const termRect = new DOMRect(left, top, right - left, bottom - top);
+
+      highlight.style.left = `${termRect.left - 2}px`;
+      highlight.style.top = `${termRect.top - 2}px`;
+      highlight.style.width = `${termRect.width + 4}px`;
+      highlight.style.height = `${termRect.height + 4}px`;
+      highlight.style.opacity = '1';
       bubble.textContent = el.getAttribute('data-tip') || '';
 
       // Prefer the empty flank left of the centered formula (a margin note —
@@ -94,6 +117,7 @@ export function MathTips() {
       document.removeEventListener('mouseover', over);
       window.removeEventListener('scroll', hide);
       bubble.remove();
+      highlight.remove();
     };
   }, []);
 

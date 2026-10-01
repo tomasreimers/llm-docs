@@ -184,34 +184,6 @@ main[data-pagefind-body] {
   cursor: help;
   position: relative;
 
-  // The highlight: drawn by a pseudo-element rather than the span's own
-  // background, because KaTeX spans carry extra font ascent above the glyph
-  // and the box reads as vertically off-center.
-  &::before {
-    content: '';
-    position: absolute;
-    top: calc(50% - 0.6em);
-    height: 1.2em;
-    right: -0.12em;
-    left: -0.12em;
-    background: var(--brand);
-    border-radius: 2px;
-    opacity: 0;
-    z-index: -1;
-  }
-
-  // Tall stacked terms (fractions, sums — anything with a vlist) fill their
-  // real box; the fixed-height band above is only for single-line glyphs.
-  &:has(.vlist)::before {
-    top: -0.08em;
-    bottom: -0.08em;
-    height: auto;
-  }
-
-  &:hover::before {
-    opacity: 1;
-  }
-
   // Invisible padded hit area: pseudo-elements count toward hover
   // hit-testing, so this enlarges the target without changing the visuals.
   &::after {
@@ -219,7 +191,26 @@ main[data-pagefind-body] {
     position: absolute;
     inset: -0.4em -0.35em;
   }
+}
 
+// The hover highlight, drawn by components/math-tips.tsx as an overlay sized
+// to the term's true visual extent (KaTeX spans' CSS boxes routinely exclude
+// parts of the glyphs, so no pseudo-element can cover them reliably).
+// Blend modes keep the text legible underneath.
+.math-tip-highlight {
+  position: fixed;
+  background: #fff7b1;
+  mix-blend-mode: multiply;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  z-index: 40;
+}
+
+html.dark .math-tip-highlight {
+  background: #6e6420;
+  mix-blend-mode: screen;
 }
 
 // KaTeX's internal layout spans (vlist struts) can sit on top of annotated
