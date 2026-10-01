@@ -59,16 +59,14 @@ function TangentArrow({ x }: { x: number }) {
 
 export function GradientDescentFigure() {
   const [tick, setTick] = useState(0);
-  const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
-    if (!playing) return;
     const id = window.setInterval(
       () => setTick((t) => (t + 1) % (TOTAL_TICKS + 1)),
       PHASE_MS,
     );
     return () => window.clearInterval(id);
-  }, [playing]);
+  }, []);
 
   const s = Math.min(Math.floor(tick / 2), LAST);
   const measuring = tick % 2 === 0 && s < LAST;
@@ -135,35 +133,28 @@ export function GradientDescentFigure() {
           θ ← θ − η · slope
         </text>
       </svg>
-      <div className="mt-1 flex w-full max-w-xl items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-        <button
-          onClick={() => setPlaying((p) => !p)}
-          aria-label={playing ? 'Pause' : 'Play'}
-          className="w-5 text-sm leading-none opacity-70 hover:opacity-100"
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-        <div className="flex items-center gap-1.5">
-          {STEPS.map((_, i) => (
-            <button
-              key={i}
-              aria-label={`Jump to iteration ${i}`}
-              onClick={() => {
-                setTick(i * 2);
-                setPlaying(false);
-              }}
-              className="h-3.5 w-3.5 rounded-full transition-all"
+      <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
+        {STEPS.map((_, i) => (
+          <button
+            key={i}
+            aria-label={`Jump to iteration ${i}`}
+            onClick={() => setTick(i * 2)}
+            className="h-1.5 w-7 overflow-hidden rounded-full"
+            style={{ background: 'color-mix(in srgb, currentColor 15%, transparent)' }}
+          >
+            <div
+              key={`${i}-${i === s ? tick - (tick % 2) : 'static'}`}
+              className="h-full rounded-full"
               style={{
                 background: 'currentColor',
-                opacity: i === s ? 0.9 : i < s ? 0.45 : 0.15,
-                transform: i === s ? 'scale(1.25)' : 'scale(1)',
+                opacity: 0.65,
+                width: i < s ? '100%' : i > s ? '0%' : undefined,
+                animation:
+                  i === s ? `gd-fill ${PHASE_MS * 2}ms linear forwards` : undefined,
               }}
             />
-          ))}
-        </div>
-        <span className="w-24 whitespace-nowrap tabular-nums">
-          iteration {s} / {LAST}
-        </span>
+          </button>
+        ))}
         </div>
       </div>
     </Figure>
