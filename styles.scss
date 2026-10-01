@@ -123,7 +123,6 @@ main[data-pagefind-body] {
 .katex [data-tip] {
   cursor: help;
   position: relative;
-  border-bottom: 1px dotted currentColor;
 
   &:hover {
     background: var(--brand);
