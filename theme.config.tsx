@@ -22,7 +22,7 @@ const config = {
           property="og:description"
           content={
             frontMatter?.description ||
-            'A ~12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.'
+            'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.'
           }
         />
         <meta name="twitter:card" content="summary_large_image" />

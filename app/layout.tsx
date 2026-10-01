@@ -16,7 +16,7 @@ export const metadata = {
     template: '%s - LLM Docs',
   },
   description:
-    'A ~12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
+    'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
   applicationName: 'LLM Docs',
   generator: 'Next.js',
   appleWebApp: {
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }) {
             extraContent: (
               <div className="my-4 text-xs text-gray-500 dark:text-gray-400 contrast-more:text-gray-800 contrast-more:dark:text-gray-50">
                 <p>
-                  This site is a ~12-chapter, front-to-back-readable guide on
+                  This site is a 12-chapter, front-to-back-readable guide on
                   how modern large language models work, for experienced
                   engineers.
                 </p>
