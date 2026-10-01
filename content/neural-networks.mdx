@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { BackpropFigure } from "../components/figures/backprop"
 import { FixedStepFigure } from "../components/figures/fixed-step"
 import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
@@ -130,6 +131,8 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, loss out — is called a **forward pass**; it's what the model does every time it makes a prediction. Now, the naive way to get the gradient: nudge one parameter, run a forward pass, and see how the loss moved. That works — it's literally the definition of a derivative — but it costs one forward pass *per parameter*: a million forward passes to take a single step.
 
 [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients in about the cost of two forward passes. It's the chain rule from multivariate calculus, applied with dynamic programming: run the network forward, remember the intermediate values, then walk backward from the loss, multiplying local derivatives as you go. The gradient of the loss with respect to any weight is the product of the derivatives along the path from that weight to the loss.
+
+<BackpropFigure />
 
 In practice you never write this by hand. Frameworks like PyTorch record the **computational graph** as your code runs and derive the backward pass automatically (this is "autograd"). Here is the entire training loop, for real:
 
