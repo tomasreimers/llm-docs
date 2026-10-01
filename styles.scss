@@ -116,6 +116,20 @@ main[data-pagefind-body] {
   code {
     border-radius: 3px;
   }
+
+  // Asides (details/summary) are optional digressions: quieter than the
+  // body, not brighter.
+  details {
+    background: color-mix(in srgb, currentColor 3%, transparent);
+    border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+    border-radius: 3px;
+    box-shadow: none;
+    font-size: 0.95em;
+
+    summary {
+      color: var(--color-gray-500);
+    }
+  }
 }
 
 // Math term tooltips: the \tip{explanation}{term} KaTeX macro (next.config.mjs)
