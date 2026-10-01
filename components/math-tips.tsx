@@ -57,8 +57,11 @@ export function MathTips() {
       const eqRect = eq.getBoundingClientRect();
       const termRect = el.getBoundingClientRect();
       bubble.textContent = el.getAttribute('data-tip') || '';
-      bubble.style.left = `${termRect.left + termRect.width / 2}px`;
-      bubble.style.top = `${eqRect.top - 8}px`;
+      // Center on the term, but keep the bubble on screen.
+      const half = bubble.offsetWidth / 2 || 100;
+      const cx = termRect.left + termRect.width / 2;
+      bubble.style.left = `${Math.max(half + 8, Math.min(cx, window.innerWidth - half - 8))}px`;
+      bubble.style.top = `${eqRect.top - 6}px`;
       bubble.style.opacity = '1';
     };
 

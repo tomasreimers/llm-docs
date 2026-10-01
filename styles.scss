@@ -200,6 +200,14 @@ main[data-pagefind-body] {
     z-index: -1;
   }
 
+  // Tall stacked terms (fractions, sums — anything with a vlist) fill their
+  // real box; the fixed-height band above is only for single-line glyphs.
+  &:has(.vlist)::before {
+    top: -0.08em;
+    bottom: -0.08em;
+    height: auto;
+  }
+
   &:hover::before {
     opacity: 1;
   }
