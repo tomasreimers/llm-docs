@@ -117,6 +117,34 @@ a[href^='/sampling'] {
   pointer-events: none;
 }
 
+// Clickable ink-style chips/buttons in figures.
+.ink-button {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  transition: background 0.12s;
+
+  &:hover {
+    background: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, currentColor 26%, transparent);
+  }
+}
+
+.ink-chip {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  transition: background 0.12s;
+
+  &:hover {
+    background: color-mix(in srgb, currentColor 14%, transparent);
+  }
+}
+
+.ink-chip--active {
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font-weight: 700;
+}
+
 // Progress-pill fill for the gradient descent figure's stepper.
 @keyframes gd-fill {
   from {

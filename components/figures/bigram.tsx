@@ -79,11 +79,7 @@ export function BigramFigure() {
                 <button
                   key={w}
                   onClick={() => setCtx(w)}
-                  className="rounded-sm px-1.5 py-0.5"
-                  style={{
-                    background: w === ctx ? ink(18) : ink(6),
-                    fontWeight: w === ctx ? 700 : 400,
-                  }}
+                  className={`rounded-sm px-1.5 py-0.5 ${w === ctx ? 'ink-chip--active' : 'ink-chip'}`}
                 >
                   {w}
                 </button>
@@ -107,8 +103,7 @@ export function BigramFigure() {
           <div className="flex max-w-[240px] flex-col items-center gap-2">
             <button
               onClick={() => setSampleText(generate())}
-              className="rounded-sm px-2 py-1"
-              style={{ background: ink(12) }}
+              className="ink-button rounded-sm px-2 py-1"
             >
               generate a sentence
             </button>
