@@ -2,6 +2,7 @@ import { Breadcrumbs } from "../components/breadcrumbs"
 import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { LinearScoresFigure } from "../components/figures/linear-scores"
+import { LossCurvesFigure } from "../components/figures/loss-curves"
 import { MlpFigure } from "../components/figures/mlp"
 import { SoftmaxFigure } from "../components/figures/softmax"
 import { Image } from "../components/image"
@@ -149,9 +150,27 @@ Vanilla SGD works, but the loss landscape of a real network is a mess of ravines
 
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. One consequence worth filing away for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
 
+## What training actually looks like
+
+On paper, training is "run the loop until the loss is low." In practice, training is *staring at the loss curve* — and knowing what to check, in what order, when it isn't doing what you want. For our MNIST net, the ritual looks like this:
+
+**First number: the loss at initialization.** Before any training, a 10-class model with random weights should assign roughly 10% to everything, so its cross-entropy should be almost exactly $-\ln(1/10) \approx 2.3$. Check it. If it's 7, your initialization is broken; if it's 0.3, you have a bug (probably your data is leaking the answer). This one free sanity check catches a remarkable fraction of setup errors before you've spent a single GPU-minute.
+
+**First milestone: overfit one batch.** Take 32 images and train on just those until the loss is ~0. A network that can't *memorize* 32 examples has a plumbing problem — wrong shapes, a broken loss, gradients not flowing. This proves the machinery works before you ask it to learn anything real. Skipping this step is the classic way to spend a day debugging the wrong layer of the stack.
+
+**Then: watch the shape.** With the plumbing verified, start real training and read the curve. There are only three shapes, and the learning rate usually picks between them:
+
+<LossCurvesFigure />
+
+When the curve diverges, lower the learning rate; when it crawls, raise it. The standard move is a sweep over powers of ten — nobody, at any level of seniority, guesses it correctly on the first try. For our MNIST MLP, a healthy run takes the loss from 2.3 to under 0.1 within a couple of epochs, and accuracy to ~98%.
+
+**What matters, in order.** For a fixed dataset, the learning rate dwarfs everything else; after that, training longer and making the model bigger; after *that*, the architecture tweaks people love to argue about. And looming over all of it: more and better data beats all of the above — a hierarchy so reliable it becomes the thesis of Chapter 4. Karpathy's [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe.html) is the canonical write-up of this discipline, and it transfers almost unchanged from MNIST to frontier models.
+
+There's one curve we haven't mentioned yet, though — and it's the one that actually matters.
+
 ## Generalization: the point of all this
 
-One last concept, because it's the difference between machine learning and curve fitting. A model with enough parameters can *memorize* its training set — and score 100% on it while being useless on new data. This is **overfitting**, and it's why we always hold out a **test set** the model never trains on, and report accuracy there.
+One last concept, because it's the difference between machine learning and curve fitting. A model with enough parameters can *memorize* its training set — and score 100% on it while being useless on new data. This is **overfitting**, and it's why we always hold out a **test set** the model never trains on, and report accuracy there. In practice you watch *two* loss curves during training — one on training data, one on held-out data — and the number you actually care about is the second. When the training curve keeps falling but the held-out curve turns back upward, the model has stopped learning and started memorizing.
 
 The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
 
