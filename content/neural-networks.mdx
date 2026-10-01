@@ -97,7 +97,7 @@ The multiplier $\eta$ is the **learning rate**, and it is the single most finick
 
 Two practical modifications matter:
 
-- **Stochastic** gradient descent: you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an unbiased estimate of the full gradient, and its accuracy improves only with the square root of the sample size, while its cost grows linearly. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones, and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
+- **Stochastic** gradient descent (**SGD** — the name you'll see in every framework and paper): you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an unbiased estimate of the full gradient, and its accuracy improves only with the square root of the sample size, while its cost grows linearly. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones, and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
 - **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
 
 ## The loss: measuring wrongness
@@ -185,7 +185,7 @@ Every model in this book — up to and including the frontier ones — is traine
 
 ## Better optimizers: momentum and Adam
 
-Vanilla SGD works, but the loss landscape of a real network is a mess of ravines and plateaus, and two refinements are so universal you should know them by name.
+Vanilla SGD — gradient descent on random batches, exactly as we've described it — works, but the loss landscape of a real network is a mess of ravines and plateaus, and two refinements are so universal you should know them by name.
 
 **Momentum** keeps a running average of recent gradients and steps in that direction — like a ball rolling downhill, it smooths over noise and powers through small bumps.
 
