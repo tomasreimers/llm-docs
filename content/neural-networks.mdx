@@ -90,7 +90,7 @@ Why a *small* step — and why must the steps shrink as we close in? Imagine tak
 
 <FixedStepFigure />
 
-The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and even shrinking steps can't save you — the parameters ricochet around and diverge.
+The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning. Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, and it's worth seeing exactly why, because it seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On our parabola you can make this exact: each step multiplies your distance from the minimum by a fixed factor set by $\eta$ — below the threshold that factor is less than one and the walk converges; above it, every step pushes you further away than you started.
 
 Two practical modifications matter:
 
