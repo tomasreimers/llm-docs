@@ -41,7 +41,9 @@ Notice that the problem itself isn't deterministic. A sloppily written 5 shades 
 
 The simplest mechanism in all of statistics for turning many weighted pieces of evidence into a score is a regression — a linear function of the input:
 
-$$y = Wx + b$$
+$$
+y = Wx + b
+$$
 
 where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST, which tells you something important: a matrix multiply is already a primitive form of pattern matching.
 
@@ -55,7 +57,9 @@ The fix is to insert a nonlinearity between the layers, and the field has settle
 
 Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
 
-$$y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2$$
+$$
+y = W_2 \, \mathrm{relu}(W_1 x + b_1) + b_2
+$$
 
 With one hidden layer of 512 units, this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
 
@@ -69,13 +73,17 @@ The obvious candidate — accuracy, percent correct — turns out to be a terrib
 
 The 10 output scores (called **logits**) are unbounded real numbers. To interpret them as a probability distribution, we pass them through **softmax**:
 
-$$p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}$$
+$$
+p_i = \frac{e^{y_i}}{\sum_j e^{y_j}}
+$$
 
 Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1.
 
 Then we score the prediction with **cross-entropy loss**: the negative log of the probability the model assigned to the correct answer.
 
-$$L = -\log(p_{\text{correct}})$$
+$$
+L = -\log(p_{\text{correct}})
+$$
 
 If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is ~4.6. Averaged over the dataset, this single number summarizes how wrong the model is — and turns "learn to read digits" into "minimize this function."
 
@@ -85,7 +93,9 @@ This exact loss — softmax over possible outputs, negative log-likelihood of th
 
 So we have a function with hundreds of thousands of parameters and a loss we want to minimize. The search algorithm is almost embarrassingly greedy: compute the gradient of the loss with respect to every parameter — the direction that increases the loss fastest — and take a small step the other way.
 
-$$\theta \leftarrow \theta - \eta \nabla_\theta L$$
+$$
+\theta \leftarrow \theta - \eta \nabla_\theta L
+$$
 
 The step size $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning: too small and training takes forever, too large and the parameters ricochet around and diverge.
 
