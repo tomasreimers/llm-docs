@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // plot: x 50..530 (progress 0..1), y 180 (lr 0) .. 40 (peak)
 const X = (t: number) => 50 + t * 480;
@@ -39,12 +39,12 @@ export function LrScheduleFigure() {
         <text x={24} y={105} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.7} transform="rotate(-90 24 105)">
           learning rate
         </text>
-        <path d={path(cosine)} fill="none" stroke={ACCENT.blue} strokeWidth={2.5} />
-        <path d={path(wsd)} fill="none" stroke={ACCENT.orange} strokeWidth={2.5} />
-        <text x={200} y={95} fontSize={12} fill={ACCENT.blue}>
+        <path d={path(cosine)} fill="none" stroke="currentColor" strokeOpacity={0.85} strokeWidth={2.5} />
+        <path d={path(wsd)} fill="none" stroke="currentColor" strokeOpacity={0.85} strokeWidth={2.5} strokeDasharray="7 4" />
+        <text x={200} y={95} fontSize={12} fill="currentColor" opacity={0.75}>
           cosine
         </text>
-        <text x={330} y={32} fontSize={12} fill={ACCENT.orange}>
+        <text x={330} y={32} fontSize={12} fill="currentColor" opacity={0.75}>
           WSD
         </text>
         <text x={62} y={30} fontSize={11} fill="currentColor" opacity={0.6}>

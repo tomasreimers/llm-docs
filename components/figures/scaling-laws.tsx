@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // x: log10(training FLOPs), 18..26 → px 60..530
 // y: loss 1.8..5.0 → px 270..20
@@ -45,10 +45,10 @@ export function ScalingLawsFigure() {
         <text x={18} y={145} textAnchor="middle" fontSize={13} fill="currentColor" opacity={0.8} transform="rotate(-90 18 145)">
           loss
         </text>
-        <line x1={x(18)} y1={y(4.8)} x2={x(26)} y2={y(2.0)} stroke={ACCENT.blue} strokeWidth={2.5} />
+        <line x1={x(18)} y1={y(4.8)} x2={x(26)} y2={y(2.0)} stroke="currentColor" strokeOpacity={0.8} strokeWidth={2.5} />
         {POINTS.map((p) => (
           <g key={p.label}>
-            <circle cx={x(p.logC)} cy={y(p.loss)} r={5} fill={ACCENT.orange} />
+            <circle cx={x(p.logC)} cy={y(p.loss)} r={5} fill="currentColor" />
             <text x={x(p.logC) + 10} y={y(p.loss) - 8} fontSize={12} fill="currentColor" opacity={0.8}>
               {p.label}
             </text>

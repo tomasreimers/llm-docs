@@ -1,11 +1,11 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 const FEATURES = [
-  { angle: 90, label: 'feature A', color: ACCENT.blue },
-  { angle: 162, label: 'feature B', color: ACCENT.orange },
-  { angle: 234, label: 'feature C', color: ACCENT.green },
-  { angle: 306, label: 'feature D', color: ACCENT.purple },
-  { angle: 18, label: 'feature E', color: ACCENT.red },
+  { angle: 90, label: 'feature A' },
+  { angle: 162, label: 'feature B' },
+  { angle: 234, label: 'feature C' },
+  { angle: 306, label: 'feature D' },
+  { angle: 18, label: 'feature E' },
 ];
 
 export function SuperpositionFigure() {
@@ -27,8 +27,8 @@ export function SuperpositionFigure() {
           const ly = cy - (r + 24) * Math.sin(rad);
           return (
             <g key={f.label}>
-              <line x1={cx} y1={cy} x2={x2} y2={y2} stroke={f.color} strokeWidth={2.5} />
-              <circle cx={x2} cy={y2} r={4} fill={f.color} />
+              <line x1={cx} y1={cy} x2={x2} y2={y2} stroke="currentColor" strokeOpacity={0.8} strokeWidth={2.5} />
+              <circle cx={x2} cy={y2} r={4} fill="currentColor" fillOpacity={0.8} />
               <text x={lx} y={ly + 4} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.8}>
                 {f.label}
               </text>

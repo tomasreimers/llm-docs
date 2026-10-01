@@ -1,14 +1,6 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
-function Block({
-  y,
-  label,
-  color,
-}: {
-  y: number;
-  label: string;
-  color: string;
-}) {
+function Block({ y, label }: { y: number; label: string }) {
   return (
     <g>
       {/* read from stream */}
@@ -23,10 +15,21 @@ function Block({
       <path
         d={`M 330 ${y + 30} C 370 ${y + 30}, 170 ${y + 8}, 128 ${y + 8}`}
         fill="none"
-        stroke={color}
+        stroke="currentColor"
+        strokeOpacity={0.85}
         markerEnd="url(#arrow)"
       />
-      <rect x={210} y={y + 10} width={120} height={40} rx={6} fill={`${color}26`} stroke={color} />
+      <rect
+        x={210}
+        y={y + 10}
+        width={120}
+        height={40}
+        rx={6}
+        fill="currentColor"
+        fillOpacity={0.07}
+        stroke="currentColor"
+        strokeOpacity={0.65}
+      />
       <text x={270} y={y + 35} textAnchor="middle" fontSize={13} fill="currentColor">
         {label}
       </text>
@@ -54,8 +57,8 @@ export function ResidualStreamFigure() {
         <text x={62} y={170} textAnchor="middle" fontSize={12} fill="currentColor" opacity={0.7} transform="rotate(-90 62 170)">
           residual stream
         </text>
-        <Block y={190} label="attention" color={ACCENT.blue} />
-        <Block y={80} label="MLP" color={ACCENT.purple} />
+        <Block y={190} label="attention" />
+        <Block y={80} label="MLP" />
         <text x={270} y={262} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.6}>
           moves info between tokens
         </text>

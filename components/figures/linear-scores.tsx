@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // The same flattened "7" vector as in the flatten figure above it.
 const VEC = ['0', '0', '0', '⋮', '.9', '.4', '⋮', '0'];
@@ -15,11 +15,11 @@ const BIAS = [0.1, 0, -0.2, 0.3, -0.1, 0.2, 0, -0.3, 0.1, -0.2];
 // Plausible logits for the "7".
 const SCORES = [-1.8, 0.6, 1.1, -0.4, -1.2, 0.2, -2.1, 3.4, 0.9, 1.6];
 
-function Brackets({ x, w, top, h, color }: { x: number; w: number; top: number; h: number; color?: string }) {
+function Brackets({ x, w, top, h }: { x: number; w: number; top: number; h: number }) {
   return (
     <g>
-      <path d={`M ${x} ${top} h -7 v ${h} h 7`} fill="none" stroke={color || 'currentColor'} strokeOpacity={color ? 1 : 0.7} />
-      <path d={`M ${x + w} ${top} h 7 v ${h} h -7`} fill="none" stroke={color || 'currentColor'} strokeOpacity={color ? 1 : 0.7} />
+      <path d={`M ${x} ${top} h -7 v ${h} h 7`} fill="none" stroke="currentColor" strokeOpacity={0.7} />
+      <path d={`M ${x + w} ${top} h 7 v ${h} h -7`} fill="none" stroke="currentColor" strokeOpacity={0.7} />
     </g>
   );
 }
@@ -48,7 +48,7 @@ export function LinearScoresFigure() {
         </text>
 
         {/* W */}
-        <Brackets x={130} w={192} top={top - 4} h={h10} color={ACCENT.blue} />
+        <Brackets x={130} w={192} top={top - 4} h={h10} />
         {W_ROWS.map((row, r) => (
           <g key={r}>
             {row.map((v, c) => (
@@ -95,8 +95,8 @@ export function LinearScoresFigure() {
           const best = d === 7;
           return (
             <g key={d}>
-              {best && <rect x={482} y={top - 2 + d * rowH} width={44} height={rowH - 3} rx={2} fill={ACCENT.blue} fillOpacity={0.18} />}
-              <text x={504} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={best ? 700 : 400} fill={best ? ACCENT.blue : 'currentColor'} opacity={best ? 1 : 0.8}>
+              {best && <rect x={482} y={top - 2 + d * rowH} width={44} height={rowH - 3} rx={2} fill="currentColor" fillOpacity={0.1} />}
+              <text x={504} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={best ? 700 : 400} fill="currentColor" opacity={best ? 1 : 0.8}>
                 {s.toFixed(1)}
               </text>
             </g>
@@ -113,13 +113,13 @@ export function LinearScoresFigure() {
         <text x={620} y={top - 14} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.7}>
           the label, one-hot:
         </text>
-        <Brackets x={600} w={40} top={top - 4} h={h10} color={ACCENT.green} />
+        <Brackets x={600} w={40} top={top - 4} h={h10} />
         {SCORES.map((_, d) => {
           const hot = d === 7;
           return (
             <g key={d}>
-              {hot && <rect x={600} y={top - 2 + d * rowH} width={40} height={rowH - 3} rx={2} fill={ACCENT.green} fillOpacity={0.18} />}
-              <text x={620} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={hot ? 700 : 400} fill={hot ? ACCENT.green : 'currentColor'} opacity={hot ? 1 : 0.5}>
+              {hot && <rect x={600} y={top - 2 + d * rowH} width={40} height={rowH - 3} rx={2} fill="currentColor" fillOpacity={0.1} />}
+              <text x={620} y={top + 8 + d * rowH} textAnchor="middle" fontSize={9.5} fontWeight={hot ? 700 : 400} fill="currentColor" opacity={hot ? 1 : 0.5}>
                 {hot ? 1 : 0}
               </text>
             </g>

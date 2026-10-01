@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
 const TOKENS: Array<[string, number]> = [
   ['The', 464],
@@ -11,8 +11,6 @@ const TOKENS: Array<[string, number]> = [
   ['ization', 2734],
 ];
 
-const COLORS = [ACCENT.blue, ACCENT.orange, ACCENT.green, ACCENT.purple];
-
 export function TokenizationFigure() {
   return (
     <Figure caption="A BPE tokenizer at work: common words survive whole, rarer ones split into reusable chunks. The model only ever sees the integer IDs.">
@@ -22,8 +20,8 @@ export function TokenizationFigure() {
             <span
               className="whitespace-pre rounded-sm px-0.5 py-1"
               style={{
-                backgroundColor: `${COLORS[i % COLORS.length]}26`,
-                boxShadow: `inset 0 -2px 0 ${COLORS[i % COLORS.length]}`,
+                background: ink(i % 2 === 0 ? 8 : 20),
+                boxShadow: `inset 0 -2px 0 ${ink(55)}`,
               }}
             >
               {text}

@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
 const STAGES: Array<{ label: string; note: string; pct: number }> = [
   { label: 'raw crawl', note: 'petabytes of HTML', pct: 100 },
@@ -19,11 +19,10 @@ export function DataFunnelFigure() {
             </div>
             <div className="mx-3 h-7 grow">
               <div
-                className="flex h-7 items-center rounded-sm pl-2 text-xs text-white"
+                className="h-7 rounded-sm"
                 style={{
                   width: `${s.pct}%`,
-                  background: ACCENT.blue,
-                  opacity: 0.45 + (i / (STAGES.length - 1)) * 0.55,
+                  background: ink(35 + (i / (STAGES.length - 1)) * 50),
                   minWidth: 8,
                 }}
               />

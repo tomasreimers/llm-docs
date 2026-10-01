@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // A 1-D loss landscape: one smooth bowl.
 const f = (x: number) => 0.09 * (x - 5) ** 2 + 1.5;
@@ -32,7 +32,7 @@ export function GradientDescentFigure() {
       <svg viewBox="0 0 590 320" className="w-full max-w-xl">
         <defs>
           <marker id="gd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill={ACCENT.orange} />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.8} />
           </marker>
         </defs>
         <line x1={60} y1={268} x2={530} y2={268} stroke="currentColor" strokeOpacity={0.3} />
@@ -50,11 +50,11 @@ export function GradientDescentFigure() {
           y1={Y(f(x0))}
           x2={X(x0) - gx}
           y2={Y(f(x0)) + gy}
-          stroke={ACCENT.orange}
+          stroke="currentColor" strokeOpacity={0.8}
           strokeWidth={2}
           markerEnd="url(#gd-arrow)"
         />
-        <text x={X(x0) - 8} y={Y(f(x0)) - 26} textAnchor="end" fontSize={11.5} fill={ACCENT.orange}>
+        <text x={X(x0) - 8} y={Y(f(x0)) - 26} textAnchor="end" fontSize={11.5} fill="currentColor" fillOpacity={0.8}>
           gradient (points uphill)
         </text>
         {/* descent path */}
@@ -65,21 +65,21 @@ export function GradientDescentFigure() {
             y1={Y(f(x))}
             x2={X(STEPS[i + 1])}
             y2={Y(f(STEPS[i + 1]))}
-            stroke={ACCENT.blue}
+            stroke="currentColor" strokeOpacity={0.45}
             strokeWidth={1.5}
             strokeDasharray="3 3"
           />
         ))}
         {STEPS.map((x, i) => (
-          <circle key={i} cx={X(x)} cy={Y(f(x))} r={i === 0 ? 6 : 4.5} fill={ACCENT.blue} fillOpacity={0.4 + (0.6 * i) / (STEPS.length - 1)} />
+          <circle key={i} cx={X(x)} cy={Y(f(x))} r={i === 0 ? 6 : 4.5} fill="currentColor" fillOpacity={0.4 + (0.6 * i) / (STEPS.length - 1)} />
         ))}
-        <text x={X(STEPS[0])} y={Y(f(STEPS[0])) + 24} textAnchor="middle" fontSize={11.5} fill={ACCENT.blue}>
+        <text x={X(STEPS[0])} y={Y(f(STEPS[0])) + 24} textAnchor="middle" fontSize={11.5} fill="currentColor">
           start (random init)
         </text>
         <text x={X(STEPS[STEPS.length - 1]) + 4} y={Y(f(STEPS[STEPS.length - 1])) + 24} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
           minimum
         </text>
-        <text x={X(3.4)} y={Y(f(3.4)) - 32} fontSize={11.5} fill={ACCENT.blue}>
+        <text x={X(3.4)} y={Y(f(3.4)) - 32} fontSize={11.5} fill="currentColor">
           θ ← θ − η · slope
         </text>
       </svg>

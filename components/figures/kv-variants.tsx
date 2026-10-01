@@ -1,9 +1,9 @@
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
-const ROWS: Array<{ label: string; detail: string; pct: number; color: string }> = [
-  { label: 'MHA', detail: '64 KV heads (one per query head)', pct: 100, color: ACCENT.red },
-  { label: 'GQA', detail: '8 KV heads shared by groups', pct: 12.5, color: ACCENT.orange },
-  { label: 'MLA', detail: 'compressed latent per token', pct: 4, color: ACCENT.green },
+const ROWS: Array<{ label: string; detail: string; pct: number }> = [
+  { label: 'MHA', detail: '64 KV heads (one per query head)', pct: 100 },
+  { label: 'GQA', detail: '8 KV heads shared by groups', pct: 12.5 },
+  { label: 'MLA', detail: 'compressed latent per token', pct: 4 },
 ];
 
 export function KvVariantsFigure() {
@@ -22,7 +22,7 @@ export function KvVariantsFigure() {
             <div className="h-4 w-full rounded-sm bg-gray-500/10">
               <div
                 className="h-4 rounded-sm"
-                style={{ width: `${r.pct}%`, background: r.color, minWidth: 6 }}
+                style={{ width: `${r.pct}%`, background: ink(60), minWidth: 6 }}
               />
             </div>
           </div>

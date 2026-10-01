@@ -1,14 +1,14 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // x: year 2019..2026 → 50..530; y: 0..100% → 280..30
 const X = (yr: number) => 50 + ((yr - 2019) / 7) * 480;
 const Y = (pct: number) => 280 - (pct / 100) * 250;
 
-const SERIES: Array<{ label: string; color: string; pts: Array<[number, number]> }> = [
-  { label: 'MMLU', color: ACCENT.blue, pts: [[2020, 44], [2022, 70], [2023, 86], [2024, 90], [2026, 92]] },
-  { label: 'GSM8K', color: ACCENT.green, pts: [[2021, 17], [2022, 58], [2023, 92], [2024, 96], [2026, 97]] },
-  { label: 'GPQA', color: ACCENT.orange, pts: [[2023, 28], [2024, 50], [2025, 70], [2026, 85]] },
-  { label: 'SWE-bench', color: ACCENT.purple, pts: [[2023, 4], [2024, 33], [2025, 62], [2026, 75]] },
+const SERIES: Array<{ label: string; dash?: string; pts: Array<[number, number]> }> = [
+  { label: 'MMLU', pts: [[2020, 44], [2022, 70], [2023, 86], [2024, 90], [2026, 92]] },
+  { label: 'GSM8K', dash: '7 4', pts: [[2021, 17], [2022, 58], [2023, 92], [2024, 96], [2026, 97]] },
+  { label: 'GPQA', dash: '2 4', pts: [[2023, 28], [2024, 50], [2025, 70], [2026, 85]] },
+  { label: 'SWE-bench', dash: '10 4 2 4', pts: [[2023, 4], [2024, 33], [2025, 62], [2026, 75]] },
 ];
 
 export function BenchmarkSaturationFigure() {
@@ -37,10 +37,12 @@ export function BenchmarkSaturationFigure() {
             <path
               d={s.pts.map(([yr, p], i) => `${i === 0 ? 'M' : 'L'} ${X(yr).toFixed(1)} ${Y(p).toFixed(1)}`).join(' ')}
               fill="none"
-              stroke={s.color}
-              strokeWidth={2.5}
+              stroke="currentColor"
+              strokeOpacity={0.8}
+              strokeWidth={2}
+              strokeDasharray={s.dash}
             />
-            <text x={X(s.pts[s.pts.length - 1][0]) + 6} y={Y(s.pts[s.pts.length - 1][1]) + 4} fontSize={11.5} fill={s.color}>
+            <text x={X(s.pts[s.pts.length - 1][0]) + 6} y={Y(s.pts[s.pts.length - 1][1]) + 4} fontSize={11.5} fill="currentColor" opacity={0.85}>
               {s.label}
             </text>
           </g>

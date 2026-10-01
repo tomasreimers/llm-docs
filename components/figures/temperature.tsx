@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
 const BASE: Array<[string, number]> = [
   [' Paris', 0.62],
@@ -78,7 +78,7 @@ export function TemperatureFigure() {
                 className="w-full rounded-t-sm"
                 style={{
                   height: `${Math.max(probs[i] * 100, 0.5)}%`,
-                  background: included[i] ? ACCENT.blue : 'rgba(128,128,128,0.35)',
+                  background: included[i] ? ink(80) : ink(22),
                 }}
               />
               <span className="mt-1.5 whitespace-pre font-mono text-[10px] opacity-80">

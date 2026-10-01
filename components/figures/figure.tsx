@@ -1,12 +1,12 @@
 import { type ReactNode } from 'react';
 
-export const ACCENT = {
-  blue: '#3b82f6',
-  orange: '#f97316',
-  green: '#10b981',
-  red: '#ef4444',
-  purple: '#8b5cf6',
-};
+// House style: "ink on paper" — figures are drawn in currentColor at varying
+// opacities (1.0 emphasis, ~0.8 normal, ~0.5 secondary, ~0.12 hairlines) so
+// they read like the surrounding text and adapt to dark mode. Series are
+// distinguished by opacity and dash patterns, not hue. For translucent fills
+// in HTML (non-SVG) figures, use `ink(percent)`.
+export const ink = (percent: number) =>
+  `color-mix(in srgb, currentColor ${percent}%, transparent)`;
 
 export function Figure({
   caption,

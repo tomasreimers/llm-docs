@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
 const TOKENS: Array<[string, number]> = [
   ['the', 0.03],
@@ -22,7 +22,7 @@ export function AttentionFigure() {
             <span
               key={i}
               className="rounded-sm px-1.5 py-1 font-bold"
-              style={{ boxShadow: `inset 0 0 0 2px ${ACCENT.orange}` }}
+              style={{ boxShadow: `inset 0 0 0 2px ${ink(80)}` }}
             >
               {text} →
             </span>
@@ -30,11 +30,7 @@ export function AttentionFigure() {
             <span
               key={i}
               className="rounded-sm px-1.5 py-1"
-              style={{
-                background: `${ACCENT.blue}${Math.round(Math.min(w * 1.4, 1) * 255)
-                  .toString(16)
-                  .padStart(2, '0')}`,
-              }}
+              style={{ background: ink(Math.min(w * 100, 60)) }}
             >
               <span>{text}</span>
               <span className="ml-1 align-super text-[10px] opacity-70">

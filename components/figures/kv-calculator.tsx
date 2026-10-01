@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ACCENT, Figure } from './figure';
+import { Figure, ink } from './figure';
 
 // 70B-class dense model with GQA: 80 layers × 8 KV heads × 128 head dim
 const LAYERS = 80;
@@ -74,21 +74,21 @@ export function KvCalculatorFigure() {
         </div>
         <div className="mb-1 flex h-8 w-full overflow-hidden rounded-sm bg-gray-500/10">
           <div
-            className="flex h-8 items-center justify-center text-xs text-white"
-            style={{ width: `${(weightsGB / scaleMax) * 100}%`, background: ACCENT.blue }}
+            className="flex h-8 items-center justify-center text-xs text-white dark:text-black"
+            style={{ width: `${(weightsGB / scaleMax) * 100}%`, background: ink(80) }}
           >
             weights
           </div>
           <div
-            className="flex h-8 items-center justify-center text-xs text-white"
-            style={{ width: `${(kvGB / scaleMax) * 100}%`, background: ACCENT.orange, minWidth: 2 }}
+            className="flex h-8 items-center justify-center text-xs"
+            style={{ width: `${(kvGB / scaleMax) * 100}%`, background: ink(30), minWidth: 2 }}
           >
             {kvGB / scaleMax > 0.12 ? 'KV cache' : ''}
           </div>
         </div>
         <div className="flex justify-between font-mono text-xs">
-          <span style={{ color: ACCENT.blue }}>weights {weightsGB.toFixed(0)} GB</span>
-          <span style={{ color: ACCENT.orange }}>KV {kvGB.toFixed(1)} GB</span>
+          <span className="opacity-90">weights {weightsGB.toFixed(0)} GB</span>
+          <span className="opacity-60">KV {kvGB.toFixed(1)} GB</span>
           <span>
             total {totalGB.toFixed(0)} GB ≈ {gpus} × H100
           </span>

@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 function column(n: number, x: number, top: number, bottom: number) {
   const step = (bottom - top) / (n - 1);
@@ -40,13 +40,13 @@ export function MlpFigure() {
           )),
         )}
         {inputs.map((p) => (
-          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill={ACCENT.blue} fillOpacity={0.85} />
+          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill="currentColor" fillOpacity={0.75} />
         ))}
         {hidden.map((p) => (
-          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill={ACCENT.purple} fillOpacity={0.85} />
+          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill="currentColor" fillOpacity={0.75} />
         ))}
         {outputs.map((p) => (
-          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill={ACCENT.green} fillOpacity={0.85} />
+          <circle key={p.y} cx={p.x} cy={p.y} r={8} fill="currentColor" fillOpacity={0.75} />
         ))}
         <text x={200} y={28} textAnchor="middle" fontSize={13} fill="currentColor" opacity={0.7}>
           W₁ (784 × 512)

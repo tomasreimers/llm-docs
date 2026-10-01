@@ -1,4 +1,4 @@
-import { ACCENT, Figure } from './figure';
+import { Figure } from './figure';
 
 // x: log10(arithmetic intensity) 0..4 → 60..530
 // y: log10(TFLOPs) 0..3.3 → 280..20
@@ -32,17 +32,17 @@ export function RooflineFigure() {
           TFLOPs achieved (log)
         </text>
         {/* bandwidth slope: perf = 3.35 * intensity */}
-        <line x1={X(0)} y1={Y(Math.log10(3.35))} x2={X(RIDGE)} y2={Y(ROOF)} stroke={ACCENT.orange} strokeWidth={2.5} />
+        <line x1={X(0)} y1={Y(Math.log10(3.35))} x2={X(RIDGE)} y2={Y(ROOF)} stroke="currentColor" strokeOpacity={0.85} strokeWidth={2.5} />
         {/* compute roof */}
-        <line x1={X(RIDGE)} y1={Y(ROOF)} x2={X(4)} y2={Y(ROOF)} stroke={ACCENT.blue} strokeWidth={2.5} />
+        <line x1={X(RIDGE)} y1={Y(ROOF)} x2={X(4)} y2={Y(ROOF)} stroke="currentColor" strokeOpacity={0.85} strokeWidth={2.5} />
         <line x1={X(RIDGE)} y1={Y(ROOF)} x2={X(RIDGE)} y2={280} stroke="currentColor" strokeOpacity={0.25} strokeDasharray="4 4" />
         <text x={X(RIDGE)} y={272} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.6}>
           ~300
         </text>
-        <text x={X(0.9)} y={Y(0.8) - 14} fontSize={11.5} fill={ACCENT.orange} transform={`rotate(-29 ${X(0.9)} ${Y(0.8) - 14})`}>
+        <text x={X(0.9)} y={Y(0.8) - 14} fontSize={11.5} fill="currentColor" opacity={0.7} transform={`rotate(-29 ${X(0.9)} ${Y(0.8) - 14})`}>
           memory-bound (3.35 TB/s)
         </text>
-        <text x={X(3.2)} y={Y(ROOF) - 10} textAnchor="middle" fontSize={11.5} fill={ACCENT.blue}>
+        <text x={X(3.2)} y={Y(ROOF) - 10} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
           compute-bound (~1 PFLOP roof)
         </text>
         {[
@@ -53,7 +53,7 @@ export function RooflineFigure() {
           const logT = p.onRoof ? ROOF : Math.log10(3.35) + p.i;
           return (
             <g key={p.label}>
-              <circle cx={X(p.i)} cy={Y(logT)} r={5} fill={ACCENT.green} />
+              <circle cx={X(p.i)} cy={Y(logT)} r={5} fill="currentColor" />
               <text x={X(p.i) + 9} y={Y(logT) + p.dy + 8} fontSize={11} fill="currentColor" opacity={0.85}>
                 {p.label}
               </text>
