@@ -33,6 +33,8 @@ That's the thread this chapter pulls on, in three steps:
 
 Seen this way, machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
 
+One piece of vocabulary before we build: a model's life has two distinct phases. **Training** is when the optimization algorithm is searching for good weights — the model is being written. **Inference** is everything after: the weights are frozen, and the model is simply being *used*, like any other function. This chapter is almost entirely about training; by the end of the book, inference will have earned three chapters of its own.
+
 ## The model: from a matrix to an MLP
 
 Back to MNIST — an MNIST image is 28×28 pixels. Flatten it and you get a vector $x$ of 784 numbers between 0 (white) and 1 (black). We want a function that maps that vector to an answer: which digit is this?
