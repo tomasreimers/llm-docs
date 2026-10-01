@@ -7,6 +7,7 @@ import { getPageMap } from 'nextra/page-map';
 import { Layout, Navbar } from 'nextra-theme-docs';
 
 import { IdleChrome } from '../components/idle-chrome';
+import { MathTips } from '../components/math-tips';
 
 export const metadata = {
   // TODO: replace llmdocs.com with the real domain once chosen
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }) {
       </Head>
       <body>
         <IdleChrome />
+        <MathTips />
         <Layout
           navbar={navbar}
           feedback={{ content: 'Questions? Leave me feedback' }}
