@@ -13,7 +13,7 @@ In 1951, [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon) publishe
 
 How do we get from reading digits to a machine that writes? The answer, in three steps:
 
-1. We pose "produce language" as a prediction problem: given text so far, guess the next token. That makes it a *classifier* — the classifier from Chapter 1, with the vocabulary as its classes.
+1. We pose "produce language" as a prediction problem: given text so far, guess the next token. That makes it a *classifier* — the classifier from Chapter 1, with the possible words in the vocabulary as classes.
 2. The obvious approach, counting what followed what, works until it has to generalize — so words become learned *vectors*, where similar words can share what the model knows.
 3. The loss is the same cross-entropy from Chapter 1 — and here it picks up a famous alter ego: a model that predicts text well *compresses* it well.
 
