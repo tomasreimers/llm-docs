@@ -164,7 +164,7 @@ On paper, training is "run the loop until the loss is low." In practice, trainin
 
 When the curve diverges, lower the learning rate; when it crawls, raise it. The standard move is a sweep over powers of ten — nobody, at any level of seniority, guesses it correctly on the first try. For our MNIST MLP, a healthy run takes the loss from 2.3 to under 0.1 within a couple of epochs, and accuracy to ~98%.
 
-**What matters, in order.** For a fixed dataset, the learning rate dwarfs everything else; after that, training longer and making the model bigger; after *that*, the architecture tweaks people love to argue about. And looming over all of it: more and better data beats all of the above — a hierarchy so reliable it becomes the thesis of Chapter 4. Karpathy's [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe.html) is the canonical write-up of this discipline, and it transfers almost unchanged from MNIST to frontier models.
+**What matters, in order.** For a fixed dataset, the learning rate dwarfs everything else; after that, training longer and making the model bigger; after *that*, the architecture tweaks people love to argue about. And looming over all of it: more and better data beats all of the above — a hierarchy so reliable it becomes the thesis of Chapter 4. Karpathy's [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe/) is the canonical write-up of this discipline, and it transfers almost unchanged from MNIST to frontier models.
 
 There's one curve we haven't mentioned yet, though — and it's the one that actually matters.
 
