@@ -130,10 +130,10 @@ main[data-pagefind-body] {
   &::before {
     content: '';
     position: absolute;
-    top: 0.18em;
-    right: -0.1em;
-    bottom: -0.1em;
-    left: -0.1em;
+    top: calc(50% - 0.6em);
+    height: 1.2em;
+    right: -0.12em;
+    left: -0.12em;
     background: var(--brand);
     border-radius: 2px;
     opacity: 0;
