@@ -155,13 +155,13 @@ Backprop computes every weight's derivative — exactly, not by estimate — in 
 2. **One backward sweep.** Start at the loss and walk the network back to front. At each value, compute "how much does the loss change if *this* changes" — which is cheap, because it's just the answer already computed for the value *after* it, times one local derivative. And the local derivatives are known analytically: every operation in the network is simple (multiply, add, relu, softmax), and calculus gives each one's derivative as a formula — evaluated instantly using the values remembered from the forward pass. No $\varepsilon$ anywhere.
 3. **Collect the gradients along the way.** Every time the sweep passes a weight, that weight's exact $\partial L/\partial w$ falls out as a byproduct. By the time it reaches the input, you hold the derivative for *all* 400,000 weights — from one backward walk that costs about as much as the forward one.
 
-Then gradient descent acts on all of them *simultaneously*: every weight takes its own step, scaled by its own partial derivative — $\theta \leftarrow \theta - \eta \, \partial L/\partial \theta$, applied to all 400,000 at once. One forward pass, one backward pass, one synchronized update: that is a **training step**, and a training run is millions of them.
-
-The gradient of the loss with respect to any weight is the product of the local derivatives along the path from that weight to the loss — watch it happen:
+Here is the whole thing running on a tiny two-layer network, with real numbers — four forward calculations, then four backward, one per step:
 
 <BackpropFigure />
 
 Watch what the backward pass reuses: $\partial L/\partial \hat{y}$ is computed once and feeds every gradient below it; each $\partial L/\partial h$ is computed once and feeds every weight into that unit. That reuse is the dynamic programming — and it's how a million gradients cost about the same as two forward passes instead of a million.
+
+Then gradient descent acts on all of them *simultaneously*: every weight takes its own step, scaled by its own partial derivative — $\theta \leftarrow \theta - \eta \, \partial L/\partial \theta$, applied to all 400,000 at once. One forward pass, one backward pass, one synchronized update: that is a **training step**, and a training run is millions of them.
 
 In practice you never write this by hand. Frameworks like PyTorch record the **computational graph** as your code runs and derive the backward pass automatically (this is "autograd"). Here is the entire training loop, for real:
 
