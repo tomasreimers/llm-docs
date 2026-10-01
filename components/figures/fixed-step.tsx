@@ -19,7 +19,7 @@ const CURVE = Array.from({ length: 121 }, (_, i) => {
 // The thought experiment: a fixed stride in whichever direction is downhill.
 const STRIDE = 1.7;
 const STEPS: number[] = [1.2];
-for (let i = 0; i < 7; i++) {
+for (let i = 0; i < 5; i++) {
   const x = STEPS[STEPS.length - 1];
   STEPS.push(x - STRIDE * Math.sign(df(x)));
 }
