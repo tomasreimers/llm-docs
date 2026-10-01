@@ -88,7 +88,7 @@ The famous demonstration is [word2vec](https://arxiv.org/abs/1301.3781) (2013), 
 
 The vector from *france* to *paris* is nearly parallel to the one from *italy* to *rome*; the "maleness→royalty" arrows line up the same way, which is why the arithmetic $\vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}}$ lands near $\vec{\text{queen}}$.
 
-For an engineer, the durable frame is: **embeddings are the type system of neural networks.** Everything — words, images, sounds, whole documents — gets converted into vectors in some learned space where "semantically similar" means "geometrically close." This one idea also powers every semantic-search and retrieval product you've used, and it's the foundation the transformer builds on in the next chapter.
+For an engineer, the durable frame is: **the embedding space is the model's universal interface.** A neural network operates on exactly one data type — vectors — and embeddings are the adapters that convert the outside world into it. Words become vectors here; in Chapter 5, image patches and audio frames will arrive through their own encoders as vectors of the same kind. Once something is in the space, "semantically similar" means "geometrically close," and the same downstream machinery can process it no matter what it originally was. This one idea also powers every semantic-search and retrieval product you've used, and it's the foundation the transformer builds on in the next chapter.
 
 ## The same loss — and its alter ego
 
