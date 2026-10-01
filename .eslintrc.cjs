@@ -66,6 +66,10 @@ module.exports = {
       files: ['*.mdx'],
       extends: ['plugin:mdx/recommended'],
       plugins: [],
+      globals: {
+        // Injected by Nextra at compile time (frontmatter + wordCountPlugin).
+        metadata: 'readonly',
+      },
       rules: {
         "@typescript-eslint/await-thenable": "off",
         "@typescript-eslint/consistent-type-imports": "off",
