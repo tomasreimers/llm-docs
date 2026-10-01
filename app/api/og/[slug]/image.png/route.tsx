@@ -31,7 +31,8 @@ export async function GET(
   { params: { slug } }: { params: { slug: string } }
 ) {
   const details = slug === 'default' ? 'LLMs' : meta[slug];
-  const fullTitle = typeof details === 'string' ? details : details.title;
+  const fullTitle =
+    (typeof details === 'string' ? details : details?.title) ?? 'Modern LLMs';
   let [chapter, title]: [string | undefined, string] = fullTitle.split(': ');
 
   if (typeof title === 'undefined') {
