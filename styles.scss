@@ -214,6 +214,18 @@ main[data-pagefind-body] {
 
 }
 
+// KaTeX's internal layout spans (vlist struts) can sit on top of annotated
+// terms and swallow their hover. Make structural spans transparent to
+// pointer events; annotated terms (and their contents) re-enable them.
+.katex :is(.vlist, .vlist-r, .vlist-t, .vlist-s, .pstrut, .strut) {
+  pointer-events: none;
+}
+
+.katex [data-tip],
+.katex [data-tip] * {
+  pointer-events: auto;
+}
+
 // The shared tooltip bubble, positioned by components/math-tips.tsx above
 // the equation containing the hovered term.
 .math-tip-bubble {
