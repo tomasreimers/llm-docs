@@ -7,7 +7,28 @@
 
 @import 'nextra-theme-docs/style.css';
 
-.nextra-content {
+// Book-like design language (after manuelmoreale.com): the whole site is set
+// in a classic book serif — Iowan Old Style on Apple platforms, Palatino on
+// Windows, Palladio on Linux — with airier leading and justified paragraphs.
+@theme {
+  --font-sans: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', 'P052',
+    Georgia, serif;
+}
+
+body {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', 'P052',
+    Georgia, serif;
+}
+
+main[data-pagefind-body] {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+
+  p {
+    text-align: justify;
+    hyphens: auto;
+  }
+
   ul {
     padding: 0;
     list-style-type: none;
