@@ -134,10 +134,10 @@ export function GradientDescentFigure() {
         </text>
       </svg>
       <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
-        {STEPS.map((_, i) => (
+        {STEPS.slice(0, LAST).map((_, i) => (
           <button
             key={i}
-            aria-label={`Jump to iteration ${i}`}
+            aria-label={`Jump to step ${i + 1}`}
             onClick={() => setTick(i * 2)}
             className="h-1.5 w-7 overflow-hidden rounded-full"
             style={{ background: 'color-mix(in srgb, currentColor 15%, transparent)' }}

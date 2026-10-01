@@ -89,10 +89,10 @@ export function FixedStepFigure() {
         <line x1={X(5)} y1={Y(f(5)) - 4} x2={X(5)} y2={Y(f(5)) + 14} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="3 3" />
         </svg>
         <div className="mt-2 flex w-full max-w-xl items-center justify-center gap-1.5">
-          {STEPS.map((_, i) => (
+          {STEPS.slice(0, LAST).map((_, i) => (
             <button
               key={i}
-              aria-label={`Jump to iteration ${i}`}
+              aria-label={`Jump to step ${i + 1}`}
               onClick={() => setTick(i)}
               className="h-1.5 w-7 overflow-hidden rounded-full"
               style={{ background: 'color-mix(in srgb, currentColor 15%, transparent)' }}
