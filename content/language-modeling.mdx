@@ -25,7 +25,7 @@ $$
 P(\tip{the next token}{x_{t+1}} \mid \tip{everything so far — the context}{x_1, x_2, \ldots, x_t})
 $$
 
-Look at what this is, in Chapter 1's terms: a *classifier*. Input: the context. Output classes: every token in the vocabulary. Same logits, same softmax, same "we're doing statistics, not logic" — just ~100,000 classes instead of 10, and the internet for a training set:
+Look at what this is, in Chapter 1's terms: a *classifier*. Input: the context. Output classes: every token in the vocabulary. Same logits, same softmax, same "we're doing statistics, not logic" — just ~100,000 classes instead of 10:
 
 <NextTokenFigure />
 
