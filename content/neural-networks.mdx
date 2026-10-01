@@ -126,7 +126,7 @@ How do you compute a gradient with respect to a million parameters? You could nu
 
 In practice you never write this by hand. Frameworks like PyTorch record the **computational graph** as your code runs and derive the backward pass automatically (this is "autograd"). Here is the entire training loop, for real:
 
-```python
+```python showLineNumbers
 model = nn.Sequential(
     nn.Linear(784, 512),
     nn.ReLU(),

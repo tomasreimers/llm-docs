@@ -100,6 +100,14 @@ main[data-pagefind-body] {
   }
 }
 
+// Sharper corners on code to match the 3px brand radius.
+main[data-pagefind-body] {
+  pre,
+  code {
+    border-radius: 3px;
+  }
+}
+
 // Math term tooltips: the \tip{explanation}{term} KaTeX macro (next.config.mjs)
 // emits data-tip attributes; hovering a term shows its meaning.
 .katex [data-tip] {

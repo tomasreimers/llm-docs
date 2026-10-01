@@ -24,7 +24,13 @@ const withNextra = nextra({
     },
   },
   mdxOptions: {
-    remarkPlugins: [wordCountPlugin]
+    remarkPlugins: [wordCountPlugin],
+    rehypePrettyCodeOptions: {
+      theme: {
+        light: 'vitesse-light',
+        dark: 'vitesse-dark'
+      }
+    }
   }
 })
 

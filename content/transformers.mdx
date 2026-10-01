@@ -39,7 +39,7 @@ The analogy I find most useful: attention is a **hash map with soft lookups**. A
 
 Because queries, keys, and values are all just matrices, the entire operation is a handful of matrix multiplies:
 
-```python
+```python showLineNumbers
 def attention(x, W_q, W_k, W_v):     # x: (seq_len, d_model)
     Q, K, V = x @ W_q, x @ W_k, x @ W_v
     scores = Q @ K.T / math.sqrt(K.shape[-1])   # (seq_len, seq_len)
