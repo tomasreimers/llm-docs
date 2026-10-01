@@ -17,10 +17,10 @@ const CURVE = Array.from({ length: 121 }, (_, i) => {
   return `${i === 0 ? 'M' : 'L'} ${X(x).toFixed(1)} ${Y(f(x)).toFixed(1)}`;
 }).join(' ');
 
-// Real gradient descent, lr = 3, from a random-ish init on the left slope.
+// Real gradient descent, lr = 3.5, from a random-ish init on the left slope.
 const STEPS: number[] = [1.2];
-for (let i = 0; i < 8; i++) {
-  STEPS.push(STEPS[STEPS.length - 1] - 3 * df(STEPS[STEPS.length - 1]));
+for (let i = 0; i < 5; i++) {
+  STEPS.push(STEPS[STEPS.length - 1] - 3.5 * df(STEPS[STEPS.length - 1]));
 }
 const LAST = STEPS.length - 1;
 
