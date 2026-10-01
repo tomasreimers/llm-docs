@@ -10,14 +10,14 @@ const config = {
     const frontMatter = normalizePagesResult.activePath.at(-1)?.frontMatter;
 
     const url =
-      'https://llmdocs.com' +
+      'https://modernllms.com' +
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`);
 
     return (
       <>
         <meta property="og:url" content={url} />
-        <meta property="og:title" content={title || 'LLM docs'} />
-        <title>{title || 'LLM docs'}</title>
+        <meta property="og:title" content={title || 'Modern LLMs'} />
+        <title>{title || 'Modern LLMs'}</title>
         <meta
           property="og:description"
           content={
@@ -29,7 +29,7 @@ const config = {
         <meta name="twitter:creator" content="@tomasreimers" />
         <meta
           property="og:image"
-          content={`https://llmdocs.com/api/og${asPath === '/' ? '/default/' : asPath}image.png`}
+          content={`https://modernllms.com/api/og${asPath === '/' ? '/default/' : asPath}image.png`}
         />
       </>
     );

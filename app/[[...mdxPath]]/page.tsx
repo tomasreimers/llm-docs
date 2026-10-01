@@ -10,19 +10,19 @@ export async function generateMetadata(props) {
 
   const { metadata: frontMatter } = data;
   const title = frontMatter?.title;
-  const url = 'https://llmdocs.com/' + (params.mdxPath || '');
+  const url = 'https://modernllms.com/' + (params.mdxPath || '');
 
   return {
     title: title,
     openGraph: {
       url,
-      title: title || 'LLM docs',
+      title: title || 'Modern LLMs',
       description:
         frontMatter?.description ||
         'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
       images: [
         {
-          url: `https://llmdocs.com/api/og/${!params.mdxPath ? 'default' : params.mdxPath}/image.png`,
+          url: `https://modernllms.com/api/og/${!params.mdxPath ? 'default' : params.mdxPath}/image.png`,
         },
       ],
     },

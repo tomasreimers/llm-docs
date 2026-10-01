@@ -10,26 +10,25 @@ import { IdleChrome } from '../components/idle-chrome';
 import { MathTips } from '../components/math-tips';
 
 export const metadata = {
-  // TODO: replace llmdocs.com with the real domain once chosen
-  metadataBase: new URL('https://llmdocs.com'),
+  metadataBase: new URL('https://modernllms.com'),
   title: {
-    template: '%s - LLM Docs',
+    template: '%s - Modern LLMs',
   },
   description:
     'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
-  applicationName: 'LLM Docs',
+  applicationName: 'Modern LLMs',
   generator: 'Next.js',
   appleWebApp: {
-    title: 'LLM Docs',
+    title: 'Modern LLMs',
   },
   twitter: {
-    site: 'https://llmdocs.com',
+    site: 'https://modernllms.com',
   },
 };
 
 export default async function RootLayout({ children }) {
   const navbar = (
-    <Navbar logo={<span className="font-black">LLM DOCS</span>} />
+    <Navbar logo={<span className="font-black">MODERN LLMS</span>} />
   );
   const pageMap = await getPageMap();
   return (
