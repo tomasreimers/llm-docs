@@ -204,6 +204,14 @@ main[data-pagefind-body] {
     opacity: 1;
   }
 
+  // Invisible padded hit area: pseudo-elements count toward hover
+  // hit-testing, so this enlarges the target without changing the visuals.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -0.4em -0.35em;
+  }
+
 }
 
 // The shared tooltip bubble, positioned by components/math-tips.tsx above
