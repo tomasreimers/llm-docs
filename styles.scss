@@ -144,6 +144,11 @@ main[data-pagefind-body] {
         height: 0.8em;
         transition-duration: 100ms;
       }
+
+      // KaTeX defaults to 1.21× surrounding text; keep summary math in line.
+      .katex {
+        font-size: 1.02em;
+      }
     }
 
     > :not(summary) {
