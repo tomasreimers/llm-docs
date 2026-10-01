@@ -81,8 +81,10 @@ Here's the situation for any single weight. Somewhere out there is its *optimal*
 Scaled up to all 400,000 weights at once, this is **gradient descent**: compute the gradient of the loss — the direction that increases it fastest — and take a small step the other way.
 
 $$
-\tip{the parameters — all of the weights at once}{\theta} \leftarrow \theta - \tip{the learning rate: how big a step to take}{\eta} \tip{the gradient: the direction that increases the loss fastest}{\nabla_\theta L}
+\tip{a weight}{\theta} \leftarrow \theta - \tip{the learning rate: how big a step to take}{\eta} \tip{the slope: how much the loss changes as this weight changes}{\frac{\partial L}{\partial \theta}}
 $$
+
+This update runs for every weight simultaneously. Each weight's partial derivative, collected into one big vector, is the **gradient** — papers write the whole update as $\theta \leftarrow \theta - \eta \nabla_\theta L$, and now you can read that too.
 
 Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows. Here's the fixed-stride version for comparison:
 
