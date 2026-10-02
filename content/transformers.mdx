@@ -1,43 +1,48 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { AttentionFigure } from "../components/figures/attention"
+import { AttentionStepFigure } from "../components/figures/attention-step"
+import { CausalMaskFigure } from "../components/figures/causal-mask"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # The transformer: Attention is all you need
 
+In 2017, a team at Google working on machine translation published a paper with an unusually cocky title: [Attention Is All You Need](https://arxiv.org/abs/1706.03762). The claim was that the attention mechanism — until then a bolt-on that helped RNNs translate — could replace recurrence entirely. The resulting architecture, the **transformer**, is the substance of every model in this book. GPT stands for Generative Pre-trained *Transformer*, and nine years later the architecture is nearly unchanged.
 
-In 2017, a team at Google working on machine translation published a paper with an unusually cocky title: [Attention Is All You Need](https://arxiv.org/abs/1706.03762). The claim was that the attention mechanism — until then a bolt-on used to help RNNs translate — could replace recurrence entirely. The resulting architecture, the **transformer**, is the substance of every model in this book. GPT stands for Generative Pre-trained *Transformer*.
+Chapter 2 left a network-shaped hole: something has to read the context's embedding vectors and produce the next-token logits. This chapter fills it, in three steps:
 
-Nine years later, the architecture is nearly unchanged. Understand this chapter and you understand the object everything else in the book trains, scales, interprets, and serves.
+1. The RNNs that held the job crushed the whole past into one fixed-size vector and processed tokens one at a time. We need a network that keeps *every* token's vector and reads them all at once.
+2. One new primitive does it — **attention**: a differentiable lookup in which every token fetches what it needs from the tokens before it.
+3. Alternate attention with Chapter 1's MLP along a residual stream, stack it deep, and you have a GPT. Everything since is this, scaled.
 
 ## The problem attention solves
 
-Recall the RNN's flaws: it crushed the past into one fixed-size vector, and it processed tokens serially. The transformer's move is to keep *every* token's representation around, and let each token directly look at all the ones before it. No summarizing bottleneck, no recurrence — and because each token's computation no longer depends on the previous token's *output*, every position in the sequence can be processed **in parallel** during training. That second property is arguably the more important one: it's what let the architecture soak up all the compute the next chapter is about.
+Recall the RNN's two flaws. Squeezing an arbitrarily long past into one fixed-size hidden state meant long-range information got crushed — by the end of a page, the beginning had been averaged into mush. And the recurrence itself — each step consuming the previous step's output — meant the computation was inherently *serial*: token 1,000 could not be processed until tokens 1 through 999 had been, no matter how much hardware you owned.
 
-## Attention: a differentiable hash map
+The transformer's answer to the first flaw is to stop summarizing: keep a vector for *every* token in the context, all the way up the network, and let each token consult the others directly — no bottleneck to squeeze through. The answer to the second flaw falls out of the design: because no token's computation depends on another token's *output* (only on the shared input from the layer below), every position can be computed **simultaneously**. That second property is the quiet one that decided history: it let the architecture absorb all the parallel hardware money could buy, which is the subject of the next chapter — and of Chapter 10, where we meet the hardware itself.
 
-Here's the mechanism, in the vocabulary of a systems engineer.
+## Attention: a differentiable lookup
 
-Each token's current vector produces three new vectors via learned linear projections:
+Here's the mechanism, in the vocabulary of a systems engineer. Each token's current vector is linearly projected into three new vectors, whose names tell you the whole story:
 
 - a **query** $q$ — "what am I looking for?"
 - a **key** $k$ — "what can I be found by?"
 - a **value** $v$ — "what information do I carry?"
 
-To update a given token, take its query and dot-product it against the key of every preceding token. A big dot product means "this token is relevant to me." Softmax those scores into weights that sum to 1, then take the weighted average of the corresponding *values*. That average gets added into the token's representation:
+To update a token, take its query and dot it against every earlier token's key — a big dot product means "relevant to me." Softmax the scores into weights, then average the earlier tokens' *values* using those weights. It's a **hash map with soft lookups**: a normal map retrieves exactly one value per key; attention retrieves *every* value at once, weighted by how well each key matches the query. And because queries, keys, and values are all produced by learned matrices, gradient descent decides what each token should ask for, advertise, and carry.
+
+Here's the entire lookup with real numbers, small enough to check by hand — watch the pronoun "it" go looking for its noun:
+
+<AttentionStepFigure />
+
+In symbols, with all tokens stacked into matrices, the whole thing is one line:
 
 $$
 \mathrm{Attention}(Q, K, V) = \tip{turn relevance scores into weights that sum to 1}{\mathrm{softmax}}\!\left(\frac{\tip{every query dotted with every key: how relevant is each token to each other token}{QK^\top}}{\tip{keeps scores from growing with vector size and saturating the softmax}{\sqrt{d_k}}}\right) \tip{the weighted average of the values — what actually gets retrieved}{V}
 $$
 
-(The $\sqrt{d_k}$ just keeps dot products from growing with vector dimension and saturating the softmax.)
-
-The analogy I find most useful: attention is a **hash map with soft lookups**. A normal map retrieves exactly one value for a key. Attention retrieves *every* value at once, weighted by how well the query matches each key — and because the whole thing is differentiable, gradient descent can learn what to ask for, what to advertise, and what to carry. When the model processes `it` in "the cat sat on the mat because it was tired," some attention head is emitting a query like "what noun am I about?" that matches the key advertised by `cat`, and pulls in cat's information.
-
-<AttentionFigure />
-
-Because queries, keys, and values are all just matrices, the entire operation is a handful of matrix multiplies:
+And in code, it's a handful of matrix multiplies:
 
 ```python showLineNumbers
 def attention(x, W_q, W_k, W_v):     # x: (seq_len, d_model)
@@ -47,38 +52,58 @@ def attention(x, W_q, W_k, W_v):     # x: (seq_len, d_model)
     return softmax(scores, axis=-1) @ V
 ```
 
-Two details in that snippet deserve names:
+Two lines of that snippet deserve their own sections.
 
-- **Causal masking**: during training, all positions are computed at once, so position 5 could "cheat" by attending to position 6. Setting the upper triangle of the score matrix to $-\infty$ before the softmax prevents this — every token only sees its past. This is what makes the model *autoregressive*.
-- **The quadratic**: that `(seq_len, seq_len)` score matrix means attention costs grow with the square of context length. A huge amount of the engineering in Chapters 5, 10, and 11 exists to manage this.
+## Look back, never forward
 
-**Multi-head attention** is the observation that one soft lookup per token is not enough: you want one head tracking syntax, another tracking coreference, another matching brackets in code. So the model runs many attention "heads" in parallel (each with its own smaller Q/K/V projections) and concatenates the results. A frontier model might have ~100 heads per layer.
+During training, all positions are computed at once — which means position 5 could "cheat" by attending to position 6 and reading the future it's supposed to predict. The **causal mask** prevents it: before the softmax, every score where a token would look *forward* is set to $-\infty$, so the softmax assigns it exactly zero weight.
 
-## Position: attention is a set operation
+<CausalMaskFigure />
 
-Look at the code again: nothing in it knows *where* a token is. Shuffle the keys and values, and each output is unchanged — attention treats context as a set, not a sequence. Word order has to be injected explicitly.
+This mask is what makes the model **autoregressive** — each token predicts while seeing only its past — and it's also what makes training spectacularly efficient: every position in the sequence becomes its own training example (predict token 2 from token 1, token 3 from tokens 1–2, …), and the mask lets all of them be computed in a single parallel pass. One sentence in, hundreds of next-token exercises out.
 
-The original paper added sinusoidal "positional encodings" to the embeddings. Modern models instead use **rotary position embeddings** ([RoPE](https://arxiv.org/abs/2104.09864)), which *rotate* each query and key vector by an angle proportional to its position — so the dot product between a query and key ends up depending on their *relative* distance, which is what you actually want ("the token 3 back" matters; "token #4,821" doesn't). We'll return to RoPE when we talk about long context in Chapter 5.
+The figure also shows the architecture's famous tax. That score matrix has one cell per query–key pair: $n$ tokens means $n^2$ cells, so doubling the context quadruples attention's cost. This is why models advertise a **context window** — a maximum sequence length — and why long context is expensive enough that Chapters 5, 10, and 11 all spend time fighting the quadratic.
+
+## Many heads, many questions
+
+One soft lookup per token is not enough. Resolving "it" needs one kind of question; tracking whether we're inside a quotation needs another; matching a closing bracket in code needs a third. So the mechanism is run many times in parallel: each **head** gets its own (smaller) learned $W_q, W_k, W_v$, performs its own lookup, and the results are concatenated. A frontier model runs on the order of a hundred heads per layer.
+
+<AttentionFigure />
+
+Nobody assigns the heads their jobs — they specialize under training pressure, the way the XOR network's hidden units divided up the problem in Chapter 1. Some of what they learn is legible after the fact: previous-token heads like the one above are among the best-documented circuits in interpretability (Chapter 6 tells that story, and it turns out to explain a surprising amount about how models learn from their own context).
+
+## Attention is a set operation
+
+Look at the code again: nothing in it knows *where* a token is. Shuffle the keys and values and every output is unchanged — attention treats the context as a *set*, not a sequence. "The cat chased the dog" and "the dog chased the cat" would be indistinguishable. Word order has to be injected explicitly.
+
+The original paper added sinusoidal "positional encodings" to the embeddings. Modern models instead use **rotary position embeddings** (RoPE), which rotate each query and key by an angle proportional to its position — so the dot product between a query and a key ends up depending on their *relative* distance, which is what actually matters ("the token three back," not "token #4,821"). The mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 5's business.
 
 ## The MLP returns
 
-Attention moves information *between* tokens, but does surprisingly little computation on it. After each attention step, every token is passed — independently, in parallel — through an MLP: the exact architecture from Chapter 1, typically expanding to 4× the model dimension and back.
+Attention moves information *between* tokens, but does surprisingly little computation on it. So after each attention step, every token's vector is passed — independently, in parallel — through an MLP: the exact architecture from Chapter 1, typically expanding to 4× the model width and back down.
 
-The division of labor is worth engraving: **attention routes, the MLP computes.** Attention gathers relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as we'll see in Chapter 6, where most of the model's factual knowledge appears to be stored. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
+The division of labor is worth engraving: **attention routes, the MLP computes.** Attention gathers the relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as Chapter 6 will show, where most of the model's factual knowledge appears to live. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
+
+<details>
+<summary>Where do the parameters actually go? GPT-2, counted.</summary>
+
+GPT-2 (the small one) has width $d = 768$ and 12 layers. Per layer: the four attention projection matrices ($W_q, W_k, W_v$, plus one to mix the heads' outputs back together) are $d \times d$ each — about $4d^2 \approx 2.4$M parameters. The MLP expands to $4d$ and back: two matrices totaling $8d^2 \approx 4.7$M — the MLP is 2× attention, right there. Times 12 layers ≈ 85M. Add the embedding matrix — 50,257 tokens × 768 ≈ 38.6M, shared with the output layer — and you land at ~124M, which is exactly the number on the tin. Every transformer's parameter count decomposes this way, and you can now read any model's config file and check.
+
+</details>
 
 ## The residual stream
 
-One attention step plus one MLP (each preceded by a normalization step that keeps vector magnitudes stable) makes a **block**. A model is a stack of these blocks — from 12 in GPT-2 to on the order of a hundred in frontier models.
-
-Crucially, each block doesn't *replace* the token's vector; it computes a modification and **adds** it:
+One attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable — makes a **block** (papers also say "layer"). A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Crucially, each part doesn't *replace* the token's vector; it computes a modification and **adds** it:
 
 $$
 \tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
 $$
 
-These additive shortcuts ("residual connections") were invented to keep gradients flowing through deep networks, but they enable a mental model that the interpretability field (Chapter 6) has made standard: each token has a **residual stream** — a vector flowing up through the layers, acting like a shared memory bus. Every attention head and MLP *reads* from the stream, computes something, and *writes* its result back by addition. Early layers write low-level features, middle layers write concepts and facts, late layers convert it all into a concrete next-token prediction.
+These additive shortcuts ("residual connections") were invented to keep gradients flowing through deep networks — Chapter 1's chain rule gets a highway of plus signs to walk back along. But they also enable the mental model that the interpretability field has made standard: each token has a **residual stream**, a vector flowing up through the layers like a shared memory bus. Every attention head and every MLP *reads* from the stream, computes something, and *writes* its result back by addition:
 
 <ResidualStreamFigure />
+
+Early layers write low-level features, middle layers write concepts and facts, late layers convert it all into a concrete prediction.
 
 So here is the entire architecture, end to end:
 
@@ -88,11 +113,11 @@ So here is the entire architecture, end to end:
 
 That's it. There is no module labeled "grammar," no knowledge base, no planner. Everything a frontier model does is implemented in the weights of these identical, repeated blocks — which is either deeply unsatisfying or the most interesting fact in computer science, depending on your mood.
 
-## Encoders, decoders, and the lineage that won
+## The lineage that won
 
-The 2017 paper had two towers (an encoder for the source language, a decoder for the target). The years since sorted their descendants: [BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification; OpenAI's GPT line took the **decoder-only** path — just the causal stack described above, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100×. Every frontier LLM today is decoder-only. Why scaling was the winning bet is the next chapter.
+The 2017 paper had two towers — an encoder for the source language, a decoder for the target — and the years since sorted their descendants. [BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification. OpenAI's GPT line took the **decoder-only** path: just the causal stack described above, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100× — which is the next chapter's story. Every frontier LLM today is decoder-only.
 
-One practical seed to plant before we go: notice that when generating token 1,001, the keys and values of tokens 1–1,000 haven't changed — recomputing them would be pure waste. Caching them (the **KV cache**) is the single most important fact of inference economics, and Chapter 11 is largely about it.
+One practical seed before we go. When the model generates token 1,001, the keys and values of tokens 1–1,000 haven't changed — recomputing them would be pure waste, so they're cached. That **KV cache** is the single most important fact of inference economics, and Chapter 11 is largely about it.
 
 ## Further reading
 
@@ -100,3 +125,4 @@ One practical seed to plant before we go: notice that when generating token 1,00
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/) — Jay Alammar's visual walkthrough; the canonical companion to the paper.
 - [The Annotated Transformer](https://nlp.seas.harvard.edu/annotated-transformer/) — the paper reimplemented line-by-line in PyTorch.
 - [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) — Karpathy building exactly the model in this chapter, in two hours. If you do one piece of homework from this book, make it this.
+- [nanoGPT](https://github.com/karpathy/nanoGPT) — the same model as a clean, hackable repo; reading `model.py` after this chapter is a genuine victory lap.
