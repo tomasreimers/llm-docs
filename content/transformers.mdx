@@ -77,7 +77,7 @@ One soft lookup per token is not enough. Resolving "it" needs one kind of questi
 
 <AttentionFigure />
 
-Nobody assigns the heads their jobs — they specialize under training pressure, the way the XOR network's hidden units divided up the problem in Chapter 1. Some of what they learn is legible after the fact: previous-token heads like the one above are among the best-documented circuits in interpretability (Chapter 6 tells that story, and it turns out to explain a surprising amount about how models learn from their own context).
+Heads learn their jobs the way all network weights do: gradient descent, nothing more. Some of what they learn turns out to be legible after the fact — previous-token heads like the one above are among the best-documented circuits in interpretability (Chapter 6 tells that story).
 
 ## Attention is a set operation
 
