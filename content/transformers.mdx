@@ -112,7 +112,14 @@ That accumulating vector is the **residual stream**, and the mental model — st
 
 <ResidualStreamFigure />
 
-Early layers tend to write low-level features, middle layers concepts and facts, late layers whatever converts it all into a concrete prediction. (The additive shortcuts — "residual connections" — were originally invented for a Chapter 1 reason, too: the plus signs give the chain rule a gradient highway to walk back along, which is what makes hundred-block stacks trainable at all.)
+Early layers tend to write low-level features, middle layers concepts and facts, late layers whatever converts it all into a concrete prediction.
+
+<details>
+<summary>Why the addition also matters for training (not just for accumulating)</summary>
+
+If blocks *replaced* the vector, backprop would still work — the chain rule composes through anything differentiable. The problem is magnitude. The gradient reaching layer 1 would be a product of a hundred consecutive layer-derivatives, and any systematic shrinkage in those factors compounds exponentially — by the bottom of the stack the signal is numerically zero, and the early layers stop learning (the "vanishing gradient" problem that stalled deep networks for years). With $x + f(x)$, each block's derivative is *identity plus something*: among all the paths the chain rule sums over, there's always one straight shot of plus signs from the loss to every layer, unattenuated. Hundred-block stacks are trainable because of it.
+
+</details>
 
 Here's the question that makes the whole arrangement click. Suppose the context said, pages ago, "Jack, a tall man with red hair, walked in" — and the model must now continue "Jack's hair was ___". A single attention lookup sounds hopeless for this: the token "hair" can attend back to "Jack," but the *token* "Jack" is just a name — the redness lives three tokens away, on "red." How can attending to unprocessed tokens answer a question whose answer is smeared across several of them?
 
