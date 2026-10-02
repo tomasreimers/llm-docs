@@ -60,19 +60,21 @@ export function MathTips() {
       const eq = el.closest('.katex-display') || el.closest('.katex') || el;
       const eqRect = eq.getBoundingClientRect();
 
-      // The term's true visual extent: union of every descendant's box
-      // (KaTeX spans' own boxes exclude below-baseline depth and overhangs).
+      // The term's true visual extent. Horizontal: the span's own box is
+      // reliable. Vertical: union over descendants, because KaTeX spans'
+      // boxes exclude below-baseline depth. (Don't union horizontally —
+      // KaTeX draws radical rules with clipped 400em-wide SVGs whose
+      // bounding boxes would swallow the page.)
       const t = el.getBoundingClientRect();
-      let [top, right, bottom, left] = [t.top, t.right, t.bottom, t.left];
+      let top = t.top;
+      let bottom = t.bottom;
       el.querySelectorAll('*').forEach((c) => {
         const r = c.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) return;
         top = Math.min(top, r.top);
-        right = Math.max(right, r.right);
         bottom = Math.max(bottom, r.bottom);
-        left = Math.min(left, r.left);
       });
-      const termRect = new DOMRect(left, top, right - left, bottom - top);
+      const termRect = new DOMRect(t.left, top, t.width, bottom - top);
 
       highlight.style.left = `${termRect.left - 2}px`;
       highlight.style.top = `${termRect.top - 2}px`;
