@@ -3,6 +3,7 @@ import { AttentionFigure } from "../components/figures/attention"
 import { AttentionStepFigure } from "../components/figures/attention-step"
 import { CausalMaskFigure } from "../components/figures/causal-mask"
 import { KvGridFigure } from "../components/figures/kv-grid"
+import { LineageFigure } from "../components/figures/lineage"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -130,7 +131,11 @@ GPT-2 shipped in four sizes; the smallest — plain "GPT-2", the 124M-parameter 
 
 ## The lineage that won
 
-The 2017 paper had two towers — an encoder for the source language, a decoder for the target — and the years since sorted their descendants. [BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification. OpenAI's GPT line took the **decoder-only** path: just the causal stack described above, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100× — which is the next chapter's story. Every frontier LLM today is decoder-only.
+The 2017 paper had two towers — an encoder for the source language, a decoder for the target — and the years since sorted their descendants:
+
+<LineageFigure />
+
+[BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification. OpenAI's GPT line took the **decoder-only** path: just the causal stack described in this chapter, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100× — which is the next chapter's story. Every frontier LLM today is decoder-only.
 
 ## One picture to keep
 
