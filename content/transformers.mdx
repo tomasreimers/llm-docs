@@ -64,7 +64,9 @@ During training, all positions are computed at once — which means position 5 c
 
 <CausalMaskFigure />
 
-This mask is what makes the model **autoregressive** — each token predicts while seeing only its past — and it's also what makes training spectacularly efficient: every position in the sequence becomes its own training example (predict token 2 from token 1, token 3 from tokens 1–2, …), and the mask lets all of them be computed in a single parallel pass. One sentence in, hundreds of next-token exercises out.
+This mask is what makes the model **autoregressive** — a term borrowed from time-series statistics whose etymology *is* its definition: *auto-* (self) + *regression* (the first tool this book reached for, back in Chapter 1). An autoregressive model regresses a sequence *on itself* — each value predicted from the values before it. Statisticians have fit autoregressive models to stock prices and weather for a century; a GPT is the same idea with a trillion-parameter regressor and tokens for data points. The mask is what enforces the "before": each token predicts while seeing only its past.
+
+The mask is also what makes training spectacularly efficient: every position in the sequence becomes its own training example (predict token 2 from token 1, token 3 from tokens 1–2, …), and the mask lets all of them be computed in a single parallel pass. One sentence in, hundreds of next-token exercises out.
 
 The figure also shows the architecture's famous tax. That score matrix has one cell per query–key pair: $n$ tokens means $n^2$ cells, so doubling the context quadruples attention's cost. This is why models advertise a **context window** — a maximum sequence length — and why long context is expensive enough that Chapters 5, 10, and 11 all spend time fighting the quadratic.
 
