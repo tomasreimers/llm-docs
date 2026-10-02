@@ -83,7 +83,7 @@ Heads learn their jobs the way all network weights do: gradient descent, nothing
 
 Look at the code again: nothing in it knows *where* a token is. Shuffle the keys and values and every output is unchanged — attention treats the context as a *set*, not a sequence. "The cat chased the dog" and "the dog chased the cat" would be indistinguishable. Word order has to be injected explicitly.
 
-The original paper added sinusoidal "positional encodings" to the embeddings. Modern models instead use **rotary position embeddings** (RoPE), which rotate each query and key by an angle proportional to its position — so the dot product between a query and a key ends up depending on their *relative* distance, which is what actually matters ("the token three back," not "token #4,821"). The mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 5's business.
+The fix is unglamorous: make position part of the input. The original paper computed a **positional encoding** — a vector that depends only on the position number — and *added* it to each token's embedding, so "cat as token 2" and "cat as token 9" enter the network as slightly different vectors, and attention can learn to care about the difference. Modern models use a cleverer scheme (**RoPE**) that encodes *relative* position — "three tokens back" rather than "position #4,821," which is what sentences actually care about. Its mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 5's business.
 
 ## The MLP returns
 
