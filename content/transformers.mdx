@@ -114,6 +114,10 @@ That accumulating vector is the **residual stream**, and the mental model — st
 
 Early layers tend to write low-level features, middle layers concepts and facts, late layers whatever converts it all into a concrete prediction. (The additive shortcuts — "residual connections" — were originally invented for a Chapter 1 reason, too: the plus signs give the chain rule a gradient highway to walk back along, which is what makes hundred-block stacks trainable at all.)
 
+Here's the question that makes the whole arrangement click. Suppose the context said, pages ago, "Jack, a tall man with red hair, walked in" — and the model must now continue "Jack's hair was ___". A single attention lookup sounds hopeless for this: the token "hair" can attend back to "Jack," but the *token* "Jack" is just a name — the redness lives three tokens away, on "red." How can attending to unprocessed tokens answer a question whose answer is smeared across several of them?
+
+It can't — and it never has to, because after the first block, **attention doesn't read tokens; it reads the previous layer's streams.** Somewhere in an early block, a head doing purely local work moved "red" into the stream above "Jack" — the column over that name now *contains* his hair color. By the time a late block's query from "hair was" goes looking for facts-about-Jack, the answer has already been computed and parked where the name is; retrieval is one hop because earlier layers did the assembly. That's what depth buys: each layer attends over the *results* of every layer below it, so one lookup becomes a pipeline of lookups over its own previous conclusions. The stream above a token isn't the token — it's the model's accumulating *dossier* on that position, and later layers consult dossiers, not words.
+
 So here is the entire architecture, end to end:
 
 1. Look up each token's **embedding** (Chapter 2).
