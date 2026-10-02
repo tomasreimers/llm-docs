@@ -102,7 +102,11 @@ $$
 \mathrm{PPL} = e^{\tip{the average cross-entropy per token}{\bar{L}}}
 $$
 
-and it means: the model is, on average, as uncertain as if it were choosing uniformly among $\mathrm{PPL}$ options. Perplexity 1 is omniscience; a model with perplexity 10 on English is hesitating between ten plausible next tokens at each step. When a pre-training paper brags about a loss curve, this is the unit of the y-axis's soul.
+and it means: the model is, on average, as uncertain as if it were choosing uniformly among $\mathrm{PPL}$ options at every token.
+
+Make that concrete with three texts and one model. Measure it on "one two three four five six seven eight": after the first couple of tokens the continuation is locked — nearly all the probability lands on the right answer every time, almost no loss, **perplexity ≈ 1**. Measure it on an ordinary sentence like "I stopped at the store to pick up some ___": at each step a handful of continuations are genuinely live (*milk, bread, eggs, things, groceries…*), the model spreads its bets, and good models land around **perplexity 10** on typical English — hesitating among roughly ten plausible tokens per step. Now measure it on the same ordinary words *shuffled into random order*: context predicts nothing, every token is a surprise, and perplexity climbs into the **hundreds or thousands**. Same model each time — perplexity measures the match between a model and a text, which is why it works as a score for either one.
+
+When a pre-training paper brags about a loss curve, perplexity is the unit of the y-axis's soul.
 
 <details>
 <summary>The alter ego: a language model is a compressor</summary>
