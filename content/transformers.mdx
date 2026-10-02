@@ -2,6 +2,7 @@ import { Breadcrumbs } from "../components/breadcrumbs"
 import { AttentionFigure } from "../components/figures/attention"
 import { AttentionStepFigure } from "../components/figures/attention-step"
 import { CausalMaskFigure } from "../components/figures/causal-mask"
+import { KvGridFigure } from "../components/figures/kv-grid"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -123,7 +124,13 @@ That's it. There is no module labeled "grammar," no knowledge base, no planner. 
 
 The 2017 paper had two towers — an encoder for the source language, a decoder for the target — and the years since sorted their descendants. [BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification. OpenAI's GPT line took the **decoder-only** path: just the causal stack described above, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100× — which is the next chapter's story. Every frontier LLM today is decoder-only.
 
-One practical seed before we go. When the model generates token 1,001, the keys and values of tokens 1–1,000 haven't changed — recomputing them would be pure waste, so they're cached. That **KV cache** is the single most important fact of inference economics, and Chapter 11 is largely about it.
+## One picture to keep
+
+Here is the whole chapter in a single mental image: the computation as a *spreadsheet*. One column per token; the top row is the embeddings; each row below is the residual stream after another block; and every cell is computed from the row above it, looking only at columns up to its own:
+
+<KvGridFigure />
+
+Two things this picture makes obvious. The next token always comes from the **bottom-right cell** — everything else exists to make that one cell smart. And generation just *appends a column*: the new token's cells are computed, and **no existing cell changes** — a finished column is finished forever. Which means the keys and values of every old column can be stored and reused instead of recomputed. That store is the **KV cache**, the single most important fact of inference economics, and Chapter 11 is largely about it.
 
 ## Further reading
 
