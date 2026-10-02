@@ -73,7 +73,7 @@ The figure also shows the architecture's famous tax. That score matrix has one c
 
 ## Many heads, many questions
 
-One soft lookup per token is not enough. Resolving "it" needs one kind of question; tracking whether we're inside a quotation needs another; matching a closing bracket in code needs a third. So the mechanism is run many times in parallel: each **head** gets its own (smaller) learned $W_q, W_k, W_v$, performs its own lookup, and the results are concatenated. A frontier model runs on the order of a hundred heads per layer.
+One soft lookup per token is not enough. Resolving "it" needs one kind of question; tracking whether we're inside a quotation needs another; matching a closing bracket in code needs a third. So the mechanism is run many times in parallel: each **head** gets its own (smaller) learned $W_q, W_k, W_v$, performs its own lookup, and the results are concatenated. A single attention operation in a frontier model runs on the order of a hundred heads side by side — and the full model, as we'll assemble in a moment, stacks on the order of a hundred such operations.
 
 <AttentionFigure />
 
