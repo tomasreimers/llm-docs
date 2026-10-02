@@ -99,11 +99,19 @@ $$
 \tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
 $$
 
-These additive shortcuts ("residual connections") were invented to keep gradients flowing through deep networks — Chapter 1's chain rule gets a highway of plus signs to walk back along. But they also enable the mental model that the interpretability field has made standard: each token has a **residual stream**, a vector flowing up through the layers like a shared memory bus. Every attention head and every MLP *reads* from the stream, computes something, and *writes* its result back by addition:
+Make the addition concrete with the numbers from the attention walkthrough above. The token "it" entered attention as $x = [0, 2]$. The lookup returned $[1.65, 0.31]$ — mostly cat's vector. The update *adds*:
+
+$$
+x_{\text{new}} = \tip{whatever 'it' already was — still in there}{[0, 2]} + \tip{what attention fetched — mostly cat}{[1.65,\ 0.31]} = [1.65,\ 2.31]
+$$
+
+Look at what addition preserved. The original $[0, 2]$ — everything "it" already was (a pronoun, in subject position) — is *still in the vector*, now joined by cat-ness. If the block had **replaced** the vector instead, the pronoun would have been overwritten by the cat; because it **adds**, the token accumulates. The MLP then reads the combined vector and adds its own contribution — perhaps, having seen "pronoun + cat + tired" together, something like *sleepy animal*. A later block's attention can read *that* and route it to other tokens. Each token's vector only ever gets richer.
+
+That accumulating vector is the **residual stream**, and the mental model — standard in the interpretability field — is a shared memory bus: one stream per token, flowing up through the stack, with every attention head and every MLP *reading* from it, computing something, and *writing* the result back by addition:
 
 <ResidualStreamFigure />
 
-Early layers write low-level features, middle layers write concepts and facts, late layers convert it all into a concrete prediction.
+Early layers tend to write low-level features, middle layers concepts and facts, late layers whatever converts it all into a concrete prediction. (The additive shortcuts — "residual connections" — were originally invented for a Chapter 1 reason, too: the plus signs give the chain rule a gradient highway to walk back along, which is what makes hundred-block stacks trainable at all.)
 
 So here is the entire architecture, end to end:
 
