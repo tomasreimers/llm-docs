@@ -80,13 +80,26 @@ $$
 
 To embed token 5,072, take row 5,072 of $E$. That's the whole operation — a table lookup. (If you prefer Chapter 1's vocabulary: write the token as a one-hot vector and multiply it by $E$; a lookup *is* a matrix multiply by a one-hot.) And the rows of $E$ are parameters like any others: initialized to random numbers, and nudged by backpropagation — every time a token appears in training, the gradient flows into its row — exactly the loop from Chapter 1.
 
-Here is why this solves counting's sharing problem. Under the pressure of next-token prediction, the cheapest way for the model to handle "cat" and "dog" — which appear in nearly identical contexts — is to give them nearly identical vectors, so all the machinery downstream of the embedding handles both for the price of one. Similarity isn't programmed in; it's the *economical solution* gradient descent keeps finding. Evidence about dog-sentences now genuinely transfers to cat-sentences, because to the rest of the network they look almost alike.
+To see what the numbers in a row *could* mean, run a thought experiment. Suppose the vocabulary were nothing but city names, and we hand-picked $d = 3$: let the first dimension encode coast (−1 west, +1 east), the second size, the third warmth. Then:
 
-The famous demonstration is [word2vec](https://arxiv.org/abs/1301.3781) (2013), which showed that the learned geometry encodes more than similarity — *directions* carry *relationships*:
+| | coast | size | warmth |
+|---|---|---|---|
+| Los Angeles | −1 | 0.9 | 0.8 |
+| San Francisco | −1 | 0.6 | 0.5 |
+| Boston | +1 | 0.6 | 0.3 |
+| New York | +1 | 0.9 | 0.6 |
+
+Each city is now a point whose coordinates *are* its properties — and the geometry starts doing work for free. Subtract San Francisco from Los Angeles and you get [0, 0.3, 0.3]: "same coast, but bigger and warmer." Add that to Boston: [+1, 0.9, 0.6] — a large, warm-ish, east-coast city. That's New York, to the decimal: $\vec{\text{LA}} - \vec{\text{SF}} + \vec{\text{Boston}} \approx \vec{\text{NYC}}$. When coordinates encode properties, *directions encode relationships*, and analogy becomes arithmetic.
+
+Nobody hand-picks the dimensions of a real model, of course. They're learned, there are thousands of them, and they're rarely this legible (Chapter 6 is about the people trying to read them anyway). But the principle survives contact with reality — which was discovered, to everyone's delight, in the actual learned spaces:
+
+The famous demonstration is [word2vec](https://arxiv.org/abs/1301.3781) (2013), which showed that learned embedding spaces encode exactly these structures — similarity as closeness, relationships as directions:
 
 <EmbeddingSpaceFigure />
 
-The vector from *france* to *paris* is nearly parallel to the one from *italy* to *rome*; the "maleness→royalty" arrows line up the same way, which is why the arithmetic $\vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}}$ lands near $\vec{\text{queen}}$.
+The vector from *france* to *paris* is nearly parallel to the one from *italy* to *rome* — a learned "capital of" direction nobody asked for — and the "maleness→royalty" arrows line up the same way, which is why $\vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}}$ lands near $\vec{\text{queen}}$: the cities trick, discovered rather than designed.
+
+And this is what rescues us from counting's sharing problem. Under the pressure of next-token prediction, the cheapest way for the model to handle "cat" and "dog" — which appear in nearly identical contexts — is to give them nearly identical vectors, so all the machinery downstream of the embedding handles both for the price of one. Similarity isn't programmed in; it's the *economical solution* gradient descent keeps finding. Evidence about dog-sentences now genuinely transfers to cat-sentences, because to the rest of the network they look almost alike.
 
 For an engineer, the durable frame is: **the embedding space is the model's universal interface.** A neural network operates on exactly one data type — vectors — and embeddings are the adapters that convert the outside world into it. Words become vectors here; in Chapter 5, image patches and audio frames will arrive through their own encoders as vectors of the same kind. Once something is in the space, "semantically similar" means "geometrically close," and the same downstream machinery can process it no matter what it originally was. This one idea also powers every semantic-search and retrieval product you've used, and it's the foundation the transformer builds on in the next chapter.
 
