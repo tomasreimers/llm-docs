@@ -91,13 +91,6 @@ Attention moves information *between* tokens, but does surprisingly little compu
 
 The division of labor is worth engraving: **attention routes, the MLP computes.** Attention gathers the relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as Chapter 6 will show, where most of the model's factual knowledge appears to live. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
 
-<details>
-<summary>Where do the parameters actually go? GPT-2, counted.</summary>
-
-GPT-2 (the small one) has width $d = 768$ and 12 layers. Per layer: the four attention projection matrices ($W_q, W_k, W_v$, plus one to mix the heads' outputs back together) are $d \times d$ each — about $4d^2 \approx 2.4$M parameters. The MLP expands to $4d$ and back: two matrices totaling $8d^2 \approx 4.7$M — the MLP is 2× attention, right there. Times 12 layers ≈ 85M. Add the embedding matrix — 50,257 tokens × 768 ≈ 38.6M, shared with the output layer — and you land at ~124M, which is exactly the number on the tin. Every transformer's parameter count decomposes this way, and you can now read any model's config file and check.
-
-</details>
-
 ## The residual stream
 
 One attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable — makes a **block** (papers also say "layer"). A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Crucially, each part doesn't *replace* the token's vector; it computes a modification and **adds** it:
@@ -119,6 +112,13 @@ So here is the entire architecture, end to end:
 3. Project the final vector of the *last* token onto the vocabulary to get **logits**, softmax into a distribution (Chapters 1–2), and predict.
 
 That's it. There is no module labeled "grammar," no knowledge base, no planner. Everything a frontier model does is implemented in the weights of these identical, repeated blocks — which is either deeply unsatisfying or the most interesting fact in computer science, depending on your mood.
+
+<details>
+<summary>Where do the parameters actually go? GPT-2, counted.</summary>
+
+GPT-2 shipped in four sizes; the smallest — plain "GPT-2", the 124M-parameter one — has width $d = 768$ and stacks 12 blocks. Per block: the four attention matrices ($W_q, W_k, W_v$, plus one to mix the heads' outputs back together) are $d \times d$ each — about $4d^2 \approx 2.4$M parameters. Heads, by the way, are free: this model runs 12 heads per block, each working in $768/12 = 64$ dimensions — the $d \times d$ matrices are simply *sliced* across them, so the head count changes the shape of the lookups but not the number of weights. The MLP expands to $4d$ and back: two matrices totaling $8d^2 \approx 4.7$M — the MLP is 2× attention, right there. Times 12 blocks ≈ 85M. Add the embedding matrix — 50,257 tokens × 768 ≈ 38.6M, shared with the output layer — and you land at ~124M, the number on the tin. Every transformer's parameter count decomposes this way, and you can now read any model's config file and check.
+
+</details>
 
 ## The lineage that won
 
