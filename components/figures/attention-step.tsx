@@ -69,6 +69,8 @@ export function AttentionStepFigure() {
   }, []);
 
   const s = Math.min(tick, N - 1);
+  // visibility helper: everything is always laid out; steps only reveal
+  const vis = (from: number) => ({ opacity: s >= from ? undefined : 0 });
 
   return (
     <Figure caption="One attention lookup, every number real (d = 2, integer weights, chosen for legible arithmetic — in a real model these are learned and thousands-dimensional). The query from 'it' matches cat's key, so the output is mostly cat's value: the pronoun resolved, by dot products.">
@@ -83,7 +85,9 @@ export function AttentionStepFigure() {
             ) : (
               <span key={i} className="rounded-sm px-1.5 py-0.5" style={{ background: s >= 3 ? ink(Math.min(W[i] * 100, 60)) : ink(6) }}>
                 {t}
-                {s >= 3 && <span className="ml-1 align-super text-[9px] opacity-70">{W[i].toFixed(2)}</span>}
+                <span className="ml-1 align-super text-[9px] opacity-70" style={vis(3)}>
+                  {W[i].toFixed(2)}
+                </span>
               </span>
             ),
           )}
@@ -94,10 +98,10 @@ export function AttentionStepFigure() {
             <tr className="opacity-60">
               <th className={cell}>token</th>
               <th className={cell}>x</th>
-              {s >= 1 && <th className={cell}>k</th>}
-              {s >= 1 && <th className={cell}>v</th>}
-              {s >= 2 && <th className={cell}>q·k</th>}
-              {s >= 3 && <th className={cell}>weight</th>}
+              <th className={cell} style={vis(1)}>k</th>
+              <th className={cell} style={vis(1)}>v</th>
+              <th className={cell} style={vis(2)}>q·k</th>
+              <th className={cell} style={vis(3)}>weight</th>
             </tr>
           </thead>
           <tbody style={{ borderTop: `1px solid ${ink(20)}` }}>
@@ -105,25 +109,23 @@ export function AttentionStepFigure() {
               <tr key={i} style={{ fontWeight: i === 1 && s >= 3 ? 700 : 400 }}>
                 <td className={`${cell} opacity-70`}>{t}</td>
                 <td className={cell}>{vec(X[i])}</td>
-                {s >= 1 && <td className={cell} style={{ fontWeight: s === 1 ? 700 : undefined }}>{vec(K[i])}</td>}
-                {s >= 1 && <td className={cell}>{vec(V[i])}</td>}
-                {s >= 2 && <td className={cell} style={{ fontWeight: s === 2 ? 700 : undefined }}>{SCORES[i]}</td>}
-                {s >= 3 && <td className={cell} style={{ fontWeight: s === 3 ? 700 : undefined }}>{W[i].toFixed(2)}</td>}
+                <td className={cell} style={{ ...vis(1), fontWeight: s === 1 ? 700 : undefined }}>{vec(K[i])}</td>
+                <td className={cell} style={vis(1)}>{vec(V[i])}</td>
+                <td className={cell} style={{ ...vis(2), fontWeight: s === 2 ? 700 : undefined }}>{SCORES[i]}</td>
+                <td className={cell} style={{ ...vis(3), fontWeight: s === 3 ? 700 : undefined }}>{W[i].toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div className="flex min-h-5 flex-col items-center justify-center gap-0.5 opacity-80">
-          {s >= 1 && <div>q (from &apos;it&apos;) = {vec(q)}</div>}
-          {s >= 4 && (
-            <div style={{ fontWeight: s === 4 ? 700 : 400 }}>
-              output = {W.map((w, i) => `${w.toFixed(2)}·${vec(V[i])}`).join(' + ')} = {vec(OUT, 2)}
-            </div>
-          )}
+        <div className="flex flex-col items-center justify-center gap-0.5 opacity-80">
+          <div style={vis(1)}>q (from &apos;it&apos;) = {vec(q)}</div>
+          <div style={{ ...vis(4), fontWeight: s === 4 ? 700 : 400 }}>
+            output = {W.map((w, i) => `${w.toFixed(2)}·${vec(V[i])}`).join(' + ')} = {vec(OUT, 2)}
+          </div>
         </div>
 
-        <div className="flex min-h-8 max-w-xl items-center justify-center text-center leading-tight opacity-80">
+        <div className="flex h-9 max-w-xl items-center justify-center text-center leading-tight opacity-80">
           {STEP_TEXT[s]}
         </div>
 
