@@ -37,7 +37,6 @@ export function KvGridFigure() {
   }, []);
 
   const s = Math.min(tick, N - 1);
-  const nCols = s >= 4 ? TOKENS.length + 1 : TOKENS.length;
   const rowsFilled = s === 0 ? 1 : s === 1 ? 2 : 4;
   // the showcased cell for the fan-in arrows
   const fan = s === 1 ? { r: 1, c: 3 } : s === 4 ? { r: 3, c: 5 } : null;
