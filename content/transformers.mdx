@@ -6,6 +6,7 @@ import { GridCellsFigure } from "../components/figures/grid-cells"
 import { KvGridFigure } from "../components/figures/kv-grid"
 import { LineageFigure } from "../components/figures/lineage"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
+import { StreamColumnFigure } from "../components/figures/stream-column"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
@@ -107,7 +108,11 @@ Two things this picture makes obvious. The next token always comes from the **bo
 
 ## The residual stream
 
-Now zoom in on a single *column* of that spreadsheet — the one the figure just highlighted: one token's vector, followed through the layers. We can now say what's inside the "layer" promised at the chapter's start: one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Crucially, each part doesn't *replace* the token's vector; it computes a modification and **adds** it:
+Now zoom in on a single *column* of that spreadsheet — one token's vector, followed through the layers:
+
+<StreamColumnFigure />
+
+We can now say what's inside the "layer" promised at the chapter's start: one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Crucially, each part doesn't *replace* the token's vector; it computes a modification and **adds** it:
 
 $$
 \tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
