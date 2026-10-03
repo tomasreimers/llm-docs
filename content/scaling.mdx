@@ -23,7 +23,7 @@ Before the laws, the quantities they relate. Any training run is summarized by t
 
 - $N$ — **parameters**: the count of weights in the model. GPT-2: 124M (we counted them at the end of Chapter 3). GPT-3: 175B.
 - $D$ — **training tokens**: how much text the model sees, measured after tokenization (Chapter 2). GPT-3: ~300B tokens.
-- $C$ — **compute**: the total number of floating-point operations (FLOPs — individual multiplies and adds) executed during training.
+- $C$ — **compute**: the total work executed during training, counted in **FLOPs** — floating-point operations, where one FLOP is a single multiply or add of two numbers. (Careful with the units: FLOPs is a *count* of operations; a chip's speed is FLOPs *per second*, often written FLOP/s. A training run costs 10²⁴ FLOPs the way a trip costs 500 miles — how fast you cover them is the hardware's problem, and Part IV's subject.)
 
 These aren't independent. Each training token costs a fixed amount of work proportional to the model's size, and the total is well-approximated by a rule of thumb you will see everywhere in this field:
 
