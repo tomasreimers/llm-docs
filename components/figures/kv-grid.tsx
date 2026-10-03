@@ -13,7 +13,8 @@ const NEW_TOKEN = 'because';
 const ROWS = ['embeddings', 'layer 1', 'layer 2', 'layer 3'];
 
 const CW = 72;
-const CH = 34;
+const CH = 50; // row pitch
+const CELL_H = 30;
 const X0 = 88;
 const Y0 = 34;
 
@@ -51,7 +52,7 @@ export function KvGridFigure() {
   return (
     <Figure caption="The transformer as a spreadsheet: columns are token positions, rows are layers, and cell (row, column) is computed from the row above, columns up to its own — the mask, again. The next token is read off the bottom-right cell. Generating appends a column and computes only it; every older cell is finished forever, which is why caching them (the KV cache, Chapter 11) is such a big deal.">
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
-        <svg viewBox="0 0 560 215" className="w-full max-w-xl">
+        <svg viewBox="0 0 560 270" className="w-full max-w-xl">
           {/* column headers */}
           {TOKENS.map((t, c) => (
             <text key={c} x={X0 + c * CW + CW / 2} y={Y0 - 12} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.75}>
@@ -63,7 +64,7 @@ export function KvGridFigure() {
           </text>
           {/* row labels */}
           {ROWS.map((r, i) => (
-            <text key={r} x={X0 - 10} y={Y0 + i * CH + CH / 2 + 4} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
+            <text key={r} x={X0 - 10} y={Y0 + i * CH + CELL_H / 2 + 4} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
               {r}
             </text>
           ))}
@@ -77,9 +78,9 @@ export function KvGridFigure() {
                 <rect
                   key={`${r}-${c}`}
                   x={X0 + c * CW + 2}
-                  y={Y0 + r * CH + 2}
+                  y={Y0 + r * CH}
                   width={CW - 4}
-                  height={CH - 4}
+                  height={CELL_H}
                   rx={3}
                   fill="currentColor"
                   fillOpacity={st === 'new' ? 0.3 : st === 'cached' ? 0.07 : 0.18}
@@ -92,7 +93,7 @@ export function KvGridFigure() {
           )}
           {/* cached label */}
           {s >= 4 && (
-            <text x={X0 + 2.5 * CW} y={Y0 + 1.5 * CH + 4} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55} fontStyle="italic">
+            <text x={X0 + 2.5 * CW} y={Y0 + 1 * CH + CELL_H + 12} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55} fontStyle="italic">
               cached — unchanged
             </text>
           )}
@@ -102,9 +103,9 @@ export function KvGridFigure() {
               <line
                 key={c}
                 x1={X0 + c * CW + CW / 2}
-                y1={Y0 + (fan.r - 1) * CH + CH - 2}
+                y1={Y0 + (fan.r - 1) * CH + CELL_H}
                 x2={X0 + fan.c * CW + CW / 2}
-                y2={Y0 + fan.r * CH + 2}
+                y2={Y0 + fan.r * CH}
                 stroke="currentColor"
                 strokeOpacity={0.45}
                 strokeWidth={1.2}
@@ -112,7 +113,7 @@ export function KvGridFigure() {
             ))}
           {/* prediction arrow out of bottom-right */}
           {s === 3 && (
-            <text x={X0 + 4 * CW + CW / 2} y={Y0 + 4 * CH + 16} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.85}>
+            <text x={X0 + 4 * CW + CW / 2} y={Y0 + 3 * CH + CELL_H + 16} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.85}>
               ↓ logits → &apos;{NEW_TOKEN}&apos;
             </text>
           )}

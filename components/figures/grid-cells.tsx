@@ -11,7 +11,8 @@ const TOKENS = ['the', 'cat', 'sat', 'by', 'me'];
 const ROWS = ['embeddings', 'layer 1', 'layer 2', 'layer 3'];
 
 const CW = 72;
-const CH = 34;
+const CH = 50; // row pitch
+const CELL_H = 30;
 const X0 = 88;
 const Y0 = 34;
 
@@ -43,14 +44,14 @@ export function GridCellsFigure() {
   return (
     <Figure caption="The spreadsheet, built the slow way: one cell at a time. Each cell attends only to the row above it, columns up to its own — and notice that no cell ever reads a neighbor in its own row.">
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
-        <svg viewBox="0 0 560 190" className="w-full max-w-xl">
+        <svg viewBox="0 0 560 250" className="w-full max-w-xl">
           {TOKENS.map((tok, c) => (
             <text key={c} x={X0 + c * CW + CW / 2} y={Y0 - 12} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.75}>
               {tok}
             </text>
           ))}
           {ROWS.map((r, i) => (
-            <text key={r} x={X0 - 10} y={Y0 + i * CH + CH / 2 + 4} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
+            <text key={r} x={X0 - 10} y={Y0 + i * CH + CELL_H / 2 + 4} textAnchor="end" fontSize={10} fill="currentColor" opacity={0.6}>
               {r}
             </text>
           ))}
@@ -62,9 +63,9 @@ export function GridCellsFigure() {
                 <rect
                   key={`${r}-${c}`}
                   x={X0 + c * CW + 2}
-                  y={Y0 + r * CH + 2}
+                  y={Y0 + r * CH}
                   width={CW - 4}
-                  height={CH - 4}
+                  height={CELL_H}
                   rx={3}
                   fill="currentColor"
                   fillOpacity={isCur ? 0.3 : filled ? 0.16 : 0.04}
@@ -81,9 +82,9 @@ export function GridCellsFigure() {
               <line
                 key={c}
                 x1={X0 + c * CW + CW / 2}
-                y1={Y0 + (cur.r - 1) * CH + CH - 2}
+                y1={Y0 + (cur.r - 1) * CH + CELL_H}
                 x2={X0 + cur.c * CW + CW / 2}
-                y2={Y0 + cur.r * CH + 2}
+                y2={Y0 + cur.r * CH}
                 stroke="currentColor"
                 strokeOpacity={0.5}
                 strokeWidth={1.2}
