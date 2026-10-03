@@ -4,9 +4,19 @@ import path from 'path';
 
 import meta from '../../../../../content/_meta';
 
-const fontData = fs.readFileSync(
-  path.join(process.cwd(), './assets/fonts/Inter/Inter-Black.ttf')
+const serif = fs.readFileSync(
+  path.join(process.cwd(), './assets/fonts/SourceSerif/SourceSerif4-Regular.otf')
 );
+const serifSemibold = fs.readFileSync(
+  path.join(process.cwd(), './assets/fonts/SourceSerif/SourceSerif4-Semibold.otf')
+);
+const serifItalic = fs.readFileSync(
+  path.join(process.cwd(), './assets/fonts/SourceSerif/SourceSerif4-It.otf')
+);
+
+const INK = '#1c1c22';
+const PAPER = '#fcfbf7';
+const HIGHLIGHT = '#fff7b1';
 
 export async function generateStaticParams() {
   return [
@@ -30,7 +40,7 @@ export async function GET(
   _: Request,
   { params: { slug } }: { params: { slug: string } }
 ) {
-  const details = slug === 'default' ? 'LLMs' : meta[slug];
+  const details = slug === 'default' ? 'Modern LLMs' : meta[slug];
   const fullTitle =
     (typeof details === 'string' ? details : details?.title) ?? 'Modern LLMs';
   let [chapter, title]: [string | undefined, string] = fullTitle.split(': ');
@@ -46,93 +56,94 @@ export async function GET(
         style={{
           width: '100%',
           height: '100%',
-          background: 'black',
+          background: PAPER,
           display: 'flex',
+          flexDirection: 'column',
+          padding: '56px 64px',
+          boxSizing: 'border-box',
+          fontFamily: '"SourceSerif"',
         }}
       >
-        {[2, 8, 32, 128].map((blur) => {
-          return (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                fontSize: 96,
-                color: 'white',
-                width: '100%',
-                height: '100%',
-                padding: '40px',
-                textAlign: 'center',
-                justifyContent: 'center',
-                alignItems: 'center',
-                fontWeight: 900,
-                fontFamily: '"Inter"',
-                textShadow: `white 0 0 ${blur}px`,
-                mixBlendMode: 'hard-light',
-                boxSizing: 'border-box',
-              }}
-            >
-              {title.toLowerCase()}
-            </div>
-          );
-        })}
+        {/* wordmark (skip on the default card, where it would duplicate the title) */}
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            fontSize: 96,
-            color: 'black',
-            width: '100%',
-            height: '100%',
-            padding: '40px',
-            textAlign: 'center',
-            justifyContent: 'center',
-            alignItems: 'center',
-            fontWeight: 900,
-            fontFamily: '"Inter"',
-            boxSizing: 'border-box',
+            display: 'flex',
+            fontSize: 21,
+            fontWeight: 600,
+            letterSpacing: 5,
+            color: INK,
+            opacity: slug === 'default' ? 0 : 0.85,
           }}
         >
-          {title.toLowerCase()}
+          MODERN LLMS
         </div>
-        {chapter && (
+
+        {/* title block, vertically centered in remaining space */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 1,
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+          }}
+        >
+          {chapter && (
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: HIGHLIGHT,
+                color: INK,
+                fontSize: 20,
+                fontWeight: 600,
+                letterSpacing: 4,
+                padding: '7px 16px',
+                marginBottom: 26,
+              }}
+            >
+              {chapter.toUpperCase()}
+            </div>
+          )}
           <div
             style={{
-              position: 'absolute',
-              top: '40px',
-              right: '-50px',
-              color: '#1E3A8A',
-              fontSize: 24,
-              fontWeight: 900,
-              fontFamily: '"Inter"',
-              width: '240px',
-              transform: 'rotate(45deg)',
-              padding: '8px',
-              textAlign: 'center',
-              justifyContent: 'center',
-              alignItems: 'center',
-              boxSizing: 'border-box',
-              backgroundColor: '#1E3A8A33',
-              border: '1px solid #FFFFFF0F',
-              // boxShadow: "0px -64px 64px 0px #FFFFFF08 inset, 0px -16px 16px 0px #FFFFFF08 inset, 0px -4px 4px 0px #FFFFFF08 inset, 0px 1px 0px 0px #FFFFFF0F inset, 0px -1px 0px 0px #FFFFFF0F inset",
+              display: 'flex',
+              fontSize: title.length > 15 ? 56 : 72,
+              fontWeight: 600,
+              color: INK,
+              lineHeight: 1.12,
+              maxWidth: '640px',
             }}
           >
-            {chapter.toUpperCase()}
+            {title}
           </div>
-        )}
+        </div>
+
+        {/* footer: hairline + url */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            width: '100%',
+            fontSize: 19,
+            color: INK,
+            opacity: 0.55,
+            fontStyle: 'italic',
+          }}
+        >
+          <div style={{ display: 'flex' }}>
+            How modern large language models work
+          </div>
+          <div style={{ display: 'flex' }}>modernllms.com</div>
+        </div>
       </div>
     ),
     {
       width: 800,
       height: 418,
       fonts: [
-        {
-          name: 'Inter',
-          data: fontData,
-          style: 'normal',
-          weight: 900,
-        },
+        { name: 'SourceSerif', data: serif, style: 'normal', weight: 400 },
+        { name: 'SourceSerif', data: serifSemibold, style: 'normal', weight: 600 },
+        { name: 'SourceSerif', data: serifItalic, style: 'italic', weight: 400 },
       ],
     }
   );
