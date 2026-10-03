@@ -55,11 +55,15 @@ A product of two quantities that each sum to 1 is minimized when both are spread
 
 ## Taming the KV cache: GQA, MQA, MLA
 
-Next, attention — but the problem isn't the attention *weights* (2.4M per block; they're cheap). It's a data structure that doesn't exist in the config at all. Recall the seed from Chapter 3 — the spreadsheet, one more time: generating appends a column and computes *only* it, because every finished token's keys and values are cached rather than recomputed:
+Next, attention — but the problem isn't the attention *weights* (2.4M per block; they're cheap). To see what the problem actually is, walk back through how attention works, from Chapter 3.
+
+**The mechanism.** Each token's vector gets projected into a **query** ("what am I looking for?"), a **key** ("what do I contain?"), and a **value** ("what I hand over if matched"). A token attends by dotting its query against the key of *every token before it*, softmaxing the scores into weights, and taking the weighted average of their values. And each layer runs many **heads** — our GPT-2 has 12 per layer — each with its own $W_q, W_k, W_v$, each doing its own independent lookup. So far, nothing new.
+
+**The cost.** Now watch generation closely. The model emits one token at a time, and each *new* token's query must search the keys — and fetch the values — of every token that came before it, in every head, in every layer. Those keys and values aren't new: token 50's K/V are the same when token 51 looks at them as when token 500 does. You have two options. Recompute them at every step — which means step $n$ redoes $n$ tokens' worth of work, and generating a whole sequence costs quadratically — or compute each token's keys and values once, when that token is produced, and *store* them. Everyone stores them. That store is the **KV cache**, and the spreadsheet from Chapter 3 is a picture of exactly this: generating appends a column and computes only it, because every finished column's K/V sit in the cache:
 
 <KvGridFigure />
 
-Now put a price on that convenience. Each cached token stores a key vector and a value vector *per layer* — one K/V pair for every cell in its column — and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
+**The challenge.** Storage isn't free — the cache has to live in GPU memory, next to the weights, for as long as the conversation does. Put a price on it. Each cached token stores one key vector and one value vector per head, per layer — and in Chapter 3's multi-head attention, the heads' K/V together span the full model width. In half-precision (2 bytes per number):
 
 $$
 \tip{cache bytes per token of context}{\text{bytes}} \; = \; \tip{a key and a value}{2} \times \tip{number of layers}{n_{\text{layer}}} \times \tip{number of KV heads}{n_{\text{kv}}} \times \tip{dimensions per head}{d_{\text{head}}} \times \tip{bytes per number in half precision}{2}
