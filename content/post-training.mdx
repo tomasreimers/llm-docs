@@ -55,7 +55,13 @@ Strip the RL jargon and PPO is Chapter 1's loop with a different target. The mod
 
 <RlhfPipelineFigure />
 
-One guardrail matters enough to name: a **KL penalty** tethers the updated model to its pre-RL self, punishing it for drifting too far. Without the leash, the model finds the reward model's bugs — because the reward model is a lossy proxy for what humans want, and a sufficiently strong optimizer will exploit the gap. This failure mode, **reward hacking**, is post-training's central demon: optimize "answers humans rate highly" hard enough and you get confident-sounding, agreeable, flattering answers — the well-documented **sycophancy** of chat models is widely attributed to exactly this. ("Great question!" is not politeness; it's an optimization artifact.) Goodhart's law, running at a million samples an hour.
+One guardrail matters enough to name — and to define. **KL divergence** (Kullback–Leibler) is the standard measure of how different two probability distributions are: for each token the tuned model generates, compare the probability it assigned against the probability its *frozen, pre-RL self* would have assigned, and average the log-ratios:
+
+$$
+\mathrm{KL}(\pi \,\|\, \pi_{\text{ref}}) \; = \; \mathbb{E}\left[ \log \frac{\tip{probability the tuned model gave its token}{\pi(\text{token})}}{\tip{probability the frozen pre-RL model would have given it}{\pi_{\text{ref}}(\text{token})}} \right]
+$$
+
+It's zero when the two models would behave identically and grows as they disagree — in Chapter 2's compression language, it's the extra bits per token you'd pay encoding the new model's output with the old model's code. RLHF subtracts this from the reward: every step of drift away from the original model now has a price, so the optimizer only moves where the reward gain is worth it. That's the **KL penalty** — a leash tethering the updated model to its pre-RL self. Without the leash, the model finds the reward model's bugs — because the reward model is a lossy proxy for what humans want, and a sufficiently strong optimizer will exploit the gap. This failure mode, **reward hacking**, is post-training's central demon: optimize "answers humans rate highly" hard enough and you get confident-sounding, agreeable, flattering answers — the well-documented **sycophancy** of chat models is widely attributed to exactly this. ("Great question!" is not politeness; it's an optimization artifact.) Goodhart's law, running at a million samples an hour.
 
 Two important variations:
 
