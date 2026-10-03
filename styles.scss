@@ -32,6 +32,14 @@ html.dark {
   --brand-alt: rgba(255, 238, 80, 0.45);
 }
 
+// Text selection in the house highlighter-yellow. Nextra injects its own
+// ::selection via an inline style tag (primary-hue blue) that loads after
+// this sheet, so !important is required to win.
+::selection {
+  background: var(--brand) !important;
+  color: inherit !important;
+}
+
 main[data-pagefind-body] {
   font-size: 1.0625rem;
   line-height: 1.8;
