@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { KvGridFigure } from "../components/figures/kv-grid"
+import { KvSharingFigure } from "../components/figures/kv-sharing"
 import { KvVariantsFigure } from "../components/figures/kv-variants"
 import { MoeFigure } from "../components/figures/moe"
 import { RopeFigure } from "../components/figures/rope"
@@ -66,7 +67,11 @@ $$
 
 For our GPT-2 (12 layers, 12 heads of 64 dimensions): $2 \times 12 \times 12 \times 64 \times 2 = 37$ KB per token — at its 1,024-token context, a trivial 38 MB. Nobody at OpenAI lost sleep over this in 2019. Now scale it. Llama 3 70B's shape is 80 layers, 64 heads of 128 dimensions: $2 \times 80 \times 64 \times 128 \times 2 = 2.6$ **MB** per token — and a single 128K-token conversation needs **320 GB**, four H100s' worth of memory, for one user's cache. Since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, the KV cache directly limits context length, batch size, and cost. The cache grew from rounding error to the single most expensive object in the datacenter.
 
-The fixes form a tidy progression — keep all 64 *query* heads, but let them share a smaller set of K/V heads (only $n_{\text{kv}}$ enters the formula; queries are never cached):
+The fixes form a tidy progression — keep all 64 *query* heads, but let them share a smaller set of K/V heads. "Share" means exactly this: each query head still has its own $W_q$ and asks its own question, but several of them search over the *same* keys and values, computed by one K/V head instead of each having their own:
+
+<KvSharingFigure />
+
+Since only the K/V heads are cached (queries are used once and discarded — nothing ever looks *back* at a query), $n_{\text{kv}}$ is the only head count in the cache formula, and shrinking it shrinks the cache proportionally:
 
 - **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): one K/V head shared by all query heads. The formula's $n_{\text{kv}}$ drops 64 → 1: cache shrinks 64×; quality measurably dips.
 - **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads. Llama 3 70B runs 64 query heads against 8 KV heads: 8× smaller cache, negligible quality loss. This is today's default.
