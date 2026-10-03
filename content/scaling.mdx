@@ -54,11 +54,24 @@ A clean number. Hold onto it; the rest of the chapter spends it.
 
 ## The straight lines
 
-Knowing your budget doesn't tell you what it buys. In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI answered that: they trained transformers at many sizes — all small enough to be affordable — and measured how the next-token loss (Chapter 2's cross-entropy) fell as $N$, $D$, and $C$ grew. The result is arguably the most consequential set of graphs in modern computing: plotted against any one of the three, loss forms a straight line on a log-log plot, spanning many orders of magnitude without bending. A straight line on log-log axes means a **power law**:
+Knowing your budget doesn't tell you what it buys. In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI answered that: they trained transformers at many sizes — all small enough to be affordable — and measured how the next-token loss (Chapter 2's cross-entropy) fell as $N$, $D$, and $C$ grew. The result is arguably the most consequential set of graphs in modern computing — but it only shows up if you plot it right. The runs span a factor of a million in compute, so on ordinary axes everything cheap is crushed into the left margin; the fix is a **log-log plot**, where each tick on each axis means "×10" rather than "+10" (so the distance from 1 to 10 equals the distance from 10 to 100 — equal space per multiplication). Replotted that way, the measurements form a straight line, spanning many orders of magnitude without bending. And a straight line on log-log axes is a specific mathematical claim — it means the relationship is a **power law**:
 
 $$
 \tip{the loss you can expect at a given model size}{L(N)} \approx \left(\frac{\tip{a constant measured empirically}{N_c}}{\tip{the number of parameters}{N}}\right)^{\tip{the slope of the line — about 0.076 for parameters}{\alpha_N}}
 $$
+
+<details>
+<summary>Why a straight line means a power law.</summary>
+
+Take the log of both sides of $L = (N_c / N)^{\alpha}$:
+
+$$
+\log L \; = \; \alpha \log N_c - \alpha \log N
+$$
+
+In log coordinates that's just $y = b - \alpha x$ — a line, with the exponent $\alpha$ as its slope. The implication runs both ways: *any* power law plots straight on log-log axes, and data that stays straight across eight orders of magnitude can only be a power law. That's why the figure's slope is the law's exponent, and why "fit the line" and "measure the scaling law" are the same operation. (Contrast the other curve engineers love: an exponential $L = e^{-kN}$ plots straight on *log-linear* axes — log the y-axis only. Checking which plot straightens your data is a quick way to identify its growth regime.)
+
+</details>
 
 Read that the way an engineer should: **capability became predictable.** Fit the line on runs you can afford, and you know the loss of the run you can't — *before spending the money*:
 
