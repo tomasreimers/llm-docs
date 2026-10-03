@@ -75,7 +75,7 @@ Since only the K/V heads are cached (queries are used once and discarded — not
 
 - **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): one K/V head shared by all query heads. The formula's $n_{\text{kv}}$ drops 64 → 1: cache shrinks 64×; quality measurably dips.
 - **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads. Llama 3 70B runs 64 query heads against 8 KV heads: 8× smaller cache, negligible quality loss. This is today's default.
-- **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of all the heads' keys and values (a 576-dimensional latent per token per layer) and decompress on the fly. Trades a little compute (abundant) for a lot of memory (scarce), which is the right direction of trade.
+- **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of all the heads' keys and values (a 576-dimensional latent per token per layer) and decompress on the fly. That spends extra compute to save memory, which sounds backwards after Chapter 4 priced everything in FLOPs — but Chapter 4 was about *training*, where huge parallel batches keep the arithmetic units saturated. *Generation* is one token at a time: the GPU finishes each token's arithmetic long before memory finishes delivering the weights and cache for it, so at inference FLOPs sit idle and bytes are the scarce resource. Trading abundant idle compute for scarce memory is exactly the right direction (Chapter 10 makes this precise).
 
 <KvVariantsFigure />
 
