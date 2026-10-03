@@ -60,7 +60,9 @@ $$
 \mathcal{L} \; = \; \tip{reconstruct the activation faithfully}{\lVert x - \hat{x} \rVert^2} \; + \; \lambda \, \tip{but use as few dictionary features as possible}{\lVert f \rVert_1}
 $$
 
-The first term says *be accurate*; the second says *be sparse*. Sparsity is what forces the dictionary to align with the model's real features: the cheapest way to explain an activation using few entries is for entries to correspond to the concepts that are actually, individually present. (Training these at scale — and deciding how big the dictionary should be — is its own engineering literature.)
+The first term says *be accurate*; the second says *be sparse*. Sparsity is what forces the dictionary to align with the model's real features: the cheapest way to explain an activation using few entries is for entries to correspond to the concepts that are actually, individually present.
+
+The training itself is Chapter 1's loop with one twist: **the dataset is another model's activations.** Freeze the subject model, run it over billions of tokens of text, and save the residual-stream vector at one chosen layer for every token — that pile of vectors is the training set. The SAE is just an encoder ($d$ → $m$, with $m$ up to millions, then a ReLU) and a decoder ($m$ → $d$) whose columns become the feature directions; train it on the pile with gradient descent like any network. Two practicalities dominate the engineering: *dead features* (a dictionary entry that stops activating gets no gradient and never recovers, so training periodically resamples them), and the sparsity knob itself (modern variants often swap the $\ell_1$ penalty for a hard top-$k$: keep the $k$ strongest features, zero the rest). Then comes the only step a human sees: for each learned feature, pull the corpus snippets that activate it most, and name what they share.
 
 </details>
 
