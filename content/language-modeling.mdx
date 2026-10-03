@@ -89,7 +89,7 @@ To see what the numbers in a row *could* mean, run a thought experiment. Suppose
 | Boston | +1 | 0.6 | 0.3 |
 | New York | +1 | 0.9 | 0.6 |
 
-Each city is now a point whose coordinates *are* its properties — and the geometry starts doing work for free. Subtract San Francisco from Los Angeles and you get [0, 0.3, 0.3]: "same coast, but bigger and warmer." Add that to Boston: [+1, 0.9, 0.6] — a large, warm-ish, east-coast city. That's New York, to the decimal: $\vec{\text{LA}} - \vec{\text{SF}} + \vec{\text{Boston}} \approx \vec{\text{NYC}}$. When coordinates encode properties, *directions encode relationships*, and analogy becomes arithmetic.
+Each city is now a point whose coordinates *are* its properties — and the geometry starts doing work for free. Subtract San Francisco from Los Angeles and you get [0, 0.3, 0.3]: "same coast, but bigger and warmer." Add that to Boston: [+1, 0.9, 0.6] — a large, warm-ish, east-coast city. That's New York, to the decimal: $\textbf{LA} - \textbf{SF} + \textbf{Boston} \approx \textbf{NYC}$. When coordinates encode properties, *directions encode relationships*, and analogy becomes arithmetic.
 
 Nobody hand-picks the dimensions of a real model, of course. They're learned, there are thousands of them, and they're rarely this legible (Chapter 6 is about the people trying to read them anyway). But the principle survives contact with reality — which was discovered, to everyone's delight, in the actual learned spaces:
 
@@ -97,7 +97,7 @@ The famous demonstration is [word2vec](https://arxiv.org/abs/1301.3781) (2013), 
 
 <EmbeddingSpaceFigure />
 
-The vector from *france* to *paris* is nearly parallel to the one from *italy* to *rome* — a learned "capital of" direction nobody asked for — and the "maleness→royalty" arrows line up the same way, which is why $\vec{\text{king}} - \vec{\text{man}} + \vec{\text{woman}}$ lands near $\vec{\text{queen}}$: the cities trick, discovered rather than designed.
+The vector from *france* to *paris* is nearly parallel to the one from *italy* to *rome* — a learned "capital of" direction nobody asked for — and the "maleness→royalty" arrows line up the same way, which is why $\textbf{king} - \textbf{man} + \textbf{woman}$ lands near $\textbf{queen}$: the cities trick, discovered rather than designed.
 
 And this is what rescues us from counting's sharing problem. Under the pressure of next-token prediction, the cheapest way for the model to handle "cat" and "dog" — which appear in nearly identical contexts — is to give them nearly identical vectors, so all the machinery downstream of the embedding handles both for the price of one. Similarity isn't programmed in; it's the *economical solution* gradient descent keeps finding. Evidence about dog-sentences now genuinely transfers to cat-sentences, because to the rest of the network they look almost alike.
 
