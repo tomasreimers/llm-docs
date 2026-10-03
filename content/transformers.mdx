@@ -2,6 +2,7 @@ import { Breadcrumbs } from "../components/breadcrumbs"
 import { AttentionFigure } from "../components/figures/attention"
 import { AttentionStepFigure } from "../components/figures/attention-step"
 import { CausalMaskFigure } from "../components/figures/causal-mask"
+import { GridCellsFigure } from "../components/figures/grid-cells"
 import { KvGridFigure } from "../components/figures/kv-grid"
 import { LineageFigure } from "../components/figures/lineage"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
@@ -94,7 +95,11 @@ The division of labor is worth engraving: **attention routes, the MLP computes.*
 
 ## One picture to keep
 
-All the parts are on the table; here is the machine they make, in a single mental image — the computation as a *spreadsheet*. One column per token; the top row is the embeddings; each row below is all $n$ vectors after one more layer; and every cell is computed from the row above it, looking only at columns up to its own:
+All the parts are on the table; here is the machine they make, in a single mental image — the computation as a *spreadsheet*. One column per token; the top row is the embeddings; each row below is all $n$ vectors after one more layer. Watch it build, one cell at a time, and watch what each cell reads:
+
+<GridCellsFigure />
+
+Every cell looked at exactly one place: the row above, columns up to its own. And notice what no cell ever read — a neighbor in its *own* row. Nothing within a layer depends on anything else within that layer, so there is nothing to wait for: an entire row can be computed in one parallel shot. Which is how it's actually done —
 
 <KvGridFigure />
 

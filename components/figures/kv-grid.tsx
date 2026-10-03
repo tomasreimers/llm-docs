@@ -21,8 +21,8 @@ const PHASE_MS = 3400;
 
 const STEP_TEXT = [
   'row 1: the embeddings — one column per token, straight out of Chapter 2',
-  'row 2: each cell = attention + MLP over the row above, columns ≤ its own (the causal mask)',
-  'and so on, row by row, to the top of the stack — every cell a refined view of its token',
+  'row 2: all five cells at once — nothing in a row waits for its neighbors',
+  'row after row, one parallel shot each, to the top of the stack',
   "the bottom-right cell becomes the logits: the next token is 'because'",
   "generate: append a column and compute only it — no older cell changes. Store them and you never recompute: that's the KV cache",
 ];
