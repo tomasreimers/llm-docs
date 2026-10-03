@@ -12,6 +12,8 @@ Everything so far has been about the *function*. This part of the book is about 
 
 The framing is not a metaphor. Chapter 2 noted that cross-entropy loss is measured in bits: a model that predicts text well literally compresses it well. Pre-training is lossy compression of humanity's written output into a few terabytes of parameters — and the "loss" in this lossy compression is exactly the stuff the model gets wrong.
 
+The name deserves a word before we use it for a whole chapter: *pre*-training is "pre" relative to the training that was supposed to matter. In the older recipe, you first trained a network on some big generic objective to give it a foundation, then did the *real*, task-specific training on top — the generic phase was mere preparation, hence the prefix. The LLM era kept the name and inverted the emphasis: the "preparation" grew into 99% of the compute and essentially all of the capability, while the "real" training shrank into the comparatively tiny shaping pass of Chapter 8. The word is a fossil of an era when this chapter was the opening act.
+
 Chapter 4 left us with a fully-planned run: an 8B model, 15 trillion tokens, your 1,000 GPUs, about a month. This chapter executes it, in four movements:
 
 1. **Build the dataset** — which practitioners will tell you is most of the actual work, and where frontier labs guard their edge.
