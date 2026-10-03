@@ -104,7 +104,19 @@ A consumer warning from the evals world: "supports 1M tokens" means the model *r
 
 ## The little diffs: norms and activations
 
-Two renames remain before our upgraded GPT-2's config reads fully modern. **RMSNorm** replaces LayerNorm (the same magnitude-stabilizing job from Chapter 3, computed more cheaply), applied *before* each block rather than after (pre-norm; trains more stably). **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). Neither changes the story; file under: the field ran an enormous ablation study for a decade, and these won.
+Two renames remain before our upgraded GPT-2's config reads fully modern — and since Chapter 3 introduced normalization in a single clause, this is the place to actually say what it is.
+
+Start with the job. The residual stream is pure accumulation: every attention step and every MLP *adds* to it, and nothing ever scales it back down. Stack 80 blocks and the vectors' magnitudes drift — and since every block starts by multiplying the stream through weight matrices, drift compounds: too large and activations and gradients blow up, too small and they fade out (the vanishing-gradient arithmetic from Chapter 3's residual-stream aside, now at depth 80). **Normalization** is the thermostat: before each block reads the stream, rescale the token's vector to a standard size, so every block at every depth sees inputs in the same predictable range. **LayerNorm**, the 2017 original, does it per token: take the vector's $d$ entries, subtract their mean, divide by their standard deviation, then let the model re-scale each dimension with learned parameters:
+
+$$
+\mathrm{LayerNorm}(x) \; = \; \tip{a learned per-dimension gain}{\gamma} \odot \frac{x - \tip{the mean of the vector's d entries}{\mu}}{\tip{the standard deviation of those entries}{\sigma}} + \tip{a learned per-dimension shift}{\beta}
+$$
+
+**RMSNorm** is what a decade of ablations left standing: it turns out the mean-subtraction and the shift $\beta$ barely matter, so drop them — just divide the vector by the root-mean-square of its entries and apply the learned gains. Same stabilizing effect, measurably cheaper (one statistic to compute instead of two, at every layer, for every token). Modern models also move *where* the norm sits: the 2017 transformer normalized after each residual addition (post-norm); modern models normalize the copy of the stream being fed *into* attention or the MLP and leave the stream itself untouched (**pre-norm**) — preserving the clean additive highway from Chapter 3's residual-stream section, which turns out to matter a lot for training stability at depth.
+
+**SwiGLU** replaces ReLU inside the MLPs. Recall Chapter 1's ReLU: $\max(0, x)$, a hard on/off gate. SwiGLU makes the gate *learned and smooth*: the MLP's expansion layer produces two projections instead of one — call them the **content** and the **gate** — and the output is their elementwise product, $\text{content} \odot \mathrm{SiLU}(\text{gate})$, where $\mathrm{SiLU}(x) = x \cdot \sigma(x)$ is a smooth sigmoid-weighted ramp. One pathway proposes what to write; the other decides, per dimension and per token, how much of it gets through. (This is also why Llama's `intermediate_size` is ~3.5$d$ rather than Chapter 3's 4$d$ — the second projection costs parameters, so the expansion shrinks to keep the total matched.) It wins consistently and nobody is quite sure why; the [paper that established it](https://arxiv.org/abs/2002.05202) ends, verbatim: "We offer no explanation as to why these architectures seem to work; we attribute their success, as all else, to divine benevolence."
+
+Neither change alters the story of the machine. File under: the field ran an enormous ablation study for a decade, and these won.
 
 <details>
 <summary>Reading a real config file.</summary>
