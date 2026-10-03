@@ -83,6 +83,25 @@ It's worth spelling out what the queries, keys, and values *represent* in each h
 - **The previous-token head** (earlier layer) runs a lookup about *position*. Each token's query asks "who sits at the position right before mine?"; each token's key advertises "here's where I sit"; each token's value carries its own identity. (Where does the position information come from? Whatever scheme the model has — in GPT-2 the head reads the learned position vectors off the stream; in a RoPE model it's even more direct, since the rotation makes the query–key score a function of *relative offset*, so the head just tunes itself into the fast-rotating planes and peaks at exactly "one back" — Chapter 5's division of labor, caught in the act.) The head's write deposits the fetched identity into the stream — after it runs, 'sley' carries a tag reading "I follow 'Dur'."
 - **The induction head** (later layer) runs a lookup about *content* — and its ingredients are second-hand. Each token's query is built from its own identity: the final 'Dur' asks "who is tagged *I follow Dur*?" Each token's **key is built from the tag the previous-token head just wrote** — so, exactly as you'd hope, every token's key effectively *is* the token before it. And each token's value is its own identity: the thing to copy. Query "I am Dur" matches key "I follow Dur" at 'sley'; the value delivers 'sley' to the prediction.
 
+<details>
+<summary>How do you attend "one back" when no token knows where it is?</summary>
+
+A fair objection: RoPE never writes a token's position into any vector — so how can anything find "the previous token"? The answer is that the *score* carries the geometry, not the tokens. Recall the mechanism: the query at position $m$ is rotated by $m\theta$, the key at position $n$ by $n\theta$, and rotations inside a dot product cancel down to their difference — the score only ever sees $(m-n)\theta$. Run the dumbest possible example: suppose, in one 2D plane, the head's raw query and raw key are both $[1, 0]$ for every token, ignoring content entirely. Then:
+
+$$
+\text{score}(m, n) \; = \; \cos\big((m-n)\theta\big)
+$$
+
+which peaks at offset 0 — a head that attends to itself. Now let the head bake one constant extra rotation of $\theta$ into its key matrix (a fixed choice of weights, learned once):
+
+$$
+\text{score}(m, n) \; = \; \cos\big((m-n-1)\theta\big)
+$$
+
+peaked at exactly $m - n = 1$: the previous token — at every position, uniformly, with no token ever learning its address. The attention weights do the selecting; the values then deliver the selected token's identity. Position never has to live *in* any vector, because it lives in the angles between them.
+
+</details>
+
 The composition is visible right there in the wiring: the induction head's keys are *manufactured from the previous-token head's output*. Neither head alone can do anything interesting; stacked, they're an algorithm — which is what "circuit" means. And note the word *fuzzy*: because the matching happens on learned vectors rather than exact tokens, the same circuit generalizes — matching synonyms, translations, analogous structures — which upgrades a grep into something closer to pattern completion.
 
 The evidence that this story is *true*, not just plausible, is the kind you'd demand in any other science. The heads are findable in every trained model. Ablate them — zero out just those heads — and the model's ability to use repeated context collapses while everything else barely moves. Best of all, induction heads snap into existence at a specific, visible bump in every training run's loss curve, and their appearance coincides exactly with the model getting dramatically better at in-context learning — Chapter 4's headline "emergent" capability, here with a *mechanistic explanation*. Grander behaviors are still mostly unmapped, but the existence proof matters: emergence isn't magic; it's circuits forming, and at least sometimes we can catch them doing it.
