@@ -81,7 +81,7 @@ This is exactly how you de-risk your month. Before committing the cluster, you'd
 
 Two properties of these laws matter for everything downstream:
 
-- **Power laws are brutal.** The exponents are small ($\alpha_N \approx 0.076$), which means each fixed decrement of loss costs roughly 10× more compute. This single fact explains the shape of the industry: the GPU shortages, the $100B datacenter announcements, the concentration of frontier training into a handful of labs.
+- **Power laws are brutal.** The exponents are small — $\alpha_N \approx 0.076$ for parameters, and the compute version is shallower still, around 0.05. To see what that costs, plug a 10× budget increase into the law: $L(10C) = L(C) \times 10^{-0.05} \approx 0.89 \, L(C)$. Ten times the money buys an 11% loss reduction — and because the law is a power law, the *next* 11% costs another 10×, forever. A shallow slope on a log-log plot means progress is real but priced in orders of magnitude, and that single fact explains the shape of the industry: the GPU shortages, the $100B datacenter announcements, the concentration of frontier training into a handful of labs.
 - **But they are relentless.** Loss falls slowly — yet it falls *reliably*, and (as we'll see below) fixed decrements of loss keep unlocking qualitatively new behavior.
 
 ## Chinchilla: the exchange rate between size and data
