@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { KvGridFigure } from "../components/figures/kv-grid"
 import { KvVariantsFigure } from "../components/figures/kv-variants"
 import { MoeFigure } from "../components/figures/moe"
 import { RopeFigure } from "../components/figures/rope"
@@ -53,7 +54,11 @@ A product of two quantities that each sum to 1 is minimized when both are spread
 
 ## Taming the KV cache: GQA, MQA, MLA
 
-Next, attention — but the problem isn't the attention *weights* (2.4M per block; they're cheap). It's a data structure that doesn't exist in the config at all. Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. Each cached token stores a key vector and a value vector *per layer*, and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
+Next, attention — but the problem isn't the attention *weights* (2.4M per block; they're cheap). It's a data structure that doesn't exist in the config at all. Recall the seed from Chapter 3 — the spreadsheet, one more time: generating appends a column and computes *only* it, because every finished token's keys and values are cached rather than recomputed:
+
+<KvGridFigure />
+
+Now put a price on that convenience. Each cached token stores a key vector and a value vector *per layer* — one K/V pair for every cell in its column — and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
 
 $$
 \tip{cache bytes per token of context}{\text{bytes}} \; = \; \tip{a key and a value}{2} \times \tip{number of layers}{n_{\text{layer}}} \times \tip{number of KV heads}{n_{\text{kv}}} \times \tip{dimensions per head}{d_{\text{head}}} \times \tip{bytes per number in half precision}{2}
