@@ -1,21 +1,27 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { DataFunnelFigure } from "../components/figures/data-funnel"
+import { DataMixFigure } from "../components/figures/data-mix"
 import { LrScheduleFigure } from "../components/figures/lr-schedule"
+import { TrainingRunFigure } from "../components/figures/training-run"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # Pre-training: Compressing the internet
 
-
 Everything so far has been about the *function*. This part of the book is about how the function gets made — and it starts with the strangest industrial process of our era: take a rough copy of the internet, and spend months of time on tens of thousands of GPUs compressing it into weights.
 
 The framing is not a metaphor. Chapter 2 noted that cross-entropy loss is measured in bits: a model that predicts text well literally compresses it well. Pre-training is lossy compression of humanity's written output into a few terabytes of parameters — and the "loss" in this lossy compression is exactly the stuff the model gets wrong.
 
+Chapter 4 left us with a fully-planned run: an 8B model, 15 trillion tokens, your 1,000 GPUs, about a month. This chapter executes it, in four movements:
+
+1. **Build the dataset** — which practitioners will tell you is most of the actual work, and where frontier labs guard their edge.
+2. **Run the loop** — which is, remarkably, still Chapter 1's ten lines, executed a few million times.
+3. **Keep it alive** — a single stateful job, weeks long, on hardware that fails constantly.
+4. **Ship the artifact** — a *base model*, which knows nearly everything and is almost unusable.
+
 ## The data: most of the work
 
-The romantic image of pre-training is the GPU cluster. Practitioners will tell you the real product is the *dataset*, and the pipeline that produces it is where frontier labs guard their edge most jealously.
-
-The raw material is web crawl — [Common Crawl](https://commoncrawl.org/) alone is petabytes of scraped HTML — plus code, books, papers, and licensed corpora. Between raw crawl and training corpus sits a brutal funnel:
+The romantic image of pre-training is the GPU cluster. The real product is the *dataset*. Your plan needs 15T tokens of good text, and good text does not exist in a downloadable file; it has to be refined out of ore. The raw material is web crawl — [Common Crawl](https://commoncrawl.org/) alone is petabytes of scraped HTML — plus code, books, papers, and licensed corpora. Between raw crawl and training corpus sits a brutal funnel:
 
 - **Extraction**: strip the HTML boilerplate — nav bars, cookie banners, SEO sludge — to get at actual prose. Harder than it sounds; extraction quality measurably moves final model quality.
 - **Filtering**: heuristics (language ID, length, symbol ratios) followed by *model-based* quality classifiers — small models trained to score "is this page educational/informative?", used to grade every document. Each generation of models curates data for the next.
@@ -24,27 +30,52 @@ The raw material is web crawl — [Common Crawl](https://commoncrawl.org/) alone
 
 <DataFunnelFigure />
 
-The open [FineWeb](https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1) project documents this funnel end-to-end (from 96 Common Crawl snapshots down to 15T curated tokens) and is the best public look at decisions labs usually keep private. For the historical baseline, [The Pile](https://arxiv.org/abs/2101.00027) was the canonical open corpus of the GPT-3 era.
+The open [FineWeb](https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1) project documents this funnel end-to-end — 96 Common Crawl snapshots distilled down to exactly the 15T curated tokens your run needs — and is the best public look at decisions labs usually keep private. (For the historical baseline, [The Pile](https://arxiv.org/abs/2101.00027) was the canonical open corpus of the GPT-3 era.)
 
-What remains after the funnel gets composed into a **data mix**: what fraction code, what fraction multilingual, how much math. These ratios are product decisions as much as research ones — the reason every 2026 model is good at code is that its makers *chose* code to be a large slice of the mix (it also appears to improve reasoning generally). Unlike MNIST's many epochs, LLMs see this data roughly **once** — with the highest-quality slices sometimes repeated a handful of times, and research consistently showing that many repetitions hurt.
+What survives the funnel then gets composed into a **data mix**: what fraction code, what fraction multilingual, how much math. These ratios are product decisions as much as research ones:
+
+<DataMixFigure />
+
+Unlike MNIST's many passes over the same images, your run will see this data roughly **once** — one epoch.
+
+<details>
+<summary>Why only one epoch?</summary>
+
+With MNIST, Chapter 1 happily looped over 60,000 images dozens of times. At internet scale the economics invert: when data is abundant relative to compute, a *fresh* token teaches more than a repeated one, so you spend your FLOPs on text the model hasn't seen. Repetition also has a measured cost curve: a few epochs over high-quality data are nearly as good as fresh data, but returns decay fast, and heavy repetition actively hurts — the model starts memorizing documents instead of generalizing from them (overfitting, again). In practice labs repeat only the best slices (textbook-grade prose, verified code) a handful of times and show everything else once. This is also why Chapter 4's data wall bites: "just do more epochs" is not an escape hatch.
+
+</details>
 
 ## The objective: unchanged
 
-Amid all this scale, the training loop is *identical* to Chapter 1's ten lines: predict the next token everywhere in a batch, take the cross-entropy loss, backprop, step. A frontier run is that loop executed a few million times over a few trillion tokens. There is no curriculum of tasks, no labels, no grades — the internet is its own supervision. That's the trick that unlocked everything: labeled data is scarce and expensive, but *text that continues* is free and unlimited.
+Amid all this scale, the training loop is *identical* to Chapter 1's ten lines: predict the next token everywhere in a batch, take the cross-entropy loss, backprop, step. There is no curriculum of tasks, no labels, no grades — the internet is its own supervision. That's the trick that unlocked everything: labeled data is scarce and expensive, but *text that continues* is free and unlimited.
+
+Put your run's numbers on the loop. Your cluster does $4 \times 10^{17}$ FLOPs per second at realistic efficiency (Chapter 4's MFU arithmetic); at $6N = 4.8 \times 10^{10}$ FLOPs per token, that's about **8 million tokens per second — 720 billion tokens a day**, 15T in roughly three weeks. Each step processes one *global batch* — a few million tokens spread across all thousand GPUs — so the whole run is Chapter 1's loop executed about **4 million times**. That's the entire algorithm. Everything else in this chapter is logistics.
 
 ## Keeping a months-long run alive
 
-What separates pre-training from every other computation you've operated is that it's a *single, stateful, months-long job* on hardware that fails constantly. During Llama 3's training, Meta [reported](https://arxiv.org/abs/2407.21783) unexpected interruptions roughly every three hours across a 16K-GPU cluster — mostly GPU and memory failures. At that scale, checkpointing strategy, fast restart, and failure detection are as much a part of "training a model" as the math is. A few load-bearing practices:
+What separates pre-training from every other computation you've operated is that it's a *single, stateful, weeks-long job* on hardware that fails constantly. During Llama 3's training, Meta [reported](https://arxiv.org/abs/2407.21783) unexpected interruptions roughly every three hours across its 16K-GPU cluster — mostly GPU and memory failures. Scale that to your 1,000 GPUs and you should still budget for a failure every day or two, each one a potential run-killer if you can't recover. Here is your month, compressed:
 
-- **The learning-rate schedule.** Runs begin with a **warmup** (ramping the learning rate from zero, so the violent early gradients don't wreck the initialization) and then decay it — classically along a cosine curve, increasingly with **WSD** (warmup–stable–decay: hold it flat for most of the run, then decay sharply at the end, which conveniently lets you branch a finished model off a mid-run checkpoint without committing to a total token count up front).
+<TrainingRunFigure />
+
+Three load-bearing practices behind that picture:
+
+- **The learning-rate schedule.** Runs begin with a **warmup** (ramping the learning rate from zero, so the violent early gradients don't wreck the initialization — at step zero the loss is $\ln(128{,}256) \approx 11.8$, maximum ignorance, and the first gradients are huge) and end with a **decay** (shrinking steps as you approach the minimum — Chapter 1's overshooting lesson, applied on schedule). Between the classical cosine shape and the newer **WSD** (warmup–stable–decay), the difference is operational: WSD's long flat stretch means a mid-run checkpoint isn't committed to any particular total token count — you can branch a finished model off it later by just running the decay.
 
 <LrScheduleFigure />
-- **Loss spikes.** Every practitioner's scar tissue: the loss curve occasionally jumps violently, from a bad data batch or numerical instability. Defenses: **gradient clipping** (cap the gradient norm per step), skipping bad batches, and sometimes rewinding to a checkpoint.
-- **Precision.** Weights and activations are kept in 16-bit floats (bf16), with the newest hardware pushing parts of the computation to 8-bit (fp8) — halving memory and doubling throughput again, at the cost of numerical-stability engineering. (Why memory is the thing being economized is Chapter 10.)
+
+- **Loss spikes.** Every practitioner's scar tissue: the loss occasionally jumps violently, from a bad data batch or numerical instability. Defenses, in escalating order: **gradient clipping** (cap the gradient norm every step, as routine hygiene), skipping the offending batch, and — worst case — rewinding to a checkpoint.
+- **Checkpoints and precision.** The run's state is saved frequently enough that a failure costs hours, not weeks. Weights and activations are kept in 16-bit floats (bf16), with the newest hardware pushing parts of the computation to 8-bit (fp8) — halving memory and doubling throughput again, at the cost of numerical-stability engineering. (Why memory is the thing being economized is Chapter 10.)
+
+<details>
+<summary>Anatomy of a checkpoint.</summary>
+
+A checkpoint is not just the weights. Mixed-precision training with AdamW keeps, per parameter: the bf16 working weights (2 bytes), a full-precision master copy (4 bytes), and Adam's two moment buffers (4 + 4 bytes) — roughly **14 bytes per parameter**. For your 8B model that's ~112 GB per checkpoint; for a 405B model, ~5.7 TB. Writing that to storage every few hours, from a thousand machines, without pausing training, is its own systems problem — and it's why "optimizer state" keeps appearing in Chapter 10's memory arithmetic: during training, the optimizer's bookkeeping outweighs the model itself.
+
+</details>
 
 ## The optimizer wars, finally interesting again
 
-For a decade, the optimizer slot in every config file said AdamW (Chapter 1) and nobody debated it. Worth knowing *why* it held: at scale, an optimizer must be boring — a 2% efficiency win is worthless if it adds instability risk to a $500M run. AdamW's cost is memory: two moment buffers make optimizer state ~2× the model's own size, a fact that shapes the parallelism strategies in Chapter 10.
+For a decade, the optimizer slot in every config file said AdamW (Chapter 1) and nobody debated it. Worth knowing *why* it held: at scale, an optimizer must be boring — a 2% efficiency win is worthless if it adds instability risk to a $500M run. AdamW's cost is memory (those two moment buffers in the checkpoint arithmetic above), a fact that shapes the parallelism strategies in Chapter 10.
 
 Then, in 2024–25, the slot actually changed for the first time. **[Muon](https://kellerjordan.github.io/posts/muon/)** emerged not from a lab but from the **nanoGPT speedrun** community — an open competition to train a small GPT-2 as fast as possible, which became a proving ground for training tricks. Muon's idea, stripped of detail: for the matrix-shaped parameters, take the momentum-averaged gradient and *orthogonalize* it (roughly, equalize its action across directions) before stepping — yielding meaningfully better loss per token. Moonshot AI then [demonstrated it scales](https://arxiv.org/abs/2502.16982) and trained Kimi K2 — a trillion-parameter frontier model — with a Muon variant. Hobbyist speedrun to frontier run in about a year: the most encouraging possible datapoint that individual researchers outside the big labs can still move the field's foundations. (The optimizer zoo beyond this — Shampoo, whose lineage Muon descends from; Sophia; Lion — you can safely file under "a sentence each.")
 
@@ -54,13 +85,13 @@ Between the big run and the post-training of Chapter 8 sits an increasingly impo
 
 - **Context extension**: train briefly on long documents with RoPE frequencies rescaled (Chapter 5) to stretch 8K into 128K+.
 - **Domain infusion**: continued training on a domain corpus (medical, legal, your company's stack) — same loop, targeted data.
-- **Annealing on quality**: end training with a pass over the highest-quality data (textbooks, verified solutions) while the learning rate decays — the model's final impression is disproportionately formed by what it saw last.
+- **Annealing on quality**: end training with a pass over the highest-quality data (textbooks, verified solutions) while the learning rate decays — the model's final impression is disproportionately formed by what it saw last. (This is why the WSD decay phase and the best data get scheduled together.)
 
 ## What you get: the base model
 
-The artifact at the end is a **base model**, and it is not an assistant. It's a *document completer* — ask it "What's the capital of France?" and it may answer, or continue with nine more geography questions, because both are plausible internet documents. All the knowledge is in there; what's missing is any notion that it should be *helpful*, or that it's in a conversation at all.
+The artifact at the end of your month is a **base model**, and it is not an assistant. It's a *document completer* — ask it "What's the capital of France?" and it may answer, or continue with nine more geography questions, because both are plausible internet documents. All the knowledge is in there; what's missing is any notion that it should be *helpful*, or that it's in a conversation at all.
 
-The base model is the compressed internet. Turning it into something you'd want to talk to costs less than 1% of the compute and is the subject of the next chapter — which should strike you as remarkable: almost all the *capability* comes from here; almost all the *behavior* comes from what's next.
+The base model is the compressed internet. Turning it into something you'd want to talk to costs a percent or two of the compute you just spent and is the subject of the next chapter — which should strike you as remarkable: almost all the *capability* comes from here; almost all the *behavior* comes from what's next.
 
 ## Further reading
 

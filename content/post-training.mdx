@@ -1,20 +1,30 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { BaseVsSftFigure } from "../components/figures/base-vs-sft"
 import { RlhfPipelineFigure } from "../components/figures/rlhf-pipeline"
+import { RlvrFigure } from "../components/figures/rlvr"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # Post-training: From autocomplete to assistant
 
-
 GPT-3 existed for two and a half years before ChatGPT. The model that took over the world was not much more *capable* than the base model that preceded it — it was more *usable*, and the difference was post-training. If pre-training pours in the knowledge, post-training shapes the thing you actually talk to: the assistant persona, the instruction-following, the refusals, and — since 2024 — the reasoning.
 
-A useful frame before diving in: the base model is a simulator of documents, and the assistant is a *character* the model has been trained to play. Post-training is character design, wielding less than 1% of the total compute — a lever whose smallness should surprise you every time you think about it.
+A useful frame before diving in: the base model is a simulator of documents, and the assistant is a *character* the model has been trained to play. Post-training is character design, and it runs on a startlingly small budget — for InstructGPT, the pipeline that created the ChatGPT recipe, all of post-training cost about 65 petaflop/s-days against pre-training's 3,640: **under 2% of the compute**, steering 100% of the behavior. The chapter builds the pipeline in four stages:
+
+1. **Supervised fine-tuning** — show the model transcripts of the assistant you want. Teaches the *format*.
+2. **RLHF** — grade its answers instead of writing them. Teaches *judgment*, and introduces post-training's central demon.
+3. **RLVR** — replace the fallible grader with a verifier, and watch reasoning *emerge*. The 2024 turn.
+4. **The practical tier** — the fine-tuning you might actually do, and what it can and can't fix.
 
 ## Supervised fine-tuning: show it the format
 
-The first step is embarrassingly direct. Hire people (increasingly: use stronger models, with humans editing) to write ideal transcripts — conversations between a user and the assistant you *wish* existed. Then train on them with the exact same next-token loss from Chapter 1.
+The first step is embarrassingly direct. Hire people (increasingly: use stronger models, with humans editing) to write ideal transcripts — conversations between a user and the assistant you *wish* existed. Then train on them with the exact same next-token loss from Chapter 1. This is **supervised fine-tuning** (SFT), and mechanically there is nothing new in it: it's more pre-training, on a tiny, curated corpus of "documents" that all happen to depict a helpful assistant. InstructGPT needed only ~13,000 such demonstrations to transform the model's behavior:
 
-This is **supervised fine-tuning** (SFT), and mechanically there is nothing new in it: it's more pre-training, on a tiny, curated corpus of "documents" that all happen to depict a helpful assistant. (If you learned some ML years ago, you may know this whole pattern — train a general network once, expensively, then adapt it to tasks cheaply — as **transfer learning**. In the LLM era nobody says the term anymore, because it stopped being a technique and became the field's entire structure: the "P" in GPT stands for *pre-trained* precisely because the model is built to be adapted.) Conversations are serialized with special tokens marking who's speaking — the **chat template**:
+<BaseVsSftFigure />
+
+(If you learned some ML years ago, you may know this whole pattern — train a general network once, expensively, then adapt it to tasks cheaply — as **transfer learning**. In the LLM era nobody says the term anymore, because it stopped being a technique and became the field's entire structure: the "P" in GPT stands for *pre-trained* precisely because the model is built to be adapted.)
+
+Conversations are serialized with special tokens marking who's speaking — the **chat template**:
 
 ```
 <|system|>You are a helpful assistant.<|end|>
@@ -24,31 +34,46 @@ This is **supervised fine-tuning** (SFT), and mechanically there is nothing new 
 
 (When you call a chat API, this is what your list of messages compiles to. The model is still just completing a document — the document is a screenplay, and the API stops generation when the model emits the end-of-turn token.)
 
-A few thousand to a few million high-quality examples teach the model the *format* and *persona* of assistance. What SFT can't teach well is judgment — the difference between a good answer and a great one — because writing perfect demonstrations of judgment is exactly as hard as having it.
+What SFT can't teach well is judgment — the difference between a good answer and a great one — because writing perfect demonstrations of judgment is exactly as hard as having it.
 
 ## RLHF: grading is easier than writing
 
-The insight that unlocked ChatGPT-level behavior, from the [InstructGPT](https://arxiv.org/abs/2203.02155) paper: *people are much better at comparing answers than producing them.* You may not be able to write the perfect explanation of a tax form, but shown two candidates, you can reliably say which is better. **Reinforcement learning from human feedback** (RLHF) converts that cheap signal into training pressure, in two steps:
+The insight that unlocked ChatGPT-level behavior, from the [InstructGPT](https://arxiv.org/abs/2203.02155) paper: *people are much better at comparing answers than producing them.* Ask the model "my script crashes with `KeyError: 'user_id'` — why?" and sample two answers: one dumps a corrected snippet with no explanation; the other explains that the dictionary is missing the key, shows the fix, and mentions `.get()` for safety. Few users could *write* the ideal answer — but nearly everyone picks the second, instantly. **Reinforcement learning from human feedback** (RLHF) converts that cheap signal into training pressure.
 
-1. **Train a reward model.** Sample pairs of model outputs, have humans pick the better one, and train a separate model (typically a clone of the LLM with the token-prediction head swapped for a single score output) to predict human preference. You've now *compressed human judgment into a function* you can call millions of times.
+One definition first, because this is the book's first real use of it: **reinforcement learning** (RL) is the third training paradigm. Supervised learning says "here is the correct output; imitate it." RL says "act, receive a score, and be adjusted so that high-scoring actions become more likely." No one shows the model what to do — it explores, and the score shapes it. The pipeline, in two steps:
+
+1. **Train a reward model.** Sample pairs of model outputs, have humans pick the better one (InstructGPT used ~33,000 such comparisons), and train a separate model — typically a clone of the LLM with the token-prediction head swapped for a single score output — to predict human preference. You've now *compressed human judgment into a function* you can call millions of times an hour.
 2. **Optimize against it with RL.** The LLM generates responses, the reward model scores them, and an algorithm — classically PPO — adjusts the LLM to make high-scoring responses more probable. Unlike SFT's "reproduce this exact text," RL says "produce *whatever* scores well" — the model can discover behaviors no human demonstrated. (This is reinforcement learning's original lineage: the same family of ideas from [learning Atari and robot control from human preferences](https://arxiv.org/abs/1706.03741), repurposed.)
 
 <RlhfPipelineFigure />
 
-One guardrail matters enough to name: a **KL penalty** tethers the updated model to its pre-RL self, punishing it for drifting too far. Without the leash, the model finds the reward model's bugs — because the reward model is a lossy proxy for what humans want, and a sufficiently strong optimizer will exploit the gap. This failure mode, **reward hacking**, is post-training's central demon: optimize "answers humans rate highly" hard enough and you get confident-sounding, agreeable, flattering answers — the well-documented **sycophancy** of chat models is widely attributed to exactly this. Goodhart's law, running at a million samples an hour.
+One guardrail matters enough to name: a **KL penalty** tethers the updated model to its pre-RL self, punishing it for drifting too far. Without the leash, the model finds the reward model's bugs — because the reward model is a lossy proxy for what humans want, and a sufficiently strong optimizer will exploit the gap. This failure mode, **reward hacking**, is post-training's central demon: optimize "answers humans rate highly" hard enough and you get confident-sounding, agreeable, flattering answers — the well-documented **sycophancy** of chat models is widely attributed to exactly this. ("Great question!" is not politeness; it's an optimization artifact.) Goodhart's law, running at a million samples an hour.
 
 Two important variations:
 
 - **[Direct Preference Optimization](https://arxiv.org/abs/2305.18290)** (DPO) collapses the pipeline: a clever loss lets you train on preference pairs *directly*, no reward model, no RL loop. Far simpler and cheaper; the workhorse of open-source post-training. Frontier labs still mostly run the full RL pipeline — with online sampling and continually retrained reward models — because it can iterate past the fixed dataset that DPO is anchored to.
 - **[Constitutional AI](https://arxiv.org/abs/2212.08073)** (Anthropic) substitutes *AI* feedback for most human feedback: a written constitution of principles, a model that critiques and revises outputs against it, and preference labels generated by the model itself (RLAIF). The scalable-oversight bet: use models to supervise models, keeping humans at the top writing principles instead of grading millions of transcripts.
 
+<details>
+<summary>The DPO loss, in one line.</summary>
+
+$$
+\mathcal{L} = -\log \sigma \Big( \beta \, \tip{how much more likely the model makes the winning answer than its reference self did}{\log \tfrac{\pi(y_w)}{\pi_{\text{ref}}(y_w)}} - \beta \, \tip{how much more likely it makes the losing answer}{\log \tfrac{\pi(y_l)}{\pi_{\text{ref}}(y_l)}} \Big)
+$$
+
+Read it as: push the winner's probability up and the loser's down — but measure both *relative to the frozen reference model*, which is the KL leash smuggled directly into the loss. The derivation's trick is showing that the optimal RLHF policy and reward model are two views of one object, so you can skip training the reward model entirely. One loss, preference pairs in, aligned model out.
+
+</details>
+
 ## RLVR and reasoning: the 2024 turn
 
 Everything above optimizes for *human approval* — a fuzzy, hackable signal. The breakthrough behind reasoning models was to find domains where the reward can be **verified**: the math answer is right or wrong, the code passes the tests or doesn't. **Reinforcement learning from verifiable rewards** (RLVR) is RLHF with the squishy reward model replaced by a checker that cannot be flattered.
 
-Given an unhackable reward and room to explore, something remarkable happens — documented most openly in DeepSeek's [R1 paper](https://arxiv.org/abs/2501.12948): the model *discovers* extended reasoning on its own. Trained only on "was the final answer right," R1's precursor spontaneously learned to produce long chains of thought, to double-check itself, to backtrack — visible as an "aha-moment" in training where response lengths and accuracy climb together. Nobody demonstrated reasoning transcripts to it; thinking longer simply *wins* under a verifiable reward, so the optimizer found it. (OpenAI's [o1](https://openai.com/index/learning-to-reason-with-llms/) announced the same regime; R1 showed everyone how.)
+Given an unhackable reward and room to explore, something remarkable happens — documented most openly in DeepSeek's [R1 paper](https://arxiv.org/abs/2501.12948): the model *discovers* extended reasoning on its own. Trained only on "was the final answer right," R1's precursor spontaneously learned to produce long chains of thought, to double-check itself, to backtrack — the paper's researchers watched it learn to say "wait, let me reevaluate this step" with no one having demonstrated it:
 
-This is the third scaling axis promised in Chapter 4 — **test-time compute** — made concrete: reasoning models convert inference tokens into accuracy, and the exchange rate is good enough that "think for 10,000 tokens" competes with "be 10× bigger." It also reframes the economics of Part IV: a reasoning model's cost lives in its inference bill, not just its training bill.
+<RlvrFigure />
+
+This is the third scaling axis promised in Chapter 4 — **test-time compute** — made concrete: reasoning models convert inference tokens into accuracy, and the exchange rate is good enough that "think for 10,000 tokens" competes with "be 10× bigger." It also reframes the economics of Part IV: a reasoning model's cost lives in its inference bill, not just its training bill. (OpenAI's [o1](https://openai.com/index/learning-to-reason-with-llms/) announced the regime; R1 showed everyone how it works.)
 
 Two caveats to keep your model of reasoning models honest. Verifiability is a *spectrum* — math and code sit at the easy end, and extending RLVR to essay quality or medical advice requires reward models again (with all their hackability; there's active work on making the graders themselves reason). And recall Chapter 6: the chain of thought is *evidence* of the computation, not a faithful log of it.
 

@@ -1,14 +1,19 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { BenchmarkSaturationFigure } from "../components/figures/benchmark-saturation"
+import { PassAtKFigure } from "../components/figures/pass-at-k"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # Evaluation: Knowing if it worked
 
-
 Every engineer knows you don't ship code without tests. Now imagine your codebase is a trillion inscrutable floats (Chapter 6), its behavior changed in unknown ways by every training decision, and "correct" is defined as "answers arbitrary human requests well." Evaluation is the testing discipline of machine learning, and for LLMs it is simultaneously the most important and most broken part of the field.
 
-This chapter matters double for you, because unlike pre-training, **you will do this**. Anyone shipping an LLM feature is in the evals business, whether they've admitted it or not.
+This chapter matters double for you, because unlike pre-training, **you will do this**. Anyone shipping an LLM feature is in the evals business, whether they've admitted it or not. Four stops:
+
+1. **The benchmark canon** — the shared tests that define eras, and how grading itself evolved.
+2. **Why you can't trust the numbers** — four systematic rots, from contamination to construct validity.
+3. **Grading without answer keys** — LLM judges and arenas, and the biases of each.
+4. **The eval stack you'll actually build** — the part that pays your rent.
 
 ## The benchmark canon
 
@@ -16,11 +21,23 @@ A benchmark is a dataset of tasks plus a grading scheme. A handful have defined 
 
 - **[MMLU](https://arxiv.org/abs/2009.03300)** — ~16K multiple-choice questions across 57 subjects; the "general knowledge" headline number of the GPT-4 era.
 - **[GSM8K](https://arxiv.org/abs/2110.14168)** — grade-school math word problems; for years the standard reasoning test.
-- **[HumanEval](https://arxiv.org/abs/2107.03374)** — write a function from a docstring, graded by *running the tests*. Introduced **pass@k** (probability at least one of k samples passes), a genuinely better idiom: grade by execution, not text match.
+- **[HumanEval](https://arxiv.org/abs/2107.03374)** — write a function from a docstring, graded by *running the tests*. Grade by execution, not text match — a genuinely better idiom.
 - **[GPQA](https://arxiv.org/abs/2311.12022)** — PhD-level science questions that are "Google-proof"; built explicitly because models saturated easier tests.
 - **[SWE-bench](https://arxiv.org/abs/2310.06770)** — resolve real GitHub issues in real repos, graded by the repo's test suite. The closest canon benchmark to economically real work, and the industry's favorite agent metric.
 
 Read the progression: from multiple choice, to executed code, to *do a junior engineer's job*. Benchmarks have had to chase capability upward — because models keep eating them.
+
+HumanEval also introduced the metric you'll see on every coding leaderboard: **pass@k**, the probability that at least one of $k$ sampled solutions passes the tests. The math is worth thirty seconds, because it changes how you read the numbers. If a model solves a problem with probability $p$ per attempt, then all $k$ independent attempts fail with probability $(1-p)^k$, so:
+
+$$
+\text{pass@}k \; = \; 1 - (1 - p)^k
+$$
+
+Run it: a model with a modest 20% per-attempt success rate already passes 89% of the time at $k = 10$. At 5%, fifty attempts get you to 92%:
+
+<PassAtKFigure />
+
+Two readings of the same model — "usually fails" and "nearly always succeeds, given tries" — and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
 
 ## Why you can't trust the numbers
 
@@ -42,13 +59,30 @@ Multiple choice and unit tests only cover tasks with checkable answers — Chapt
 
 **LLM-as-judge.** Use a strong model to grade outputs, pioneered by [MT-Bench](https://arxiv.org/abs/2306.05685). It broadly agrees with human raters — with biases you must engineer around, and which should sound familiar from the reward-hacking discussion: **position bias** (favors the first answer shown; fix by grading both orders), **length bias** (favors longer), **self-preference** (favors its own family's prose). A judge is a reward model you run at eval time — trust it accordingly, and never let a model family be its own final examiner.
 
-**Arenas.** [LMArena](https://lmarena.ai/) (née Chatbot Arena) shows users two anonymous models' answers and lets them vote, aggregating millions of votes into Elo ratings — the same math as chess. It resists contamination (prompts are live user traffic) and measures *something* real, but that something is "what impresses people in a chat window," which conflates capability with confident formatting. Style-controlled variants exist precisely because the community learned that pleasing and correct are separable — Chapter 8's sycophancy lesson, measured.
+**Arenas.** [LMArena](https://lmarena.ai/) (née Chatbot Arena) shows users two anonymous models' answers and lets them vote, aggregating millions of votes into **Elo ratings** — the same math as chess. It resists contamination (prompts are live user traffic) and measures *something* real, but that something is "what impresses people in a chat window," which conflates capability with confident formatting. Style-controlled variants exist precisely because the community learned that pleasing and correct are separable — Chapter 8's sycophancy lesson, measured.
+
+<details>
+<summary>How Elo turns votes into a leaderboard.</summary>
+
+Elo assigns each model a number such that rating *gaps* predict win rates: a model rated 100 points above another is expected to win about 64% of head-to-heads; 200 points, about 76% ($E = 1 / (1 + 10^{-\Delta/400})$). After each vote, the winner takes points from the loser in proportion to how surprising the result was — an upset moves ratings a lot, an expected win barely at all. Two properties worth knowing when you read the leaderboard: ratings are *relative* (the absolute number means nothing; only gaps do), and small gaps are noise (a 10-point lead is ~51.4% expected win rate — indistinguishable from a coin flip without enormous vote counts). The confidence intervals on the public board are doing real work; respect them.
+
+</details>
 
 ## The eval stack you'll actually build
 
 Now the part that pays your rent. Public benchmarks tell you which model to start with; they say nothing about *your* task. Treat model choice and prompt changes the way you treat code changes — with a regression suite:
 
-1. **Build a golden set.** Fifty to a few hundred real examples from your product, each with a definition of "good." Small and real beats large and synthetic; an afternoon of curation here is worth more than any leaderboard.
+1. **Build a golden set.** Fifty to a few hundred real examples from your product, each with a definition of "good." Small and real beats large and synthetic; an afternoon of curation here is worth more than any leaderboard. A row is just:
+
+```json
+{
+  "input": "customer email: 'I was charged twice for my March invoice...'",
+  "must": ["acknowledges duplicate charge", "offers refund path"],
+  "must_not": ["promises a specific refund date"],
+  "format": "valid JSON matching RefundTicket schema"
+}
+```
+
 2. **Grade mechanically where possible.** Exact match, schema validation, "did the code run," "did it cite a real document" — cheap, deterministic checks catch a shocking fraction of regressions. Save judgment for what needs it.
 3. **Use an LLM judge for the rest — and eval the judge.** Write a rubric, grade both response orders, and spot-check judge verdicts against your own until you trust it (then keep spot-checking).
 4. **Run it on every change.** Model version bumps, prompt edits, retrieval tweaks — all of them shift behavior in ways that don't announce themselves. The teams that ship reliable LLM features aren't the ones with the best prompts; they're the ones who *notice* when something breaks.
@@ -57,7 +91,7 @@ The mental shift: in ordinary software, tests verify logic you wrote. Here, the 
 
 ## A closing calibration
 
-When a new model drops, the sophisticated read of its eval table: check the benchmarks you know aren't saturated, discount anything the marketing leads with, treat arena Elo as a style-inclusive signal, and reserve judgment until it's run on *your* golden set. Benchmarks are the field's shared unit tests — imperfect, gamed, indispensable. The mistake isn't trusting them too little or too much; it's forgetting they were designed to answer someone else's question.
+When a new model drops, the sophisticated read of its eval table: check the benchmarks you know aren't saturated, discount anything the marketing leads with, note the k on every pass@k, treat arena Elo as a style-inclusive signal with error bars, and reserve judgment until it's run on *your* golden set. Benchmarks are the field's shared unit tests — imperfect, gamed, indispensable. The mistake isn't trusting them too little or too much; it's forgetting they were designed to answer someone else's question.
 
 ## Further reading
 
