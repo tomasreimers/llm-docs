@@ -159,6 +159,8 @@ Frontier models see images, hear audio, and increasingly emit both. The remarkab
 
 <VitFigure />
 
+An image is two-dimensional, though, and the flattening step destroys that: patches are laid out in reading order, so the patch directly *above* this one is now just "sixteen positions back," indistinguishable from any other neighbor. How does the model know the grid? The same way the transformer knew word order — it doesn't, until you tell it. Attention is a set operation (Chapter 3), so spatial structure is injected as position information. The original ViT did the laziest possible thing: a learned position vector per patch slot, exactly like GPT-2's position table, with no 2D-ness built in — and training *discovered* the geometry anyway. Visualize which learned position embeddings are similar to which, and a clean 2D grid emerges: each patch's embedding is most similar to its actual spatial neighbors, including the one "sixteen positions back." (It's one of the paper's best figures.) Modern vision stacks make the structure explicit instead — giving each patch a (row, column) coordinate pair and encoding the two axes separately, e.g. 2D RoPE rotating on row and column in different dimension pairs — which matters for the same reason RoPE beat the position table in text: formulas generalize to image sizes the table never saw.
+
 Early multimodal systems bolted encoders onto finished LLMs; current frontier models are *natively multimodal* — trained on mixed text/image/audio streams from the start. But the deep point stands: the transformer never knew it was a language model. It's a sequence model, and everything — prose, code, screenshots, speech — is sequences of embeddings to it.
 
 ## Sidebar: the road not (yet) taken
