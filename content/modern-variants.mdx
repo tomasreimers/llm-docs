@@ -8,43 +8,47 @@ import { VitFigure } from "../components/figures/vit"
 
 # Modern variants: What's in a frontier model
 
-If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the MLPs* or *the cost of the KV cache*. This chapter is a guided tour of a modern model's spec sheet, in four stops:
+If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the MLPs* or *the cost of the KV cache*.
+
+So let's do the diff by hand. At the end of Chapter 3 we counted GPT-2's 124M parameters down to the matrix: 12 blocks of (2.4M attention + 4.7M MLP) ≈ 85M, plus a 38.6M embedding matrix. That fully-itemized model is our starting point, and this chapter upgrades it one config field at a time, redoing the arithmetic after each change:
 
 1. **Mixture of experts** makes the MLPs — the majority of the parameters — *sparse*: huge total knowledge, small per-token cost.
 2. **Attention variants** (GQA, MLA) shrink the KV cache, the data structure that dominates inference memory.
-3. **RoPE and systems tricks** stretched context windows from 2K tokens to over a million.
-4. **Multimodality** turned out to require almost nothing new: convert everything into tokens and reuse the whole machine.
+3. **RoPE and systems tricks** stretch the context window from GPT-2's 1,024 tokens toward a million.
+4. **Multimodality** turns out to require almost nothing new: convert everything into tokens and reuse the whole machine.
+
+By the end, the little model from Chapter 3 will read, field for field, like a frontier config.
 
 ## Mixture of experts: sparse MLPs
 
-Chapter 3 established that MLPs hold most of the parameters (two-thirds of each GPT-2 block), and Chapter 4 established that more parameters mean lower loss. The tension: every parameter you add makes *every token* more expensive, because a dense model uses all its weights all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
+Start with the MLPs, because that's where the parameters are: 4.7M of each GPT-2 block's 7.1M — two-thirds. Chapter 4 said more parameters mean lower loss; the tension is that in a dense model every parameter you add makes *every token* more expensive, because all the weights run all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
 
 **Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (8 to 256 in practice) — the "experts" — plus a small learned **router**: a linear layer that reads the token's vector from the residual stream, scores every expert, and sends the token through only the top-k (often 2 to 8). The outputs of the chosen experts are blended by router weight and written back to the stream:
 
 <MoeFigure />
 
-The accounting splits in two, and the split is the whole point:
+Now upgrade GPT-2 and redo Chapter 3's arithmetic. Replace each block's single 4.7M-parameter MLP with 8 experts of the same shape, route top-2:
 
-- **Total parameters** — every expert's weights exist and hold knowledge. This can be enormous.
-- **Active parameters** — the weights a given token actually flows through. This stays small.
+- **Total parameters:** each block is now 2.4M attention + 8 × 4.7M experts ≈ 40M; times 12 blocks plus embeddings ≈ **520M**. The model *knows* 4× more.
+- **Active parameters:** each token runs 2.4M attention + 2 × 4.7M chosen experts ≈ 12M per block — **180M** across the model. Each token *pays* only ~1.5× the dense cost.
 
-DeepSeek-V3 has 671B total parameters but only ~37B active per token: GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
+That asymmetry — 4.2× the knowledge for 1.45× the per-token compute — is the entire pitch, and it scales: DeepSeek-V3 has 671B total parameters but only ~37B active per token. GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
 
 The catch is engineering, not math. The router is trained end-to-end like every other weight, and left alone it will happily collapse onto a few favorite experts — so training adds load-balancing pressure to spread tokens out. And since hundreds of experts can't fit on one GPU, they're sharded across many, which turns every MoE layer into a *network* problem: tokens physically travel to their experts and back (a preview of Chapter 10). A useful demystification: despite the name, experts don't specialize into "the biology expert" — inspection shows specialization is mostly syntactic and token-level, discovered rather than assigned.
 
 ## Taming the KV cache: GQA, MQA, MLA
 
-Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. Time to size that cache. Each token stores a key vector and a value vector *per layer*, and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
+Next, attention — but the problem isn't the attention *weights* (2.4M per block; they're cheap). It's a data structure that doesn't exist in the config at all. Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. Each cached token stores a key vector and a value vector *per layer*, and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
 
 $$
 \tip{cache bytes per token of context}{\text{bytes}} \; = \; \tip{a key and a value}{2} \times \tip{number of layers}{n_{\text{layer}}} \times \tip{number of KV heads}{n_{\text{kv}}} \times \tip{dimensions per head}{d_{\text{head}}} \times \tip{bytes per number in half precision}{2}
 $$
 
-Take Llama 3 70B's real shape — 80 layers, 64 heads of 128 dimensions — and give every query head its own K/V as Chapter 3 described: $2 \times 80 \times 64 \times 128 \times 2 = 2.6$ MB *per token of context*. A single 128K-token conversation: **320 GB** — four H100s' worth of memory, for one user's cache. And since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, the KV cache directly limits context length, batch size, and cost.
+For our GPT-2 (12 layers, 12 heads of 64 dimensions): $2 \times 12 \times 12 \times 64 \times 2 = 37$ KB per token — at its 1,024-token context, a trivial 38 MB. Nobody at OpenAI lost sleep over this in 2019. Now scale it. Llama 3 70B's shape is 80 layers, 64 heads of 128 dimensions: $2 \times 80 \times 64 \times 128 \times 2 = 2.6$ **MB** per token — and a single 128K-token conversation needs **320 GB**, four H100s' worth of memory, for one user's cache. Since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, the KV cache directly limits context length, batch size, and cost. The cache grew from rounding error to the single most expensive object in the datacenter.
 
-The fixes form a tidy progression — keep all 64 *query* heads, but let them share a smaller set of K/V heads:
+The fixes form a tidy progression — keep all 64 *query* heads, but let them share a smaller set of K/V heads (only $n_{\text{kv}}$ enters the formula; queries are never cached):
 
-- **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): one K/V head shared by all query heads. Cache shrinks 64×; quality measurably dips.
+- **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): one K/V head shared by all query heads. The formula's $n_{\text{kv}}$ drops 64 → 1: cache shrinks 64×; quality measurably dips.
 - **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads. Llama 3 70B runs 64 query heads against 8 KV heads: 8× smaller cache, negligible quality loss. This is today's default.
 - **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of all the heads' keys and values (a 576-dimensional latent per token per layer) and decompress on the fly. Trades a little compute (abundant) for a lot of memory (scarce), which is the right direction of trade.
 
@@ -54,9 +58,9 @@ If you only remember one thing from this section: when a model card advertises s
 
 ## Long context: RoPE and its stretching exercises
 
-Frontier context windows went from 2K tokens (2020) to 1M+ (2025). Two things had to happen.
+Frontier context windows went from GPT-2's 1,024 tokens to 1M+ in about five years. Two things had to happen.
 
-First, **positions had to generalize.** Chapter 3's answer to word order was to *add* a learned position vector to each embedding — position 7 gets the position-7 vector. That has two weaknesses: a model trained on 2K positions has simply never seen the vector for position 5,000, and "these tokens are 3 apart" — the thing attention usually cares about — is only represented indirectly. **RoPE** ([Rotary Position Embedding](https://arxiv.org/abs/2104.09864)), today's standard, encodes position by *rotating* each query and key vector by an angle proportional to its position. The trick is what rotation does to attention scores: a dot product depends only on the angle *between* two vectors, so the score between a query and a key depends only on how far apart they are — relative position, baked into the geometry:
+First, **positions had to generalize.** Chapter 3's answer to word order — and GPT-2's — was to *add* a learned position vector to each embedding: position 7 gets the position-7 vector, stored in a 1,024 × 768 table (0.8M parameters of our ledger). That table is two problems in one: the model has simply never seen a vector for position 5,000, and "these tokens are 3 apart" — the thing attention usually cares about — is only represented indirectly. **RoPE** ([Rotary Position Embedding](https://arxiv.org/abs/2104.09864)), today's standard, deletes the table entirely (our ledger's one *negative* line item: −0.8M parameters, replaced by a formula with none). It encodes position by *rotating* each query and key vector by an angle proportional to its position. The trick is what rotation does to attention scores: a dot product depends only on the angle *between* two vectors, so the score between a query and a key depends only on how far apart they are — relative position, baked into the geometry:
 
 <RopeFigure />
 
@@ -67,18 +71,18 @@ Pair up the dimensions of each query and key — a $d$-dimensional vector become
 
 </details>
 
-Second, **the quadratic had to be survivable.** Attention still compares every token to every token. [FlashAttention](https://arxiv.org/abs/2205.14135) computes *exact* attention but reorders the computation so the big seq×seq score matrix never materializes in slow GPU memory — a pure systems win, and arguably the most influential systems paper of the era (the full why belongs to Chapter 10). On top of that, long-context models interleave **sliding-window layers**: most layers attend only to a local window of recent tokens, and only some layers attend globally.
+Second, **the quadratic had to be survivable.** Attention still compares every token to every token — at 1M tokens, that's $10^{12}$ score pairs per head per layer, naively materialized as a terabyte-scale matrix. [FlashAttention](https://arxiv.org/abs/2205.14135) computes *exact* attention but reorders the computation so the big seq×seq score matrix never materializes in slow GPU memory — a pure systems win, and arguably the most influential systems paper of the era (the full why belongs to Chapter 10). On top of that, long-context models interleave **sliding-window layers**: most layers attend only to a local window of recent tokens, and only some layers attend globally.
 
 A consumer warning from the evals world: "supports 1M tokens" means the model *runs* at 1M tokens. Whether it can actually *use* information spread across that window (measured by needle-in-a-haystack and multi-hop retrieval evals) is a separate and often disappointing question — see Chapter 9.
 
 ## The little diffs: norms and activations
 
-Read any modern model card and a few recurring renames from the 2017 original will appear. None change the story, but for decoding purposes: **RMSNorm** replaces LayerNorm (the same magnitude-stabilizing job from Chapter 3, computed more cheaply), applied *before* each block rather than after (pre-norm; trains more stably), and **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). File under: the field ran an enormous ablation study for a decade, and these won.
+Two renames remain before our upgraded GPT-2's config reads fully modern. **RMSNorm** replaces LayerNorm (the same magnitude-stabilizing job from Chapter 3, computed more cheaply), applied *before* each block rather than after (pre-norm; trains more stably). **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). Neither changes the story; file under: the field ran an enormous ablation study for a decade, and these won.
 
 <details>
 <summary>Reading a real config file.</summary>
 
-Everything in this chapter and Chapter 3 is visible in a model's config. Llama 3 70B's, annotated:
+The ledger we've been keeping *is* the config file. Llama 3 70B's, annotated:
 
 ```json
 {
@@ -93,7 +97,7 @@ Everything in this chapter and Chapter 3 is visible in a model's config. Llama 3
 }
 ```
 
-A MoE model adds `num_experts` and `num_experts_per_tok` — total vs. active, in config form. After this chapter, every line of every model card should parse.
+A MoE model adds `num_experts` and `num_experts_per_tok` — total vs. active, in config form. After this chapter, every line of every model card should parse — and you can rerun Chapter 3's parameter count on any of them.
 
 </details>
 
@@ -112,6 +116,8 @@ Early multimodal systems bolted encoders onto finished LLMs; current frontier mo
 ## Sidebar: the road not (yet) taken
 
 The transformer's quadratic attention keeps inspiring challengers — most prominently **state-space models** like [Mamba](https://arxiv.org/abs/2312.00752), which are, with real irony, a modernized recurrence: constant-size state, linear-time inference, the very design attention replaced in Chapter 3's opening. They now match transformers at moderate scale, and ideas from them show up in production as *hybrids* (a few attention layers among many linear-time layers). Worth watching; not yet worth reorganizing your mental model around. The transformer's real moat is nine years of tooling, kernels, and hardware co-evolution — a lesson any engineer who has tried to replace a battle-tested system will recognize.
+
+Step back and look at what we built. We took Chapter 3's 124M-parameter GPT-2 and, field by field: made its MLPs sparse (520M total, 180M active), shared its KV heads (cache ÷8), swapped its position table for rotations (context extendable), renamed its norms and activations, and taught it to eat pixels. At no point did we touch the skeleton. That is the state of the art: the 2017 architecture, relentlessly cost-optimized.
 
 ## Further reading
 

@@ -15,6 +15,8 @@ The transformer era is the bitter lesson's greatest vindication. The previous ch
 2. A fixed compute budget must be split between a bigger model and more data, and there is a measured answer — **Chinchilla's ~20 tokens per parameter** — which the industry then deliberately violates in one direction, for a good reason.
 3. Loss falls smoothly, but *capabilities* arrive in lurches — **emergence** — and when the data that feeds the power laws runs short, the field finds new axes to scale.
 
+And because the whole point of this chapter is that these laws are *used*, not admired, we'll use them. Here is the running example: **someone hands you a cluster of 1,000 GPUs for one month** and tells you to train the best model you can. By the end of the chapter you will have planned the entire run — budget, model size, dataset size, expected loss — without training anything.
+
 ## Three numbers describe a training run
 
 Before the laws, the quantities they relate. Any training run is summarized by three numbers:
@@ -23,13 +25,11 @@ Before the laws, the quantities they relate. Any training run is summarized by t
 - $D$ — **training tokens**: how much text the model sees, measured after tokenization (Chapter 2). GPT-3: ~300B tokens.
 - $C$ — **compute**: the total number of floating-point operations (FLOPs — individual multiplies and adds) executed during training.
 
-These aren't independent. Each token processed during training costs a fixed amount of work proportional to the model's size, and the total is well-approximated by a rule of thumb you will see everywhere in this field:
+These aren't independent. Each training token costs a fixed amount of work proportional to the model's size, and the total is well-approximated by a rule of thumb you will see everywhere in this field:
 
 $$
 \tip{total training compute in FLOPs}{C} \approx 6 \cdot \tip{parameters}{N} \cdot \tip{training tokens}{D}
 $$
-
-Run the numbers for GPT-3: $6 \times 175\text{B} \times 300\text{B} \approx 3.15 \times 10^{23}$ FLOPs. To give that number texture: a single modern GPU sustains on the order of $10^{15}$ FLOPs per second, so GPT-3 is roughly ten GPU-*years* of arithmetic — a thousand GPUs for several days at perfect efficiency, weeks in practice. Frontier runs today are a thousand times larger.
 
 <details>
 <summary>Where does the 6 come from?</summary>
@@ -38,9 +38,23 @@ Count the work per token. In the forward pass, essentially every parameter parti
 
 </details>
 
+Two sanity checks with real runs. GPT-3: $6 \times 175\text{B} \times 300\text{B} \approx 3.15 \times 10^{23}$ FLOPs — which matches the number in the paper. And *your* run: a modern GPU sustains on the order of $10^{15}$ FLOPs per second at peak, so 1,000 GPUs × 30 days is
+
+$$
+1{,}000 \times 10^{15} \times 2{,}592{,}000 \text{ s} \approx 2.6 \times 10^{24} \text{ FLOPs — at peak.}
+$$
+
+You will not run at peak. The fraction of theoretical FLOPs a training run actually achieves is called **MFU** (model FLOPs utilization), and a well-engineered run manages around 40% — the rest is lost to memory stalls, communication between GPUs, and everything else in Part IV. So your real budget is:
+
+$$
+C \approx 2.6 \times 10^{24} \times 0.40 \approx 10^{24} \text{ FLOPs.}
+$$
+
+A clean number. Hold onto it; the rest of the chapter spends it.
+
 ## The straight lines
 
-In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI trained transformers at many sizes — all small enough to be affordable — and measured how the next-token loss (Chapter 2's cross-entropy) fell as $N$, $D$, and $C$ grew. The result is arguably the most consequential set of graphs in modern computing: plotted against any one of the three (with the other two unconstrained), loss forms a straight line on a log-log plot, spanning many orders of magnitude without bending. A straight line on log-log axes means a **power law**:
+Knowing your budget doesn't tell you what it buys. In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI answered that: they trained transformers at many sizes — all small enough to be affordable — and measured how the next-token loss (Chapter 2's cross-entropy) fell as $N$, $D$, and $C$ grew. The result is arguably the most consequential set of graphs in modern computing: plotted against any one of the three, loss forms a straight line on a log-log plot, spanning many orders of magnitude without bending. A straight line on log-log axes means a **power law**:
 
 $$
 \tip{the loss you can expect at a given model size}{L(N)} \approx \left(\frac{\tip{a constant measured empirically}{N_c}}{\tip{the number of parameters}{N}}\right)^{\tip{the slope of the line — about 0.076 for parameters}{\alpha_N}}
@@ -50,7 +64,7 @@ Read that the way an engineer should: **capability became predictable.** Fit the
 
 <ScalingLawsFigure />
 
-GPT-3 — a 175B-parameter model that cost millions to train — was not a gamble. It was an interpolation along a line OpenAI had already measured. No plateau was in sight; the line just kept going. (Gwern's [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) is the best contemporaneous account of why this was such a shock to the field's self-image.)
+This is exactly how you de-risk your month. Before committing the cluster, you'd spend a few days training a ladder of small models — 10M, 100M, 1B parameters, each a sliver of your budget — fit the line, and read off what loss $10^{24}$ FLOPs should buy. If the eventual big run misses that number badly, something is *wrong* (a data bug, an instability), and you know it early. GPT-3 — a 175B-parameter model that cost millions to train — was not a gamble; it was an interpolation along a line OpenAI had already measured. No plateau was in sight; the line just kept going. (Gwern's [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) is the best contemporaneous account of why this was such a shock to the field's self-image.)
 
 Two properties of these laws matter for everything downstream:
 
@@ -59,7 +73,7 @@ Two properties of these laws matter for everything downstream:
 
 ## Chinchilla: the exchange rate between size and data
 
-The compute budget $C \approx 6ND$ immediately poses a question: given a fixed budget, should you train a *bigger model* (raise $N$) or train *longer* (raise $D$)? You can't do both — the product is pinned.
+Your budget is $C \approx 6ND \approx 10^{24}$, and that immediately poses a question the compute law can't answer: should you train a *bigger model* (raise $N$) or train *longer* (raise $D$)? You can't do both — the product is pinned.
 
 Kaplan's paper offered an answer, and the answer was wrong. In 2022, DeepMind's [Chinchilla paper](https://arxiv.org/abs/2203.15556) redid the measurement more carefully: train many models at *fixed* compute budgets, varying the $N$-vs-$D$ split within each budget, and see where loss bottoms out. Every budget has a sweet spot, and the sweet spots line up:
 
@@ -67,23 +81,25 @@ Kaplan's paper offered an answer, and the answer was wrong. In 2022, DeepMind's 
 
 The compute-optimal rule of thumb: **about 20 tokens of training data per parameter.** The field had been training models far too large on far too little data — DeepMind's own 280B-parameter Gopher saw just 300B tokens, barely *one* token per parameter. Chinchilla, a 70B model trained on 1.4T tokens (exactly the 20:1 ratio) for the same total compute, beat it across the board.
 
-But the more important lesson is the one the field internalized *after* Chinchilla: compute-optimal is only the right target if **training cost is all you care about**. Every *served* model has a second budget — inference — and a smaller model is cheaper on every single token it ever generates. So the industry now deliberately **over-trains**: Llama 3's 8B model trained on ~15 *trillion* tokens — 1,875 tokens per parameter, nearly 100× the Chinchilla ratio — happily paying extra training compute (visible in the figure as a worse loss than that budget could have bought) in exchange for a small model that punches above its size forever after. When you see a cheap, fast, surprisingly good small model, you are looking at this trade. ([Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) is a great meditation on the corollary: once data is the binding constraint, where does more *data* come from?)
+Now plan your run. The top curve in the figure *is* your budget — $10^{24}$ FLOPs — and its minimum sits at roughly $N^* \approx 95\text{B}$ parameters and $D^* \approx 1.7\text{T}$ tokens (about 18 tokens per parameter; the fitted formula's numbers, which is what the figure plots). Expected loss: about 1.96. That is the compute-optimal plan: a 95B model, 1.7 trillion tokens, one month, done. In 2022 you would have stopped here.
+
+But compute-optimal is only the right target if **training cost is all you care about** — and every *served* model has a second budget: inference. A smaller model is cheaper on every single token it ever generates. So the industry now deliberately **over-trains**. Consider the alternative plan for your same month: train an 8B model on 15T tokens, the way Llama 3 did. That's $6 \times 8\text{B} \times 15\text{T} \approx 7 \times 10^{23}$ FLOPs — it also fits your budget. The figure shows what you paid: the 8B point sits far up the left wall of its iso-FLOP curve, a visibly worse loss than the 95B plan. And it shows what you bought: a model ~12× cheaper to serve, forever. Which plan is right depends entirely on how many tokens the model will serve in its lifetime — which is why cheap, fast, surprisingly good small models exist: you are looking at this trade. ([Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) is a great meditation on the corollary: once data is the binding constraint, where does more *data* come from?)
 
 ## Emergence: when quantity reads as quality
 
-Scaling laws describe the smooth decline of *loss*. But users don't experience loss; they experience capabilities — and capabilities arrive in a lurchier way.
+So the laws told you your loss in advance — 1.96 for the optimal plan. What they did *not* tell you is what the model will be able to **do** at loss 1.96. Scaling laws describe the smooth decline of a training objective; users experience capabilities — and capabilities arrive in a lurchier way.
 
 GPT-3's paper was titled [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165) because of its headline surprise: show the model a few examples of a task *in its prompt*, and it performs the task — no training, no gradient updates. Nobody designed **in-context learning**; it emerged. Smaller models mostly couldn't do it; bigger ones could. Likewise multi-digit arithmetic, translation, and code generation seemed to snap from "can't" to "can" at particular scales — a phenomenon catalogued in [Emergent Abilities of Large Language Models](https://arxiv.org/abs/2206.07682).
 
-You should hold this idea with some skepticism, because the sharpest version of it may be an artifact of how we grade. [Are Emergent Abilities a Mirage?](https://arxiv.org/abs/2304.15004) showed that many "discontinuous" jumps come from all-or-nothing metrics. The arithmetic makes it obvious: suppose a correct answer is 10 tokens long, and the model's per-token accuracy $p$ improves smoothly with scale. A grader that awards partial credit reports $p$ — smooth. A grader that requires the whole answer scores $p^{10}$ — which sits near zero until $p$ gets large and then shoots up:
+You should hold this idea with some skepticism, because the sharpest version of it may be an artifact of how we grade. [Are Emergent Abilities a Mirage?](https://arxiv.org/abs/2304.15004) showed that many "discontinuous" jumps come from all-or-nothing metrics. The arithmetic makes it obvious: suppose a correct answer is 10 tokens long, and the model's per-token accuracy $p$ improves smoothly with scale. A grader that awards partial credit reports $p$ — smooth. A grader that requires the whole answer scores $p^{10}$: at $p = 0.5$ that's 0.001, at $p = 0.9$ it's 0.35, at $p = 0.98$ it's 0.82 — a cliff, manufactured entirely by the exponent:
 
 <EmergenceFigure />
 
-The truth seems to be: *underlying competence improves smoothly; thresholded, real-world usefulness arrives suddenly.* Both halves matter. The smooth part is why labs can forecast; the sudden part is why each model generation feels categorically different — and why nobody can tell you with confidence what the next 10× will unlock.
+The truth seems to be: *underlying competence improves smoothly; thresholded, real-world usefulness arrives suddenly.* Both halves matter. The smooth part is why labs can forecast loss; the sudden part is why each model generation feels categorically different — and why nobody can tell you with confidence what the next 10× will unlock. For your own run it means the loss forecast is solid but the capability forecast is not: you know the model will be *better*; you don't know exactly what new thing it will be able to do.
 
 ## The data wall, and what came after
 
-Power laws don't repeal themselves, but their inputs can run short. Chinchilla says a compute-optimal frontier run wants tens of trillions of tokens — and by 2024 the frontier labs were training on a meaningful fraction of *all usable public text*. You cannot 10× a dataset that is most of the internet. This "data wall" reshaped the field's direction in three visible ways:
+Power laws don't repeal themselves, but their inputs can run short — and your own plan shows where. Your month wanted 1.7T tokens. Now scale the plan the way the industry did: a frontier lab's budget is 100× yours, $10^{26}$ FLOPs, and the same fit asks for roughly a **trillion parameters trained on ~16 trillion tokens**. Estimates of all usable, deduplicated public text land in the low tens of trillions of tokens. The compute-optimal frontier run doesn't just want a big dataset; it wants *most of the usable internet* — and you cannot 10× a dataset that is most of the internet. By 2024 this "data wall" was reshaping the field's direction in three visible ways:
 
 - **Data quality became the frontier.** If you can't get more tokens, get better ones — aggressive filtering, deduplication, and curriculum design (Chapter 7).
 - **Synthetic data went mainstream.** Models generating, grading, and filtering training data for the next model — with the obvious snake-eating-its-tail risks carefully managed.
@@ -95,6 +111,6 @@ The meta-lesson of this chapter for an engineer: in this field, the boring, gene
 
 - [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) — seven paragraphs; the ideological foundation of the scaling era.
 - [Scaling Laws for Neural Language Models](https://arxiv.org/abs/2001.08361) — the Kaplan paper. Skim for the figures.
-- [Training Compute-Optimal Large Language Models](https://arxiv.org/abs/2203.15556) — Chinchilla; plus [Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) for what it means that data is the constraint.
+- [Training Compute-Optimal Large Language Models](https://arxiv.org/abs/2203.15556) — Chinchilla; with [Chinchilla Scaling: A Replication Attempt](https://arxiv.org/abs/2404.10102) — the corrected fit this chapter's numbers use, and a lesson in checking famous results — and [Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) for what it means that data is the constraint.
 - [The Scaling Hypothesis](https://gwern.net/scaling-hypothesis) — Gwern's sprawling, opinionated history of the bet nobody wanted to believe.
 - [Emergent Abilities of Large Language Models](https://arxiv.org/abs/2206.07682) vs. [Are Emergent Abilities of Large Language Models a Mirage?](https://arxiv.org/abs/2304.15004) — read as a pair; a model case study in how this field argues with itself.
