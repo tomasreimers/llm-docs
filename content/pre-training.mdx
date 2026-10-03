@@ -63,7 +63,7 @@ Three load-bearing practices behind that picture:
 
 <LrScheduleFigure />
 
-- **Loss spikes.** Every practitioner's scar tissue: the loss occasionally jumps violently, from a bad data batch or numerical instability. Defenses, in escalating order: **gradient clipping** (cap the gradient norm every step, as routine hygiene), skipping the offending batch, and — worst case — rewinding to a checkpoint.
+- **Loss spikes.** Every practitioner's scar tissue: the loss occasionally jumps violently, from a bad data batch or numerical instability. Defenses, in escalating order: **gradient clipping** (cap the gradient norm every step, as routine hygiene), skipping the offending batch, and — worst case — rewinding to a checkpoint *and skipping forward past the suspect data* (replaying identically would just hit the same batch again). A curious finding from [PaLM](https://arxiv.org/abs/2204.02311)'s team, who rewound ~100 steps and skipped a few hundred batches per spike: replaying the *same* data from a different checkpoint usually produced no spike — a spike needs the conjunction of a bad batch and a vulnerable optimizer state, not the batch alone. Nobody relies on that; you skip anyway.
 - **Checkpoints and precision.** The run's state is saved frequently enough that a failure costs hours, not weeks. Weights and activations are kept in 16-bit floats (bf16), with the newest hardware pushing parts of the computation to 8-bit (fp8) — halving memory and doubling throughput again, at the cost of numerical-stability engineering. (Why memory is the thing being economized is Chapter 10.)
 
 <details>
