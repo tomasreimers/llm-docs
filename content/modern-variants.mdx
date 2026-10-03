@@ -1,38 +1,52 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { KvVariantsFigure } from "../components/figures/kv-variants"
 import { MoeFigure } from "../components/figures/moe"
+import { RopeFigure } from "../components/figures/rope"
+import { VitFigure } from "../components/figures/vit"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # Modern variants: What's in a frontier model
 
+If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the MLPs* or *the cost of the KV cache*. This chapter is a guided tour of a modern model's spec sheet, in four stops:
 
-If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the KV cache* or *the cost of the MLPs*. This chapter is a guided tour of a modern model's spec sheet.
+1. **Mixture of experts** makes the MLPs — the majority of the parameters — *sparse*: huge total knowledge, small per-token cost.
+2. **Attention variants** (GQA, MLA) shrink the KV cache, the data structure that dominates inference memory.
+3. **RoPE and systems tricks** stretched context windows from 2K tokens to over a million.
+4. **Multimodality** turned out to require almost nothing new: convert everything into tokens and reuse the whole machine.
 
 ## Mixture of experts: sparse MLPs
 
-Chapter 3 established that MLPs hold most of the parameters, and Chapter 4 established that more parameters mean lower loss. The tension: every parameter you add makes *every token* more expensive, because dense models use all their weights all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
+Chapter 3 established that MLPs hold most of the parameters (two-thirds of each GPT-2 block), and Chapter 4 established that more parameters mean lower loss. The tension: every parameter you add makes *every token* more expensive, because a dense model uses all its weights all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
 
-**Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (say, 8 to 256) — the "experts" — plus a small learned **router** that picks the top-k (often 2 to 8) experts for each token. Only the chosen experts run:
-
-- **Total parameters** (what the model *knows*) can be enormous.
-- **Active parameters** (what each token *pays for*) stay small.
-
-DeepSeek-V3 has 671B total parameters but only ~37B active per token: GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
+**Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (8 to 256 in practice) — the "experts" — plus a small learned **router**: a linear layer that reads the token's vector from the residual stream, scores every expert, and sends the token through only the top-k (often 2 to 8). The outputs of the chosen experts are blended by router weight and written back to the stream:
 
 <MoeFigure />
 
-The catch is engineering, not math. Routing is learned end-to-end and will happily collapse onto a few favorite experts unless you add load-balancing pressure; and since experts must be sharded across GPUs, every MoE layer becomes a network problem — tokens physically travel to their experts and back (a preview of Chapter 10). A useful demystification: despite the name, experts don't specialize into "the biology expert" — specialization is mostly syntactic and token-level, discovered rather than assigned.
+The accounting splits in two, and the split is the whole point:
 
-## Taming the KV cache: MQA, GQA, MLA
+- **Total parameters** — every expert's weights exist and hold knowledge. This can be enormous.
+- **Active parameters** — the weights a given token actually flows through. This stays small.
 
-Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. At modern context lengths that **KV cache** becomes a monster — at hundreds of thousands of tokens of context, a naive cache runs to hundreds of gigabytes *per conversation*. Since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, KV cache size is the direct limiter of context length, batch size, and cost.
+DeepSeek-V3 has 671B total parameters but only ~37B active per token: GPT-4-class knowledge at mid-size-model FLOPs. First scaled by Google's [Switch Transformer](https://arxiv.org/abs/2101.03961) and pushed into the open by [Mixtral](https://arxiv.org/abs/2401.04088), MoE is now effectively universal at the frontier.
 
-The fixes form a tidy progression:
+The catch is engineering, not math. The router is trained end-to-end like every other weight, and left alone it will happily collapse onto a few favorite experts — so training adds load-balancing pressure to spread tokens out. And since hundreds of experts can't fit on one GPU, they're sharded across many, which turns every MoE layer into a *network* problem: tokens physically travel to their experts and back (a preview of Chapter 10). A useful demystification: despite the name, experts don't specialize into "the biology expert" — inspection shows specialization is mostly syntactic and token-level, discovered rather than assigned.
 
-- **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): all query heads share a single key/value head. Cache shrinks ~100×; quality dips.
-- **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads (e.g., 64 query heads, 8 KV heads). This is what Llama-class models use.
-- **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of the keys and values, and decompress on the fly. Trades a little compute (abundant) for a lot of memory bandwidth (scarce), which is the right direction of trade.
+## Taming the KV cache: GQA, MQA, MLA
+
+Recall the seed from Chapter 3: at inference, the keys and values of every previous token are cached rather than recomputed. Time to size that cache. Each token stores a key vector and a value vector *per layer*, and in Chapter 3's multi-head attention those span the full model width. In half-precision (2 bytes per number):
+
+$$
+\tip{cache bytes per token of context}{\text{bytes}} \; = \; \tip{a key and a value}{2} \times \tip{number of layers}{n_{\text{layer}}} \times \tip{number of KV heads}{n_{\text{kv}}} \times \tip{dimensions per head}{d_{\text{head}}} \times \tip{bytes per number in half precision}{2}
+$$
+
+Take Llama 3 70B's real shape — 80 layers, 64 heads of 128 dimensions — and give every query head its own K/V as Chapter 3 described: $2 \times 80 \times 64 \times 128 \times 2 = 2.6$ MB *per token of context*. A single 128K-token conversation: **320 GB** — four H100s' worth of memory, for one user's cache. And since (Chapter 10 preview) inference speed is mostly determined by how many bytes you move through memory, the KV cache directly limits context length, batch size, and cost.
+
+The fixes form a tidy progression — keep all 64 *query* heads, but let them share a smaller set of K/V heads:
+
+- **[Multi-query attention](https://arxiv.org/abs/1911.02150)** (MQA): one K/V head shared by all query heads. Cache shrinks 64×; quality measurably dips.
+- **[Grouped-query attention](https://arxiv.org/abs/2305.13245)** (GQA): the compromise — groups of query heads share K/V heads. Llama 3 70B runs 64 query heads against 8 KV heads: 8× smaller cache, negligible quality loss. This is today's default.
+- **Multi-head latent attention** (MLA): DeepSeek's move — store only a small learned *compression* of all the heads' keys and values (a 576-dimensional latent per token per layer) and decompress on the fly. Trades a little compute (abundant) for a lot of memory (scarce), which is the right direction of trade.
 
 <KvVariantsFigure />
 
@@ -40,31 +54,64 @@ If you only remember one thing from this section: when a model card advertises s
 
 ## Long context: RoPE and its stretching exercises
 
-Frontier context windows went from 2K tokens (2020) to 1M+ (2025). Two things made it possible.
+Frontier context windows went from 2K tokens (2020) to 1M+ (2025). Two things had to happen.
 
-First, **positions had to generalize.** [RoPE](https://arxiv.org/abs/2104.09864) (Chapter 3) encodes *relative* position as rotation angles, which turns "extend the context" into a geometry problem: methods like [YaRN](https://arxiv.org/abs/2309.00071) rescale the rotation frequencies so a model trained at 8K can operate at 128K after a comparatively cheap fine-tune (this happens in "mid-training" — Chapter 7). This is why long context arrived as point releases rather than retrains.
+First, **positions had to generalize.** Chapter 3's answer to word order was to *add* a learned position vector to each embedding — position 7 gets the position-7 vector. That has two weaknesses: a model trained on 2K positions has simply never seen the vector for position 5,000, and "these tokens are 3 apart" — the thing attention usually cares about — is only represented indirectly. **RoPE** ([Rotary Position Embedding](https://arxiv.org/abs/2104.09864)), today's standard, encodes position by *rotating* each query and key vector by an angle proportional to its position. The trick is what rotation does to attention scores: a dot product depends only on the angle *between* two vectors, so the score between a query and a key depends only on how far apart they are — relative position, baked into the geometry:
 
-Second, **the quadratic had to be survivable.** [FlashAttention](https://arxiv.org/abs/2205.14135) computes *exact* attention but reorders the computation so the big seq×seq score matrix never hits slow GPU memory — a pure systems win (arguably the most influential systems paper of the era; the full why belongs to Chapter 10). Long-context models also interleave **sliding-window layers**, where most layers attend only to a local window of recent tokens and only some layers attend globally.
+<RopeFigure />
+
+<details>
+<summary>RoPE in coordinates, and why it stretches.</summary>
+
+Pair up the dimensions of each query and key — a $d$-dimensional vector becomes $d/2$ little 2D planes — and rotate the pair in plane $i$ at position $m$ by angle $m\theta_i$, where the frequencies $\theta_i = 10000^{-2i/d}$ span from fast (first pairs: sensitive to adjacent-token offsets) to extremely slow (last pairs: tracking document-scale distances). It's the same idea as a clock: a second hand, a minute hand, and an hour hand together tell you both fine and coarse time. Because the encoding is a *formula* rather than a lookup table, it extends to unseen positions — and context-extension methods like [YaRN](https://arxiv.org/abs/2309.00071) work by rescaling those frequencies so a model trained at 8K positions can operate at 128K after a comparatively cheap fine-tune (done in "mid-training" — Chapter 7). This is why long context arrived as point releases rather than retrains.
+
+</details>
+
+Second, **the quadratic had to be survivable.** Attention still compares every token to every token. [FlashAttention](https://arxiv.org/abs/2205.14135) computes *exact* attention but reorders the computation so the big seq×seq score matrix never materializes in slow GPU memory — a pure systems win, and arguably the most influential systems paper of the era (the full why belongs to Chapter 10). On top of that, long-context models interleave **sliding-window layers**: most layers attend only to a local window of recent tokens, and only some layers attend globally.
 
 A consumer warning from the evals world: "supports 1M tokens" means the model *runs* at 1M tokens. Whether it can actually *use* information spread across that window (measured by needle-in-a-haystack and multi-hop retrieval evals) is a separate and often disappointing question — see Chapter 9.
 
 ## The little diffs: norms and activations
 
-Read any modern model card and a few recurring renames from the 2017 original will appear. None change the story, but for decoding purposes: **RMSNorm** replaces LayerNorm (same stabilizing job, cheaper), applied *before* each block rather than after (pre-norm; trains more stably), and **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). File under: the field ran an enormous ablation study for a decade, and these won.
+Read any modern model card and a few recurring renames from the 2017 original will appear. None change the story, but for decoding purposes: **RMSNorm** replaces LayerNorm (the same magnitude-stabilizing job from Chapter 3, computed more cheaply), applied *before* each block rather than after (pre-norm; trains more stably), and **SwiGLU** replaces ReLU in the MLPs (a gated, smoother nonlinearity that wins consistently for reasons nobody finds deeply satisfying). File under: the field ran an enormous ablation study for a decade, and these won.
+
+<details>
+<summary>Reading a real config file.</summary>
+
+Everything in this chapter and Chapter 3 is visible in a model's config. Llama 3 70B's, annotated:
+
+```json
+{
+  "hidden_size": 8192,          // d — the residual stream width (Ch. 3)
+  "num_hidden_layers": 80,      // blocks in the stack (Ch. 3)
+  "num_attention_heads": 64,    // query heads (Ch. 3)
+  "num_key_value_heads": 8,     // GQA: 8 KV heads shared 8 ways (this ch.)
+  "intermediate_size": 28672,   // MLP expansion (~3.5d, SwiGLU-adjusted)
+  "vocab_size": 128256,         // tokenizer size (Ch. 2)
+  "rope_theta": 500000,         // RoPE base frequency (this ch.)
+  "max_position_embeddings": 131072   // context window
+}
+```
+
+A MoE model adds `num_experts` and `num_experts_per_tok` — total vs. active, in config form. After this chapter, every line of every model card should parse.
+
+</details>
 
 ## Multimodality: everything becomes a token
 
 Frontier models see images, hear audio, and increasingly emit both. The remarkable fact is how little new machinery this required — the recipe is to convert other modalities *into tokens* and reuse the entire apparatus:
 
-1. A **vision encoder** — a [Vision Transformer](https://arxiv.org/abs/2010.11929), which chops an image into a grid of patches (e.g. 16×16 pixels) and treats each patch exactly like a token embedding. No convolutions; the same blocks from Chapter 3.
+1. A **vision encoder** — a [Vision Transformer](https://arxiv.org/abs/2010.11929) (ViT) — chops the image into a grid of patches (16×16 pixels each in the original), flattens each patch, and treats it exactly like a token embedding. No convolutions; the same blocks as Chapter 3, usually without the causal mask (it's an encoder — Chapter 3's lineage, reading not writing).
 2. A small **adapter** projects the encoder's output vectors into the language model's embedding space.
 3. The LLM proceeds as if the image were a few hundred words it had read. ([CLIP](https://arxiv.org/abs/2103.00020) established the shared text-image space that makes this alignment work; audio follows the same pattern with a speech encoder.)
+
+<VitFigure />
 
 Early multimodal systems bolted encoders onto finished LLMs; current frontier models are *natively multimodal* — trained on mixed text/image/audio streams from the start. But the deep point stands: the transformer never knew it was a language model. It's a sequence model, and everything — prose, code, screenshots, speech — is sequences of embeddings to it.
 
 ## Sidebar: the road not (yet) taken
 
-The transformer's quadratic attention keeps inspiring challengers — most prominently **state-space models** like [Mamba](https://arxiv.org/abs/2312.00752), which are, with real irony, a modernized recurrence: constant-size state, linear-time inference. They now match transformers at moderate scale, and ideas from them show up in production as *hybrids* (a few attention layers among many linear-time layers). Worth watching; not yet worth reorganizing your mental model around. The transformer's real moat is nine years of tooling, kernels, and hardware co-evolution — a lesson any engineer who has tried to replace a battle-tested system will recognize.
+The transformer's quadratic attention keeps inspiring challengers — most prominently **state-space models** like [Mamba](https://arxiv.org/abs/2312.00752), which are, with real irony, a modernized recurrence: constant-size state, linear-time inference, the very design attention replaced in Chapter 3's opening. They now match transformers at moderate scale, and ideas from them show up in production as *hybrids* (a few attention layers among many linear-time layers). Worth watching; not yet worth reorganizing your mental model around. The transformer's real moat is nine years of tooling, kernels, and hardware co-evolution — a lesson any engineer who has tried to replace a battle-tested system will recognize.
 
 ## Further reading
 

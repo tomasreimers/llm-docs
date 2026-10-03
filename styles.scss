@@ -103,9 +103,6 @@ main[data-pagefind-body] {
 // Unreleased chapters: listed in the sidebar as a teaser, but grayed out and
 // unclickable (this also disables prev/next pagination and in-content links
 // to them). To release a chapter, delete its line here.
-a[href^='/scaling'],
-a[href^='/modern-variants'],
-a[href^='/interpretability'],
 a[href^='/pre-training'],
 a[href^='/post-training'],
 a[href^='/evaluation'],

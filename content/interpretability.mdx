@@ -1,32 +1,60 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { InductionFigure } from "../components/figures/induction"
+import { SaeFigure } from "../components/figures/sae"
 import { SuperpositionFigure } from "../components/figures/superposition"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
 # Interpretability: What did it learn?
 
-
 Here is the uncomfortable fact at the center of this book: we do not write these models, we *grow* them. A frontier LLM is on the order of a trillion floating-point numbers, arranged by gradient descent into something that writes poetry and finds bugs in your code — and no one can point to where any of it lives. The weights are, in the standard phrase, *inscrutable*.
 
-**Mechanistic interpretability** is the young field trying to fix that: to reverse-engineer trained networks the way you'd reverse-engineer a binary without source. I've given it a full chapter for two reasons. First, it has produced the best mental models we have for *thinking* about what happens inside a transformer — useful even if you never read another interpretability paper. Second, it's the part of LLM theory that feels most like natural science: experiments, microscopes, genuine surprises. If any chapter of this book makes someone quit their job to do research, I'd bet on this one.
+**Mechanistic interpretability** is the young field trying to fix that: to reverse-engineer trained networks the way you'd reverse-engineer a binary without source. I've given it a full chapter for two reasons. First, it has produced the best mental models we have for *thinking* about what happens inside a transformer — useful even if you never read another interpretability paper. Second, it's the part of LLM theory that feels most like natural science: experiments, microscopes, genuine surprises. The chapter builds in four steps:
+
+1. **Features** — the units of meaning are *directions* in activation space, not neurons.
+2. **Superposition** — models pack far more features than they have dimensions, which is why you can't read the code by looking at one wire.
+3. **Sparse autoencoders** — the learned decompressor that unpacks superposition into interpretable, *steerable* features.
+4. **Circuits** — the algorithms built out of features, including one small program we can read end to end.
 
 ## Features: the units of meaning
 
-The field's founding bet is that networks are not homogeneous soup — that they contain **features**: directions in activation space that correspond to meaningful concepts. Chapter 2 already showed you the prototype: word2vec's `king − man + woman ≈ queen` demonstrated that a *direction* can encode a concept like gender.
+The field's founding bet is that networks are not homogeneous soup — that they contain **features**: directions in activation space that correspond to meaningful concepts. Chapter 2 already showed you the prototype: in the city-embedding example, "coastal-ness" wasn't any single coordinate, it was a *direction* you could move along, and word2vec's `king − man + woman ≈ queen` demonstrated the same thing discovered rather than designed. The bet is that this keeps being true deep inside the network — not just in the embeddings, but in the residual stream at every layer.
 
 The bet has paid out. Researchers have found — first in vision models (the [Circuits thread](https://distill.pub/2020/circuits/zoom-in/) at Distill), then in LLMs — activation directions that fire for curve detection, for base64-encoded text, for Python type errors, for sycophancy, for the Golden Gate Bridge. The residual stream framing from Chapter 3 now completes: the stream is a bus, and what travels on the bus is a sparse combination of features.
 
 ## Superposition: why you can't just look
 
-If features were assigned one-per-dimension — neuron 4,721 means "cats" — interpretability would be easy. It isn't, and the reason is a genuinely beautiful result from Anthropic's [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html).
+If features were assigned one-per-dimension — neuron 4,721 means "cats" — interpretability would be easy: read each neuron, label it, done. It isn't, and the reason is a genuinely beautiful result from Anthropic's [Toy Models of Superposition](https://transformer-circuits.pub/2022/toy_model/index.html).
 
-A model has vastly more things worth representing than it has dimensions. But high-dimensional geometry offers a loophole: while an $n$-dimensional space has only $n$ perfectly orthogonal directions, it has *exponentially many* directions that are **almost** orthogonal. Since real-world features are sparse (most concepts are absent from most inputs), the model can pack far more features than dimensions into the space, accepting a little interference between them — like a lossy compression scheme, or Bloom-filter-style overlap. This is **superposition**, and it has a sharp consequence: individual neurons are *polysemantic* — one neuron fires for cats, and car grilles, and a particular Korean suffix — not because the model is confused, but because that's the compressed encoding. You cannot read the code by looking at one wire.
+A model has vastly more things worth representing than it has dimensions — GPT-2's stream is 768 numbers wide, and the world contains more than 768 concepts. But high-dimensional geometry offers a loophole: an $n$-dimensional space has only $n$ perfectly orthogonal directions, yet *exponentially many* directions that are **almost** orthogonal. Since real-world features are sparse — most concepts are absent from most inputs — the model can pack far more features than dimensions into the space, accepting a little interference between them:
 
 <SuperpositionFigure />
 
+This is **superposition**, and it has a sharp consequence: individual neurons are **polysemantic** — one neuron fires for cats, and car grilles, and a particular Korean suffix — not because the model is confused, but because that's what a compressed encoding looks like from the inside. You cannot read the code by looking at one wire.
+
+<details>
+<summary>How many almost-orthogonal directions fit?</summary>
+
+The figure's 2D version is the worst case — five directions in a plane must overlap by cos 72° ≈ 0.31, which is a lot of interference. But the geometry improves *exponentially* with dimension: the Johnson–Lindenstrauss flavor of the result says that if you'll tolerate pairwise overlaps of at most $\varepsilon$, an $n$-dimensional space fits on the order of $e^{\varepsilon^2 n / 4}$ such directions. For a real model — $n$ in the thousands, features active perhaps one time in a thousand — the packing is astronomically profitable: near-zero effective interference in exchange for memory far beyond the dimension count. Superposition isn't a defect; it's the rational use of the space.
+
+</details>
+
 ## Sparse autoencoders: the decompressor
 
-If superposition is compression, the countermove is to learn the decompressor. A **sparse autoencoder** (SAE) is a wide, simple network trained to re-express a layer's activations as a sparse combination of a much larger dictionary of directions — millions of candidate features, only a handful active at a time.
+If superposition is compression, the countermove is to learn the decompressor. A **sparse autoencoder** (SAE) is a wide, simple network trained to re-express a layer's activations as a sparse combination of a much larger dictionary of directions — millions of candidate features, only a handful active at a time:
+
+<SaeFigure />
+
+<details>
+<summary>The SAE objective, in one line.</summary>
+
+$$
+\mathcal{L} \; = \; \tip{reconstruct the activation faithfully}{\lVert x - \hat{x} \rVert^2} \; + \; \lambda \, \tip{but use as few dictionary features as possible}{\lVert f \rVert_1}
+$$
+
+The first term says *be accurate*; the second says *be sparse*. Sparsity is what forces the dictionary to align with the model's real features: the cheapest way to explain an activation using few entries is for entries to correspond to the concepts that are actually, individually present. (Training these at scale — and deciding how big the dictionary should be — is its own engineering literature.)
+
+</details>
 
 Anthropic's [Scaling Monosemanticity](https://transformer-circuits.pub/2024/scaling-monosemanticity/) ran this on a production model (Claude 3 Sonnet) and extracted millions of features that are strikingly *interpretable*: a feature for the Golden Gate Bridge that fires on the text in any language, on photos of it, on descriptions of driving across it. Features for security vulnerabilities in code. Features for deception, flattery, and hidden agendas.
 
@@ -34,9 +62,13 @@ The killer demo was **steering**: clamp a feature's activation up, and the model
 
 ## Circuits: the algorithms
 
-Features are the variables; **circuits** are the programs — patterns of attention heads and MLP neurons that implement identifiable algorithms across layers.
+Features are the variables; **circuits** are the programs — patterns of attention heads and MLP neurons that implement identifiable algorithms across layers. One circuit is understood well enough to walk through completely, and it's worth doing, because it's the only place in this book where we can watch learned weights implement a legible algorithm:
 
-The best-understood example is the **induction head** ([in-context learning and induction heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html)): a two-head circuit that implements, roughly, *"find the last time this token appeared in the context, look at what followed it, and predict that again."* A fuzzy grep. Induction heads snap into existence at a specific, visible bump in every training run's loss curve, and their appearance coincides with the model getting dramatically better at in-context learning — Chapter 4's headline "emergent" capability, here with a *mechanistic explanation*. Grander behaviors are still mostly unmapped, but the existence proof matters: emergence isn't magic; it's circuits forming, and at least sometimes we can catch them doing it.
+<InductionFigure />
+
+This is the **induction head** ([In-context Learning and Induction Heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html)): two attention heads in different layers composing into *"find the last time this token appeared, look at what followed it, and predict that again."* A fuzzy grep. Note what made it possible — exactly the machinery from Chapter 3: heads moving information between residual streams, layers composing because later heads read what earlier heads wrote.
+
+Induction heads snap into existence at a specific, visible bump in every training run's loss curve, and their appearance coincides with the model getting dramatically better at in-context learning — Chapter 4's headline "emergent" capability, here with a *mechanistic explanation*. Grander behaviors are still mostly unmapped, but the existence proof matters: emergence isn't magic; it's circuits forming, and at least sometimes we can catch them doing it.
 
 The division of labor mirrors Chapter 3's slogan (attention routes, MLPs compute): attention-based circuits move and copy information; MLP layers act as the model's key-value memory of *facts* — which is why "where does a model store 'Paris is the capital of France'" has an actual answer (mid-layer MLPs, distributed but localizable enough that targeted edits can overwrite specific facts).
 
