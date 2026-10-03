@@ -1,5 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { BaseVsSftFigure } from "../components/figures/base-vs-sft"
+import { LoraFigure } from "../components/figures/lora"
 import { RlhfPipelineFigure } from "../components/figures/rlhf-pipeline"
 import { RlvrFigure } from "../components/figures/rlvr"
 
@@ -79,7 +80,11 @@ Two caveats to keep your model of reasoning models honest. Verifiability is a *s
 
 ## The practical tier: fine-tuning for the rest of us
 
-You will probably never run RLHF, but you may well fine-tune. **[LoRA](https://arxiv.org/abs/2106.09685)** (low-rank adaptation) makes it economical: freeze the model, and train only small low-rank matrices added to each weight — under 1% of the parameters, a single GPU instead of a cluster, and swappable adapters per customer or task at serving time.
+You will probably never run RLHF, but you may well fine-tune — and the method you'd use is **[LoRA](https://arxiv.org/abs/2106.09685)** (low-rank adaptation). The problem it solves is Chapter 7's checkpoint arithmetic in reverse: full fine-tuning needs gradients and optimizer state for every weight — ~14 bytes per parameter, >100 GB of working state for even an 8B model — which prices out single GPUs. LoRA's move: freeze every original weight, and next to each big matrix install a *bypass* of two skinny matrices — one projecting down to a tiny rank $r$, one projecting back up — so the layer computes $Wx + BAx$. Only $A$ and $B$ train:
+
+<LoraFigure />
+
+The bet behind it is that a fine-tune's *change* to the weights ($\Delta W = BA$, rank at most $r$) doesn't need the full matrix's expressiveness — you're nudging a mostly-right model, not relearning it — and empirically rank 8–64 captures most of what full fine-tuning gets. The economics follow: under 1% of the parameters trainable (and only *their* optimizer state in memory), a single GPU instead of a cluster, and — since the original weights never moved — adapters that can be merged into $W$ for zero-latency serving, or kept separate and hot-swapped per customer or task.
 
 The advice half of this section: fine-tuning teaches *form* extremely well (your JSON schema, your tone, your domain's jargon) and *facts* poorly — new knowledge injected via fine-tuning tends to be brittle and to collide with what the model already believes. For facts, retrieval (Chapter 12) usually beats weights. Fine-tune for behavior; retrieve for knowledge. And know the tax you're paying either way: any narrow training erodes some general capability (**catastrophic forgetting**), which is why labs mix general data into every specialization run — and why a model that's been aggressively aligned can feel slightly dumber than its base (the "alignment tax," real but much reduced in modern pipelines).
 
