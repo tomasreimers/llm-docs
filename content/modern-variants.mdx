@@ -23,7 +23,7 @@ By the end, the little model from Chapter 3 will read, field for field, like a f
 
 Start with the MLPs, because that's where the parameters are: 4.7M of each GPT-2 block's 7.1M — two-thirds. Chapter 4 said more parameters mean lower loss; the tension is that in a dense model every parameter you add makes *every token* more expensive, because all the weights run all the time. Your brain does not work this way — you don't engage your knowledge of French cooking while debugging a segfault.
 
-**Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (8 to 256 in practice) — the "experts" — plus a small learned **router**: a linear layer that reads the token's vector from the residual stream, scores every expert, and sends the token through only the top-k (often 2 to 8). The outputs of the chosen experts are blended by router weight and written back to the stream:
+**Mixture of experts** (MoE) makes the MLP sparse. Instead of one MLP per block, have many (8 to 256 in practice) — the "experts" — plus a small learned **router**: a linear layer that reads the token's vector from the residual stream, scores every expert (a softmax, so the scores are weights that sum to 1), and sends the token through only the top-k (often 2 to 8). The chosen experts' outputs are combined as a **weighted sum**, using the winners' router weights renormalized to sum to 1 — for the figure's last token, $\text{output} = 0.62 \cdot \text{expert}_2(x) + 0.38 \cdot \text{expert}_5(x)$ — and written back to the stream. The weighted sum isn't just bookkeeping: because the router's weights sit *inside* the output, gradients flow back through them, which is the only reason a routing decision can be learned by backpropagation at all:
 
 <MoeFigure />
 
