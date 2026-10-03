@@ -26,7 +26,10 @@ const STEP_TEXT = [
   'row after row, one parallel shot each, to the top of the stack',
   "the bottom-right cell becomes the logits: the next token is 'because'",
   "generate: append a column and compute only it — no older cell changes. Store them and you never recompute: that's the KV cache",
+  "and one column, followed through the layers, is a single token's residual stream — up next",
 ];
+
+const STREAM_COL = 2; // 'sat'
 const N = STEP_TEXT.length;
 
 export function KvGridFigure() {
@@ -43,16 +46,22 @@ export function KvGridFigure() {
   const fan = s === 1 ? { r: 1, c: 3 } : s === 4 ? { r: 3, c: 5 } : null;
 
   const cellState = (r: number, c: number) => {
-    if (c === 5) return s >= 4 ? 'new' : 'absent';
+    if (c === 5) return s === 4 ? 'new' : s === 5 ? 'dim' : 'absent';
     if (r >= rowsFilled) return 'absent';
-    if (s >= 4) return 'cached';
+    if (s === 5) return c === STREAM_COL ? 'stream' : 'dim';
+    if (s === 4) return 'cached';
     return 'filled';
   };
 
   return (
-    <Figure caption="The transformer as a spreadsheet: columns are token positions, rows are layers, and cell (row, column) is computed from the row above, columns up to its own — the mask, again. The next token is read off the bottom-right cell. Generating appends a column and computes only it; every older cell is finished forever, which is why caching them (the KV cache, Chapter 11) is such a big deal.">
+    <Figure caption="The transformer as a spreadsheet: columns are token positions, rows are layers, and cell (row, column) is computed from the row above, columns up to its own — the mask, again. The next token is read off the bottom-right cell. Generating appends a column and computes only it; every older cell is finished forever, which is why caching them (the KV cache, Chapter 11) is such a big deal. And a single column, followed through the layers, is one token's residual stream — the subject of the next section.">
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
         <svg viewBox="0 0 560 270" className="w-full max-w-xl">
+          <defs>
+            <marker id="kv-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" fillOpacity={0.7} />
+            </marker>
+          </defs>
           {/* column headers */}
           {TOKENS.map((t, c) => (
             <text key={c} x={X0 + c * CW + CW / 2} y={Y0 - 12} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.75}>
@@ -73,7 +82,7 @@ export function KvGridFigure() {
             Array.from({ length: 6 }, (_, c) => {
               const st = cellState(r, c);
               if (st === 'absent') return null;
-              const isPred = s >= 3 && r === 3 && c === (s >= 4 ? 5 : 4);
+              const isPred = (s === 3 || s === 4) && r === 3 && c === (s === 4 ? 5 : 4);
               return (
                 <rect
                   key={`${r}-${c}`}
@@ -83,19 +92,45 @@ export function KvGridFigure() {
                   height={CELL_H}
                   rx={3}
                   fill="currentColor"
-                  fillOpacity={st === 'new' ? 0.3 : st === 'cached' ? 0.07 : 0.18}
+                  fillOpacity={st === 'new' || st === 'stream' ? 0.3 : st === 'cached' || st === 'dim' ? 0.07 : 0.18}
                   stroke="currentColor"
-                  strokeOpacity={isPred ? 0.95 : 0.25}
-                  strokeWidth={isPred ? 2 : 1}
+                  strokeOpacity={isPred ? 0.95 : st === 'stream' ? 0.7 : 0.25}
+                  strokeWidth={isPred || st === 'stream' ? 1.5 : 1}
                 />
               );
             }),
           )}
           {/* cached label */}
-          {s >= 4 && (
+          {s === 4 && (
             <text x={X0 + 2.5 * CW} y={Y0 + 1 * CH + CELL_H + 12} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.55} fontStyle="italic">
               cached — unchanged
             </text>
+          )}
+          {/* residual stream column trace */}
+          {s === 5 && (
+            <g>
+              <line
+                x1={X0 + STREAM_COL * CW + CW / 2}
+                y1={Y0 + 4}
+                x2={X0 + STREAM_COL * CW + CW / 2}
+                y2={Y0 + 3 * CH + CELL_H + 8}
+                stroke="currentColor"
+                strokeOpacity={0.7}
+                strokeWidth={1.5}
+                markerEnd="url(#kv-arrow)"
+              />
+              <text
+                x={X0 + STREAM_COL * CW + CW / 2}
+                y={Y0 + 3 * CH + CELL_H + 28}
+                textAnchor="middle"
+                fontSize={10.5}
+                fill="currentColor"
+                opacity={0.8}
+                fontStyle="italic"
+              >
+                the residual stream of &apos;{TOKENS[STREAM_COL]}&apos;
+              </text>
+            </g>
           )}
           {/* fan-in arrows */}
           {fan &&
