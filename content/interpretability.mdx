@@ -22,7 +22,7 @@ The field's founding bet is that networks are not homogeneous soup — that they
 
 The bet has paid out. Researchers have found — first in vision models (the [Circuits thread](https://distill.pub/2020/circuits/zoom-in/) at Distill), then in LLMs — activation directions that fire for curve detection, for base64-encoded text, for Python type errors, for sycophancy, for the Golden Gate Bridge. And the strongest evidence is causal, not correlational: find the direction, *intervene* on it, and behavior follows. The cleanest example: [refusal in chat models is mediated by a single direction](https://arxiv.org/abs/2406.11717) — subtract one vector from the residual stream and the model stops refusing harmful requests; add it and the model refuses harmless ones. One concept, one direction, surgically manipulable.
 
-The residual stream framing from Chapter 3 now completes: the stream is a bus, and what travels on the bus is a sparse sum of feature directions.
+The residual stream framing from Chapter 3 now completes. The stream is a bus — and what travels on the bus, at any given token, is a *sum of feature directions*: a bit of "subject position," a bit of "feline," a bit of "past tense," each a direction scaled by how strongly it's present, all added together into one vector. And the sum is **sparse**: of the millions of features the model knows, almost all have coefficient zero right now, because almost every concept is absent from almost every token. The full picture of the stream, then: a bus carrying a handful of active concepts at a time — which sounds like something you could simply read off. The next section is about why you can't.
 
 ## Superposition: why you can't just look
 
