@@ -158,6 +158,10 @@ GPT-2 shipped in four sizes; the smallest — plain "GPT-2", the 124M-parameter 
 
 </details>
 
+## From distribution to text
+
+One loose end, because every demo you've ever seen depends on it: the architecture ends at a probability distribution — the model *never emits text*. Something outside the weights has to pick. The two basic moves: take the single most likely token every time (**greedy decoding** — safe, and prone to ruts), or *draw* from the distribution (**sampling** — livelier, occasionally derailed). Between them sits one knob you've already met in every API: **temperature**, which divides the logits by $T$ before the softmax — low $T$ exaggerates the leader's edge toward greedy, high $T$ evens the field toward random. Whatever gets picked is appended to the context and the model runs again; that loop *is* generation. The engineering hiding inside that "pick" — smarter truncations like top-p, masking the distribution so only valid JSON can come out, and what you can build by programming against the distribution rather than the text — is deferred to Chapter 12, where it closes the book.
+
 ## The lineage that won
 
 The 2017 paper had two towers — an encoder for the source language, a decoder for the target — and the years since sorted their descendants:
