@@ -1,6 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ContinuousBatchingFigure } from "../components/figures/continuous-batching"
 import { KvCalculatorFigure } from "../components/figures/kv-calculator"
+import { QuantQualityFigure } from "../components/figures/quant-quality"
 import { ServingAnatomyFigure } from "../components/figures/serving-anatomy"
 import { SpeculativeFigure } from "../components/figures/speculative"
 
@@ -49,7 +50,11 @@ At the frontier, serving splits further: **prefill/decode disaggregation** runs 
 
 If decode speed is bytes-of-weights ÷ bandwidth, then halving the bytes doubles the ceiling. **Quantization** stores numbers in fewer bits — 16-bit floats down to 8-bit or 4-bit integers — by mapping each weight group's range onto a small grid (plus per-group scale factors, and care for outlier values, which is where methods like [GPTQ](https://arxiv.org/abs/2210.17323) and [AWQ](https://arxiv.org/abs/2306.00978) earn their citations).
 
-The empirical miracle: weights at 8-bit cost essentially nothing in quality, and 4-bit costs remarkably little — the giant undertrained matrices simply don't need the precision (that a 70B model works at 4 bits/weight is itself a clue about how diffusely information is stored — Chapter 6 again). A 70B model at 4 bits is ~35 GB: one GPU instead of two, double the decode ceiling, or a frontier-class model on a MacBook — the entire local-LLM scene is downstream of this one technique. Quantizing the *KV cache* pays the same dividend to context length; quantizing activations (fp8) speeds prefill too. The costs are workload-dependent and show up in the tails, so the eval discipline of Chapter 9 applies to your quantized deployment as much as to any model swap.
+The empirical miracle: weights at 8-bit cost essentially nothing in quality, and 4-bit costs remarkably little — the giant undertrained matrices simply don't need the precision (that a 70B model works at 4 bits/weight is itself a clue about how diffusely information is stored — Chapter 6 again). Here's the claim measured, not asserted:
+
+<QuantQualityFigure />
+
+The knee just below 4 bits is no accident of one codebase — [Dettmers & Zettlemoyer](https://arxiv.org/abs/2212.09720) measured the tradeoff across model families and scales and found 4-bit sitting at the optimum: for a fixed memory budget, a *bigger model at 4 bits beats a smaller one at 8*, and below 4 bits the quality cost finally outruns the size savings. A 70B model at 4 bits is ~35 GB: one GPU instead of two, double the decode ceiling, or a frontier-class model on a MacBook — the entire local-LLM scene is downstream of this one technique. Quantizing the *KV cache* pays the same dividend to context length; quantizing activations (fp8) speeds prefill too. The costs are workload-dependent and show up in the tails, so the eval discipline of Chapter 9 applies to your quantized deployment as much as to any model swap.
 
 ## Speculative decoding: read the bytes less often
 
