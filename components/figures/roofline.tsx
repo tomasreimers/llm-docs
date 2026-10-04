@@ -42,19 +42,26 @@ export function RooflineFigure() {
         <text x={X(0.9)} y={Y(0.8) - 14} fontSize={11.5} fill="currentColor" opacity={0.7} transform={`rotate(-29 ${X(0.9)} ${Y(0.8) - 14})`}>
           memory-bound (3.35 TB/s)
         </text>
-        <text x={X(3.2)} y={Y(ROOF) - 10} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
+        <text x={X(3.2)} y={Y(ROOF) - 18} textAnchor="middle" fontSize={11.5} fill="currentColor" opacity={0.7}>
           compute-bound (~1 PFLOP roof)
         </text>
         {[
-          { i: 0, label: 'decode, batch = 1', dy: -12 },
-          { i: 1.5, label: 'decode, batched', dy: -12 },
-          { i: 3.2, label: 'prefill / training', dy: 24, onRoof: true },
+          { i: 0, label: 'decode, batch = 1', dx: 9, dy: 18, anchor: 'start' },
+          { i: 1.5, label: 'decode, batched', dx: -10, dy: -8, anchor: 'end' },
+          { i: 3.2, label: 'prefill / training', dx: 9, dy: 32, anchor: 'start', onRoof: true },
         ].map((p) => {
           const logT = p.onRoof ? ROOF : Math.log10(3.35) + p.i;
           return (
             <g key={p.label}>
               <circle cx={X(p.i)} cy={Y(logT)} r={5} fill="currentColor" />
-              <text x={X(p.i) + 9} y={Y(logT) + p.dy + 8} fontSize={11} fill="currentColor" opacity={0.85}>
+              <text
+                x={X(p.i) + p.dx}
+                y={Y(logT) + p.dy}
+                textAnchor={p.anchor}
+                fontSize={11}
+                fill="currentColor"
+                opacity={0.85}
+              >
                 {p.label}
               </text>
             </g>
