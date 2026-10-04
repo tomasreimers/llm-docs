@@ -92,6 +92,8 @@ Trace a request through everything at once:
 
 None of these techniques knows anything about language. It's caches, pages, schedulers, and compression — your field, aimed at one workload. The invoice line "per million tokens" is the price of bytes moved through HBM, divided by how cleverly they're shared.
 
+And after all of it — the pools, the pages, the drafts — notice what the serving stack actually delivers: not text. A probability distribution, fresh from the softmax, a hundred thousand candidates wide, every few milliseconds. Someone still has to decide what to *do* with it — and that deciding turns out to be the last mile where products are won: the difference between a model that completes your sentence and one that writes valid JSON, calls your APIs, and runs for an hour unsupervised. One chapter left, and it's the one you'll use most.
+
 ## Further reading
 
 - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) — the vLLM paper; the most satisfying systems read in the bibliography.

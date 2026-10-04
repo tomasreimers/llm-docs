@@ -244,6 +244,8 @@ Besides more data, the classic in-training countermeasures are **regularization*
 
 The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
 
+One more thing to notice before moving on: nothing in this chapter was actually about digits. The machinery was generic — vectors in, scores out, loss down — and we pointed it at 28×28 images only because the labels came free with the dataset. Labels are the scarce resource; someone had to write 70,000 of them. So here's the thought to carry into the next chapter: the largest pile of labeled data our species has ever produced is just *text* — where every word is, automatically, a label for the words before it. What happens if we point this machinery at that?
+
 ## Further reading
 
 - [Neural Networks: Zero to Hero](https://karpathy.ai/zero-to-hero.html) — Karpathy's video series building all of this (including autograd) from scratch in Python. The single best resource for making this chapter concrete.

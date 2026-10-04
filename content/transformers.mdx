@@ -175,6 +175,8 @@ The 2017 paper had two towers — an encoder for the source language, a decoder 
 
 OpenAI's GPT line took the **decoder-only** path: just the causal stack described in this chapter, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100× — which is the next chapter's story. Every frontier LLM today is decoder-only — but the embedding model sitting next to it in a retrieval pipeline is the encoder lineage, still on the job.
 
+Before you turn the page, dwell on how strange the situation is. We have an architecture with no linguistic knowledge built in, trained by Chapter 1's loop, and the chief difference between the toy in this chapter and the model you talked to this morning is… *size*. That can't be the whole story — can it? The next chapter is about the discovery that it nearly is: that the relationship between size and ability is so lawful you can plan a frontier training run on graph paper, months before you can afford to run it.
+
 ## Further reading
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762) — the original. Shorter and more readable than its reputation suggests.

@@ -172,6 +172,8 @@ The transformer's quadratic attention keeps inspiring challengers — most promi
 
 Step back and look at what we built. We took Chapter 3's 124M-parameter GPT-2 and, field by field: made its MLPs sparse (520M total, 180M active), shared its KV heads (cache ÷8), swapped its position table for rotations (context extendable), renamed its norms and activations, and taught it to eat pixels. At no point did we touch the skeleton. That is the state of the art: the 2017 architecture, relentlessly cost-optimized.
 
+Something should be nagging you about this chapter, though. We counted every parameter and never once said what any of them *does*. We know the shapes of all the containers and nothing about the contents — half a billion numbers whose dimensions we chose and whose values we can't read. Surely someone has tried to look inside? The next chapter is about the people who did — and the genuinely strange things they found.
+
 ## Further reading
 
 - [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437) — the best single artifact of this chapter: MoE, MLA, and frontier training economics in one openly documented model. ([DeepSeek-V2](https://arxiv.org/abs/2405.04434) introduces MLA in more detail.)
