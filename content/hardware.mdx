@@ -94,7 +94,7 @@ A frontier run composes all four across tens of thousands of GPUs — which is w
 
 Every LLM engineer eventually internalizes a small table; here's a starter (order-of-magnitude, per the H100 era):
 
-- Weights in 16-bit: **2 bytes/param** → a model needs ~2× its parameter count in GB just to exist.
+- Weights in 16-bit: **2 bytes/param** → a model needs ~2× its parameter count in GB just to exist. Run it at both ends: an 8B model is 16 GB — fits on one card; a 2.5T-parameter frontier model is **5,000 GB** — 63 H100s of memory before a single token of KV cache, which is why frontier models are born sharded (and why MoE's active-parameter discount applies to *reads*, not residence: all 2.5T must be held, even if each token touches 37B).
 - Decode speed ceiling: **memory bandwidth ÷ bytes-of-active-weights** (MoE's "active" distinction now cashes out: DeepSeek-V3 reads 37B parameters per token, not 671B).
 - Training cost: **~6 FLOPs per parameter per token** (the classic estimate: 2 forward + 4 backward) — multiply by N params and D tokens, divide by cluster FLOPs × MFU, and you can sanity-check any lab's claimed training time from your armchair.
 - Failure rate: at 16K GPUs, expect an interruption **every few hours** (Chapter 7).
