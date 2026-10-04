@@ -1,4 +1,6 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { AgentLoopFigure } from "../components/figures/agent-loop"
+import { ConstrainedFigure } from "../components/figures/constrained"
 import { TemperatureFigure } from "../components/figures/temperature"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -6,7 +8,12 @@ import { TemperatureFigure } from "../components/figures/temperature"
 # Sampling & beyond: The model in the loop
 
 
-Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision — sampling — is the last mile between the frozen artifact of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack — structured output, tool use, agents — stops being magic and becomes control flow.
+Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision — sampling — is the last mile between the frozen artifact of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack stops being magic and becomes control flow, in four escalations:
+
+1. **Reshape the distribution** — temperature, top-k, top-p: the knobs on every API.
+2. **Constrain it** — mask the illegal tokens and malformed output becomes impossible: structured output.
+3. **Feed it back to itself** — chain of thought: tokens as scratch space, compute bought with length.
+4. **Make the tokens executable** — tool calls, retrieval, and finally the agent: the loop, closed.
 
 ## Temperature and friends
 
@@ -22,7 +29,11 @@ One myth to retire: temperature 0 does not make an API deterministic. Your reque
 
 ## Structured output: sampling with a seatbelt
 
-You want JSON matching a schema; the model wants to emit prose. The robust fix isn't prompting harder — it's **constrained decoding**: compile your schema or grammar into a token-level automaton, and at each step *mask the logits* of every token that would violate it (set them to $-\infty$; softmax renormalizes over what's legal). The model's distribution proposes; your grammar disposes. Malformed output becomes *impossible*, not just unlikely — this is what "JSON mode" and schema-enforced APIs do under the hood. It's the cleanest illustration of this chapter's theme: the distribution is an interface, and you're allowed to program against it. (Same interface powers observability: the **logprobs** an API returns are a per-token confidence channel — a poor calibration oracle, but a fine anomaly detector for retrieval failures and hallucination-prone spans.)
+You want JSON matching a schema; the model wants to emit prose. The robust fix isn't prompting harder — it's **constrained decoding** (the decode-time move promised back in Chapter 8): compile your schema or grammar into a token-level automaton, and at each step *mask the logits* of every token that would violate it — set them to $-\infty$, and the softmax renormalizes over what's legal:
+
+<ConstrainedFigure />
+
+The model's distribution proposes; your grammar disposes. Malformed output becomes *impossible*, not just unlikely — this is what "JSON mode" and schema-enforced APIs do under the hood. (One honest caveat: a mask can force the model off its preferred phrasing mid-thought, and heavy-handed grammars occasionally buy you valid JSON containing a worse answer — constrain the envelope, not the prose inside it.) It's the cleanest illustration of this chapter's theme: the distribution is an interface, and you're allowed to program against it. (Same interface powers observability: the **logprobs** an API returns are a per-token confidence channel — a poor calibration oracle, but a fine anomaly detector for retrieval failures and hallucination-prone spans.)
 
 ## Chain of thought: buying compute with tokens
 
@@ -38,7 +49,11 @@ Squint and it's a syscall interface: an untrusted process (the model) requests p
 
 ## Agents: the loop, closed
 
-Put everything in this chapter in a `while` loop and you have an **agent**: model proposes an action ([ReAct](https://arxiv.org/abs/2210.03629) established the reason-act-observe cadence; [Toolformer](https://arxiv.org/abs/2302.04761) showed models could learn tool use), runtime executes, observation enters the context, repeat until done. That's the whole trick — the coding agents and computer-using assistants of 2026 are this loop plus enormous post-training investment in not derailing over long horizons.
+Put everything in this chapter in a `while` loop and you have an **agent**: model proposes an action ([ReAct](https://arxiv.org/abs/2210.03629) established the reason-act-observe cadence; [Toolformer](https://arxiv.org/abs/2302.04761) showed models could learn tool use), runtime executes, observation enters the context, repeat until done:
+
+<AgentLoopFigure />
+
+That's the whole trick — the coding agents and computer-using assistants of 2026 are this loop plus enormous post-training investment in not derailing over long horizons.
 
 The engineering discipline that emerged around it is **context engineering** — the recognition that the context window is the agent's *entire working memory*, and curating it (what to retrieve, summarize, evict; note how agent transcripts hit Chapter 11's prefix cache) is the systems half of agent quality. The security discipline it demands is less mature, and you should hear it as this book's one alarm bell: **prompt injection**. Instructions and data share one channel — the context — so any text an agent reads (a webpage, an email, a README) can *try to reprogram it*, and an agent with tools turns that into real-world side effects. There is no reliable fix yet; Simon Willison's [running series](https://simonwillison.net/series/prompt-injection/) is the essential literature. Design like it's the '90s web: least privilege, human confirmation on irreversible actions, and never let untrusted input and powerful tools share a context without a plan.
 

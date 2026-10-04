@@ -108,16 +108,6 @@ main[data-pagefind-body] {
   }
 }
 
-// Unreleased chapters: listed in the sidebar as a teaser, but grayed out and
-// unclickable (this also disables prev/next pagination and in-content links
-// to them). To release a chapter, delete its line here.
-a[href^='/hardware'],
-a[href^='/serving'],
-a[href^='/sampling'] {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
 // Clickable ink-style chips/buttons in figures.
 .ink-button {
   background: color-mix(in srgb, currentColor 10%, transparent);

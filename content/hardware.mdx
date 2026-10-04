@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { ParallelismFigure } from "../components/figures/parallelism"
 import { RooflineFigure } from "../components/figures/roofline"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -6,7 +7,12 @@ import { RooflineFigure } from "../components/figures/roofline"
 # Hardware: The physics of tokens
 
 
-It is one of history's better jokes that the machine underneath the most important technology of the decade was built for video games. GPUs exist because rendering pixels is millions of small, independent, identical calculations — and by lucky coincidence (nudged along by a decade of co-evolution), so is a neural network. Chapter 1 showed you that a model is essentially a pile of matrix multiplies; this chapter is about the machine that does them, because its physics — not the math — sets the price of every token you buy.
+It is one of history's better jokes that the machine underneath the most important technology of the decade was built for video games. GPUs exist because rendering pixels is millions of small, independent, identical calculations — and by lucky coincidence (nudged along by a decade of co-evolution), so is a neural network. Chapter 1 showed you that a model is essentially a pile of matrix multiplies; this chapter is about the machine that does them, because its physics — not the math — sets the price of every token you buy. Four steps:
+
+1. **The machine** — what a GPU is, and the three numbers that describe one.
+2. **The roofline** — a one-line performance model that explains nearly everything in Part IV, built from the ratio of those numbers.
+3. **The transformer's two lives** — training is compute-bound; generating is memory-bound, and that one asymmetry is the industry's cost structure.
+4. **Memory and parallelism** — why one GPU is never enough, and the four standard ways to split the work.
 
 ## A GPU, for people who know computers
 
@@ -30,7 +36,20 @@ Now apply it to the transformer's two lives:
 
 **Training is compute-bound.** You process billions of tokens in huge batches; every weight fetched from memory is reused across the whole batch, so arithmetic intensity is high. Efficiency is reported as **MFU** (model FLOPs utilization — the fraction of theoretical FLOPs doing useful work); frontier runs fight for 40–50%.
 
-**Inference — specifically, generating — is memory-bound.** Chapter 2's confession comes due: generation is one token at a time. To emit a single token, *every parameter must travel from HBM to the cores* — for a 70B model in 16-bit, ~140 GB moved to produce a handful of FLOPs per weight. Arithmetic intensity: ~1. The GPU that trained at 50% utilization generates at ~1%. **The speed at which a model talks to you is set by memory bandwidth, not compute** — 3.35 TB/s ÷ 140 GB explains why a lone user sees a couple dozen tokens per second, and why the serving tricks of the next chapter are all, at heart, schemes to raise arithmetic intensity.
+**Inference — specifically, generating — is memory-bound.** Chapter 2's confession comes due: generation is one token at a time. To emit a single token, *every parameter must travel from HBM to the cores* — for a 70B model in 16-bit, ~140 GB moved to produce a handful of FLOPs per weight. Arithmetic intensity: ~1. The GPU that trained at 50% utilization generates at ~1%. **The speed at which a model talks to you is set by memory bandwidth, not compute.**
+
+<details>
+<summary>The decode speed limit, derived.</summary>
+
+For a single conversation, each token requires one full read of the active weights, so the ceiling is just a division:
+
+$$
+\text{tokens/sec} \; \le \; \frac{\tip{memory bandwidth in bytes per second}{\text{bandwidth}}}{\tip{active parameters times bytes per parameter}{\text{bytes of weights}}}
+$$
+
+Run the book's own models through it on one H100. The 8B you trained in Chapter 7, in bf16: 16 GB of weights → 3.35 TB/s ÷ 16 GB ≈ **200 tokens/sec**, tops. A 70B in bf16: 140 GB → **~24 tokens/sec** (and it doesn't fit on one card anyway). Quantize the 70B to 4-bit (next chapter): 35 GB → ~95 tokens/sec. Note what's *not* in the formula: FLOPs. The tensor cores could go a thousand times faster; they're waiting on the bus. The formula is also why batching is magic — the weights are read once *per step*, not once per conversation, so 100 concurrent requests share one read and the per-request ceiling barely moves while throughput goes up ~100×. Every serving trick in Chapter 11 is visible in this one fraction: shrink the numerator's work (share reads via batching), shrink the denominator (quantization, MoE's active-parameter discount), or get more tokens per read (speculative decoding).
+
+</details>
 
 One refinement to file: processing your *prompt* (**prefill**) handles all input tokens in parallel — that's a big batch, so it's compute-bound and fast. Generating the *response* (**decode**) is the memory-bound crawl. This asymmetry is why long inputs are cheap relative to long outputs, and why APIs price them differently.
 
@@ -50,6 +69,8 @@ Roughly **16 bytes per parameter** — a 70B model needs ~1.1 TB before a single
 - **Tensor parallel**: split individual matrices across GPUs; every layer becomes a collective communication. Bandwidth-brutal — kept within a tightly-coupled node (NVLink, ~900 GB/s).
 - **Pipeline parallel**: put different layers on different GPUs; keep the assembly line full with micro-batches.
 - **Expert parallel**: MoE's gift (Chapter 5) — experts live on different GPUs and tokens are *routed* over the network to whichever experts they need.
+
+<ParallelismFigure />
 
 A frontier run composes all four across tens of thousands of GPUs — which is why the interconnects (NVLink within a node, InfiniBand across the cluster) are as much the computer as the GPUs are, and why "the network is the bottleneck" is a sentence you'll hear in both datacenter engineering and MoE papers.
 

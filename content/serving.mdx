@@ -1,5 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { ContinuousBatchingFigure } from "../components/figures/continuous-batching"
 import { KvCalculatorFigure } from "../components/figures/kv-calculator"
+import { SpeculativeFigure } from "../components/figures/speculative"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
@@ -8,13 +10,19 @@ import { KvCalculatorFigure } from "../components/figures/kv-calculator"
 
 Between "we trained a great model" and "an API that serves a planet" sits some of the best systems engineering of our time — and it's a shame how little of it most engineers see, because it's the part of the stack built from ideas you already know: virtual memory, batch schedulers, caches, compression. This chapter reverse-engineers the price-per-million-tokens on the invoice.
 
-The physics from last chapter, restated as the serving problem: decode is memory-bound — the GPU reads ~all active weights to emit each token, using ~1% of its compute. Every technique below is one of three moves: **share the bytes** across more work, **shrink the bytes**, or **read the bytes less often**.
+The physics from last chapter, restated as the serving problem: decode is memory-bound — the GPU reads ~all active weights to emit each token, using ~1% of its compute. Every technique below is one of three moves, and they're the chapter's arc:
+
+1. **Share the bytes** — batch many conversations onto each read of the weights (continuous batching), and stop wasting the memory that limits the batch (PagedAttention, prefix caching).
+2. **Shrink the bytes** — quantization, and at the limit, distillation: shrink the model itself.
+3. **Read the bytes less often** — speculative decoding: multiple tokens per weight-read.
 
 ## Continuous batching: share the bytes
 
 The waste in serving one user is that 140 GB of weights get read to produce *one* token. Serve 100 conversations in a single batch, and the same read produces 100 tokens — per-token cost falls ~100× before any cleverness. Throughput providers live and die on batch size (and this is why per-token API prices can sit so far below what a dedicated GPU would cost you).
 
-The wrinkle is that requests don't arrive in lockstep: one user's answer is 10 tokens, another's is 3,000. Naive batching waits for the longest member to finish — like an elevator that won't open until every rider's floor is reached. **Continuous batching** (also "in-flight batching") schedules at the granularity of a *single token step*: finished requests exit the batch and queued ones enter, immediately. It's a job scheduler where the quantum is one forward pass, and it's table stakes in every serving engine.
+The wrinkle is that requests don't arrive in lockstep: one user's answer is 10 tokens, another's is 3,000. Naive batching waits for the longest member to finish — like an elevator that won't open until every rider's floor is reached. **Continuous batching** (also "in-flight batching") schedules at the granularity of a *single token step*: finished requests exit the batch and queued ones enter, immediately. It's a job scheduler where the quantum is one forward pass, and it's table stakes in every serving engine:
+
+<ContinuousBatchingFigure />
 
 The tradeoff it navigates is the classic one — **throughput vs. latency**. Bigger batches amortize better but make everyone wait a bit longer per token. The two numbers on every serving dashboard: **TTFT** (time to first token — dominated by prefill and queueing) and **tokens/sec** thereafter (dominated by decode). Batch APIs at half price are this tradeoff sold explicitly: your overnight jobs are the ballast that fills the batches.
 
@@ -40,7 +48,11 @@ The empirical miracle: weights at 8-bit cost essentially nothing in quality, and
 
 The most conceptually delightful trick, from [Leviathan et al.](https://arxiv.org/abs/2211.17192) (and [Chen et al.](https://arxiv.org/abs/2302.01318)): most tokens are *easy* — finishing "the United States of" doesn't need a trillion parameters. But decoding makes the big model pay full price for every token.
 
-So: let a small, fast **draft model** race ahead and propose several tokens, then have the big model check them *all in one forward pass* — which it can do because verifying a sequence is a parallel, prefill-like operation (that asymmetry between checking and generating is the whole trick). Accept the longest agreeing prefix; where the draft went wrong, the big model's own prediction takes over. A careful accept/reject rule makes the output distribution **provably identical** to the big model's — this is a lossless speedup, pure latency win, typically 2–3×. When the models agree on 4 tokens, you've paid one weight-read for four tokens: arithmetic intensity, raised again.
+So: let a small, fast **draft model** race ahead and propose several tokens, then have the big model check them *all in one forward pass* — which it can do because verifying a sequence is a parallel, prefill-like operation (that asymmetry between checking and generating is the whole trick):
+
+<SpeculativeFigure />
+
+Accept the longest agreeing prefix; where the draft went wrong, the big model's own prediction takes over. A careful accept/reject rule makes the output distribution **provably identical** to the big model's — this is a lossless speedup, pure latency win, typically 2–3×. When the models agree, you've paid one weight-read for several tokens: arithmetic intensity, raised again.
 
 (Variants abound — extra prediction heads on the model itself, n-gram lookahead — and here's the promised diffusion cameo: **diffusion language models** generate whole blocks of tokens in parallel and refine them iteratively, a bet on breaking the one-token-at-a-time bottleneck entirely rather than merely speculating past it. Watch that space; don't reorganize around it.)
 
