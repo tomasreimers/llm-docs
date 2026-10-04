@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { ClusterFigure } from "../components/figures/cluster"
 import { DecodeTreadmillFigure } from "../components/figures/decode-treadmill"
 import { ParallelismFigure } from "../components/figures/parallelism"
 import { RooflineFigure } from "../components/figures/roofline"
@@ -83,7 +84,9 @@ Roughly **16 bytes per parameter** — a 70B model needs ~1.1 TB before a single
 
 <ParallelismFigure />
 
-A frontier run composes all four across tens of thousands of GPUs — which is why the interconnects (NVLink within a node, InfiniBand across the cluster) are as much the computer as the GPUs are, and why "the network is the bottleneck" is a sentence you'll hear in both datacenter engineering and MoE papers.
+A frontier run composes all four across tens of thousands of GPUs — which is why the interconnects (NVLink within a node, InfiniBand across the cluster) are as much the computer as the GPUs are, and why "the network is the bottleneck" is a sentence you'll hear in both datacenter engineering and MoE papers. Here's the machine those sentences are about:
+
+<ClusterFigure />
 
 **Inference memory is a smaller but sharper story.** The optimizer and gradients are gone — weights alone, 2 bytes per parameter — but what remains must fit with no slack: the weights (140 GB for our 70B model — already two GPUs before anyone connects) plus the **KV cache** — Chapter 5's monster, which grows linearly with every token of every concurrent conversation and competes with the weights for the same 80 GB. Managing that competition is half of the next chapter.
 
