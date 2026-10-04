@@ -1,6 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { ContinuousBatchingFigure } from "../components/figures/continuous-batching"
 import { KvCalculatorFigure } from "../components/figures/kv-calculator"
+import { ServingAnatomyFigure } from "../components/figures/serving-anatomy"
 import { SpeculativeFigure } from "../components/figures/speculative"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -19,6 +20,10 @@ The physics from last chapter, restated as the serving problem: decode is memory
 ## Continuous batching: share the bytes
 
 The waste in serving one user is that 140 GB of weights get read to produce *one* token. Serve 100 conversations in a single batch, and the same read produces 100 tokens — per-token cost falls ~100× before any cleverness. Throughput providers live and die on batch size (and this is why per-token API prices can sit so far below what a dedicated GPU would cost you).
+
+Before the scheduling trick, pin down the plumbing — *where does a generated token actually go?* Both places, in different forms. The decode loop is **GPU-resident**: the weights, every conversation's KV cache, and the step itself all live in HBM, and the newly sampled token never leaves — it's appended on-GPU as the next step's input, and its K/V join the cache. What crosses back over PCIe each step is just the sampled token *ID* — a few bytes per live request — which the **CPU-side engine** detokenizes, streams to the user, checks against stop conditions, and feeds to its scheduler. The GPU does the arithmetic; the CPU runs the airport:
+
+<ServingAnatomyFigure />
 
 The wrinkle is that requests don't arrive in lockstep: one user's answer is 10 tokens, another's is 3,000. Naive batching waits for the longest member to finish — like an elevator that won't open until every rider's floor is reached. **Continuous batching** (also "in-flight batching") schedules at the granularity of a *single token step*: finished requests exit the batch and queued ones enter, immediately. It's a job scheduler where the quantum is one forward pass, and it's table stakes in every serving engine:
 
