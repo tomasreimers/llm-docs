@@ -2,6 +2,7 @@ import { Breadcrumbs } from "../components/breadcrumbs"
 import { Byline } from "../components/byline"
 import { DataFunnelFigure } from "../components/figures/data-funnel"
 import { DataMixFigure } from "../components/figures/data-mix"
+import { LossCurvesFigure } from "../components/figures/loss-curves"
 import { LrScheduleFigure } from "../components/figures/lr-schedule"
 import { TrainingRunFigure } from "../components/figures/training-run"
 
@@ -58,6 +59,22 @@ Amid all this scale, the training loop is *identical* to Chapter 1's ten lines: 
 
 Put your run's numbers on the loop. Your cluster does $4 \times 10^{17}$ FLOPs per second at realistic efficiency (Chapter 4's MFU arithmetic); at $6N = 4.8 \times 10^{10}$ FLOPs per token, that's about **8 million tokens per second — 720 billion tokens a day**, 15T in roughly three weeks. Each step processes one *global batch* — a few million tokens spread across all thousand GPUs — so the whole run is Chapter 1's loop executed about **4 million times**. That's the entire algorithm. Everything else in this chapter is logistics.
 
+## The ritual before the run
+
+On paper, training is "run the loop until the loss is low." In practice, training is *staring at the loss curve* — knowing what to check, in what order, when it isn't doing what you want. The ritual predates scale: it's the same one you'd run on Chapter 1's MNIST net, and cheap models are where you learn it — but skip it at your scale and the tuition is GPU-months.
+
+**First number: the loss at initialization.** Before any training, a model with random weights should spread its probability uniformly, so its cross-entropy should be almost exactly $\ln(\text{number of classes})$ — for a 10-digit MNIST classifier, $\ln 10 \approx 2.3$; for your 128,256-token vocabulary, $\ln(128{,}256) \approx 11.8$. Check it. If it's far higher, your initialization is broken; if it's far lower, you have a bug (probably your data is leaking the answer). This one free sanity check catches a remarkable fraction of setup errors before you've spent a single GPU-minute.
+
+**First milestone: overfit one batch.** Take a tiny batch and train on just it until the loss is ~0. With millions of weights and a handful of examples, the network has vastly more capacity than the task needs, so gradient descent can simply *memorize* the right answers — brute-forcing the loss to zero without learning anything general. Normally memorization is the failure mode you fight (Chapter 1's overfitting); here it's a diagnostic. A network that can't memorize one batch has a plumbing problem — wrong shapes, a broken loss, gradients not flowing. Skipping this step is the classic way to spend a day debugging the wrong layer of the stack.
+
+**Then: watch the shape.** With the plumbing verified, start real training and read the curve. There are only three shapes, and the learning rate usually picks between them:
+
+<LossCurvesFigure />
+
+When the curve diverges, lower the learning rate; when it crawls, raise it. The standard move is a sweep over powers of ten — nobody, at any level of seniority, guesses it correctly on the first try. (At frontier scale even the sweep is priced in scaling-law fashion: fit the best learning rate on small models, extrapolate the trend.)
+
+**What matters, in order.** For a fixed dataset, the learning rate dwarfs everything else; after that, training longer and making the model bigger; after *that*, the architecture tweaks people love to argue about. And looming over all of it: more and better data beats all of the above — the hierarchy that was Chapter 4's thesis, and the reason this chapter opened with the funnel rather than the cluster. Karpathy's [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe/) is the canonical write-up of this discipline, and it transfers almost unchanged from MNIST to frontier models.
+
 ## Keeping a months-long run alive
 
 What separates pre-training from every other computation you've operated is that it's a *single, stateful, weeks-long job* on hardware that fails constantly. During Llama 3's training, Meta [reported](https://arxiv.org/abs/2407.21783) unexpected interruptions roughly every three hours across its 16K-GPU cluster — mostly GPU and memory failures. Scale that to your 1,000 GPUs and you should still budget for a failure every day or two, each one a potential run-killer if you can't recover. Here is your month, compressed:
@@ -83,6 +100,15 @@ A checkpoint is not just the weights. Mixed-precision training with AdamW keeps,
 ## The optimizer wars, finally interesting again
 
 For a decade, the optimizer slot in every config file said AdamW (Chapter 1) and nobody debated it. Worth knowing *why* it held: at scale, an optimizer must be boring — a 2% efficiency win is worthless if it adds instability risk to a $500M run. AdamW's cost is memory (those two moment buffers in the checkpoint arithmetic above), a fact that shapes the parallelism strategies in Chapter 10.
+
+<details>
+<summary>The "W": what AdamW actually fixed.</summary>
+
+Chapter 1 introduced weight decay — shrink every weight slightly toward zero each step, so large weights must be earned — and promised the fix's details here. The subtle bug: the traditional implementation adds the shrinking pressure *into the gradient*. Under plain SGD the two formulations are mathematically identical. Under Adam they are not — Adam divides every gradient by its running magnitude, and the decay term gets divided along with it. The result: weights with large, active gradients barely decay, while quiet weights decay hard; the regularization strength you set silently varies from parameter to parameter.
+
+AdamW *decouples* the two (the paper is literally titled "Decoupled Weight Decay Regularization"): the gradient goes through Adam's adaptive machinery, and the decay is applied to the weights directly, outside it. Same ingredients, consistent regularization — and the default optimizer of every LLM config since.
+
+</details>
 
 Then, in 2024–25, the slot actually changed for the first time. **[Muon](https://kellerjordan.github.io/posts/muon/)** emerged not from a lab but from the **nanoGPT speedrun** community — an open competition to train a small GPT-2 as fast as possible, which became a proving ground for training tricks. Muon's idea, stripped of detail: for the matrix-shaped parameters, take the momentum-averaged gradient and *orthogonalize* it (roughly, equalize its action across directions) before stepping — yielding meaningfully better loss per token. Moonshot AI then [demonstrated it scales](https://arxiv.org/abs/2502.16982) and trained Kimi K2 — a trillion-parameter frontier model — with a Muon variant. Hobbyist speedrun to frontier run in about a year: the most encouraging possible datapoint that individual researchers outside the big labs can still move the field's foundations. (The optimizer zoo beyond this — Shampoo, whose lineage Muon descends from; Sophia; Lion — you can safely file under "a sentence each.")
 

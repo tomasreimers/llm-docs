@@ -42,6 +42,8 @@ Run it: a model with a modest 20% per-attempt success rate already passes 89% of
 
 Two readings of the same model — "usually fails" and "nearly always succeeds, given tries" — and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
 
+And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless — a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^k$. Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over twenty steps; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes — the exponent just points the other way — and most published numbers measure only the first.
+
 ## Why you can't trust the numbers
 
 Four systematic rots, in ascending order of subtlety:
@@ -55,6 +57,8 @@ Four systematic rots, in ascending order of subtlety:
 **Goodhart's law.** The moment a benchmark appears in marketing, it stops measuring and starts steering. Labs tune data mixes with benchmarks in view; "benchmark-tuned" is a real slur for models that top leaderboards and disappoint users. The number was a proxy for capability; optimize the proxy and the gap between them widens — the exact reward-hacking dynamic of Chapter 8, one level up.
 
 **Construct validity.** Does a 57-subject quiz measure what you mean by "smart"? Benchmark scores are precise measurements of *something*; whether that something is what you're buying is a question the single headline number quietly skips.
+
+And beneath all four, a floor they stand on: **noise**. A benchmark score is a sample statistic with error bars nobody prints. On a 100-question eval, the 95% confidence interval is about ±10 points — a 3-point gap between models is a coin flip; even on MMLU's ~14,000 questions it's ±0.8, making decimal-point rankings numerology. And scores are haunted by **prompt sensitivity**: reorder the multiple-choice options or reformat the prompt and results swing by whole points, which is why serious comparisons rerun every model under one harness with one prompt format — never quote two launch posts at each other.
 
 ## Grading without answer keys: judges and arenas
 
@@ -70,6 +74,12 @@ Multiple choice and unit tests only cover tasks with checkable answers — Chapt
 Elo assigns each model a number such that rating *gaps* predict win rates: a model rated 100 points above another is expected to win about 64% of head-to-heads; 200 points, about 76% ($E = 1 / (1 + 10^{-\Delta/400})$). After each vote, the winner takes points from the loser in proportion to how surprising the result was — an upset moves ratings a lot, an expected win barely at all. Two properties worth knowing when you read the leaderboard: ratings are *relative* (the absolute number means nothing; only gaps do), and small gaps are noise (a 10-point lead is ~51.4% expected win rate — indistinguishable from a coin flip without enormous vote counts). The confidence intervals on the public board are doing real work; respect them.
 
 </details>
+
+## Two newer rooms in the zoo
+
+**Long context.** Chapters 5 and 7 both deferred a question here: does "supports 1M tokens" mean the model can *use* 1M tokens? The basic probe is **needle in a haystack**: bury one arbitrary fact ("the magic number is 4,096,241") at a controlled depth in a long document, ask for it, and repeat across every length-and-depth cell until you have a grid. Modern models ace that naive version — and still degrade on the harder family: multiple needles, **multi-hop** chains (fact A names the place you'll find fact B), and any task requiring *aggregation* across the window rather than retrieval from it ([RULER](https://arxiv.org/abs/2404.06654) formalizes this ladder). The recurring finding is an **effective context** meaningfully shorter than the advertised one: the window runs, but attention thins. Before you architect a product around a context-window claim, run your own haystack.
+
+**Thinking budgets.** Reasoning models (Chapter 8) broke the single-number score a second way: accuracy now depends on how many thinking tokens the model is allowed to spend — Chapter 4's test-time axis, now a free variable inside every eval table. The same model posts different scores at different budgets, with different tools, at different attempt counts, so honest reporting names all three — and the benchmarks themselves keep escalating to stay ahead of saturation ([Humanity's Last Exam](https://arxiv.org/abs/2501.14249) is the current emblem of the chase: questions commissioned specifically to stump frontier models, falling anyway). When a launch post says "state of the art," the sophisticated question is no longer just "on what benchmark" but "at what budget."
 
 ## The eval stack you'll actually build
 

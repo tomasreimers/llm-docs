@@ -5,7 +5,6 @@ import { FixedStepFigure } from "../components/figures/fixed-step"
 import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { LinearScoresFigure } from "../components/figures/linear-scores"
-import { LossCurvesFigure } from "../components/figures/loss-curves"
 import { MlpFigure } from "../components/figures/mlp"
 import { SoftmaxFigure } from "../components/figures/softmax"
 import { XorFigure } from "../components/figures/xor"
@@ -193,18 +192,7 @@ Vanilla SGD — gradient descent on random batches, exactly as we've described i
 
 **Momentum** keeps a running average of recent gradients and steps in that direction — like a ball rolling downhill, it smooths over noise and powers through small bumps.
 
-**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how weight decay (a regularization term) interacts with the adaptivity.
-
-<details>
-<summary>What's weight decay, and what exactly did AdamW fix?</summary>
-
-**Weight decay** is a gentle pressure that shrinks every weight slightly toward zero on each step — multiply each one by, say, 0.9999 before the update. Why want that? Large weights make a network twitchy: small changes in the input swing the output hard, which is the signature of a model contorting itself to memorize. Keeping weights small unless the data genuinely earns them is a classic guard against overfitting.
-
-The subtle bug AdamW fixed: the traditional implementation of weight decay adds the shrinking pressure *into the gradient*. Under plain SGD those two formulations are mathematically identical. Under Adam they are not — Adam divides every gradient by its running magnitude, and the decay term gets divided along with it. The result: weights with large, active gradients barely decay, while quiet weights decay hard. The regularization strength you set silently varies from parameter to parameter.
-
-AdamW *decouples* the two (the paper is literally titled "Decoupled Weight Decay Regularization"): the gradient goes through Adam's adaptive machinery, and the decay is applied to the weights directly, outside it. Same ingredients, consistent regularization — and the default optimizer of every LLM config since.
-
-</details>
+**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how **weight decay** — a regularization term: a gentle pressure shrinking every weight toward zero each step, to discourage the large, twitchy weights that signal memorization — interacts with the adaptivity (the details of that fix wait for Chapter 7, where the optimizer wars resume).
 
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. One consequence worth filing away for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
 
@@ -217,24 +205,6 @@ The network below is as small as they come — two inputs, two hidden units, one
 <XorFigure />
 
 Early on, the gradients are large and the weights move fast; by the end, the predictions hug their targets and the gradients fade toward zero — the walk settling into the bottom of the bowl, visible as a table of numbers instead of a curve.
-
-## What training actually looks like
-
-On paper, training is "run the loop until the loss is low." In practice, training is *staring at the loss curve* — and knowing what to check, in what order, when it isn't doing what you want. For our MNIST net, the ritual looks like this:
-
-**First number: the loss at initialization.** Before any training, a 10-class model with random weights should assign roughly 10% to everything, so its cross-entropy should be almost exactly $-\ln(1/10) \approx 2.3$. Check it. If it's 7, your initialization is broken; if it's 0.3, you have a bug (probably your data is leaking the answer). This one free sanity check catches a remarkable fraction of setup errors before you've spent a single GPU-minute.
-
-**First milestone: overfit one batch.** Take 32 images and train on just those until the loss is ~0. Here's why that's possible: with 400,000 adjustable weights and only 32 examples, the network has vastly more capacity than the task needs, so gradient descent can simply *memorize* the right answer for each one — brute-forcing the loss to zero without learning anything general. Normally memorization is the failure mode you fight (the next section is about exactly that); here it's a diagnostic. A network that can't memorize 32 examples has a plumbing problem — wrong shapes, a broken loss, gradients not flowing. Skipping this step is the classic way to spend a day debugging the wrong layer of the stack.
-
-**Then: watch the shape.** With the plumbing verified, start real training and read the curve. There are only three shapes, and the learning rate usually picks between them:
-
-<LossCurvesFigure />
-
-When the curve diverges, lower the learning rate; when it crawls, raise it. The standard move is a sweep over powers of ten — nobody, at any level of seniority, guesses it correctly on the first try. For our MNIST MLP, a healthy run takes the loss from 2.3 to under 0.1 within a couple of epochs, and accuracy to ~98%.
-
-**What matters, in order.** For a fixed dataset, the learning rate dwarfs everything else; after that, training longer and making the model bigger; after *that*, the architecture tweaks people love to argue about. And looming over all of it: more and better data beats all of the above — a hierarchy so reliable it becomes the thesis of Chapter 4. Karpathy's [A Recipe for Training Neural Networks](https://karpathy.github.io/2019/04/25/recipe/) is the canonical write-up of this discipline, and it transfers almost unchanged from MNIST to frontier models.
-
-There's one curve we haven't mentioned yet, though — and it's the one that actually matters.
 
 ## Generalization: the point of all this
 
