@@ -1,6 +1,7 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
 import { AgentLoopFigure } from "../components/figures/agent-loop"
 import { ConstrainedFigure } from "../components/figures/constrained"
+import { RagFigure } from "../components/figures/rag"
 import { TemperatureFigure } from "../components/figures/temperature"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
@@ -61,7 +62,15 @@ The model can't browse, compute, or query your database. It can only emit tokens
 
 Squint and it's a syscall interface: an untrusted process (the model) requests privileged operations from a runtime (your code) that mediates everything. The model never *does* anything — it writes requests, and the blast radius is exactly what your runtime chooses to honor.
 
-**Retrieval-augmented generation** (RAG), the most deployed pattern of the era, is this loop with a search tool, and its pipeline is worth knowing because you may well build one. Offline: split your documents into **chunks** (a few hundred tokens each — large enough to be meaningful, small enough that several fit in a context), run each through an **embedding model** (Chapter 3's encoder lineage, still on the job) to get one vector per chunk, and store the vectors in an index. At query time: embed the question, fetch the nearest chunks by dot product — Chapter 2's "semantically similar means geometrically close," now a product feature — optionally **rerank** the candidates with a stronger model that reads query and chunk together, and paste the winners into the context. Fine-tune for behavior, retrieve for knowledge (Chapter 8's advice, now with its mechanism). Retrieval is also the standard answer to the **knowledge cutoff**: the weights froze when pre-training ended, and everything the world did since only reaches the model through its context.
+## Retrieval: the standard answer to frozen weights
+
+**Retrieval-augmented generation** (RAG) — the most deployed pattern of the era — is the tool loop above with a search tool, and it earns its own section because, of everything in this book, it's the thing you're most likely to build:
+
+<RagFigure />
+
+Two design decisions follow from the mechanism. **Chunking** is a real choice: a few hundred tokens per chunk — large enough to carry meaning, small enough that several winners fit in the context (and every retrieved token is a token you pay prefill for — Chapter 11). And the **reranker** earns its keep because embedding search is blind to the pairing: each chunk's vector was computed *before anyone knew the question*, so a second model that reads query and chunk *together* catches matches that geometry alone misses — a precision pass stacked on a recall pass. (The jargon, if you shop for these: the embedding model is a *bi-encoder*, the reranker a *cross-encoder*.)
+
+Fine-tune for behavior, retrieve for knowledge (Chapter 8's advice, now with its mechanism). Retrieval is also the standard answer to the **knowledge cutoff**: the weights froze when pre-training ended, and everything the world has done since reaches the model only through its context.
 
 ## Agents: the loop, closed
 
