@@ -29,7 +29,7 @@ The wrinkle is that requests don't arrive in lockstep: one user's answer is 10 t
 
 <ContinuousBatchingFigure />
 
-The tradeoff it navigates is the classic one — **throughput vs. latency**. Bigger batches amortize better but make everyone wait a bit longer per token. The two numbers on every serving dashboard: **TTFT** (time to first token — dominated by prefill and queueing) and **tokens/sec** thereafter (dominated by decode). Batch APIs at half price are this tradeoff sold explicitly: your overnight jobs are the ballast that fills the batches.
+The tradeoff it navigates is the classic one — **throughput vs. latency**. Bigger batches amortize better but make everyone wait a bit longer per token. The two numbers on every serving dashboard: **TTFT** (time to first token) and **tokens/sec** thereafter. TTFT is queueing plus **prefill** — Chapter 10's name for processing the whole prompt, which must finish before the first output token can exist (all input tokens in parallel, so compute-bound and fast — but a 100K-token prompt is still real work). Tokens/sec thereafter is **decode**, the memory-bound crawl this chapter is about. Batch APIs at half price are this tradeoff sold explicitly: your overnight jobs are the ballast that fills the batches.
 
 ## PagedAttention: stop wasting the memory
 
