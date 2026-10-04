@@ -12,7 +12,7 @@ export function Byline({ readingTime }: { readingTime?: number }) {
       {readingTime ? (
         <>
           {' '}
-          <span aria-hidden="true">/</span> {readingTime} minute read
+          <span aria-hidden="true">·</span> {readingTime} minute read
         </>
       ) : null}
     </div>
