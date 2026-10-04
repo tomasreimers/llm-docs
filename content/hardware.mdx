@@ -1,12 +1,15 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { ClusterFigure } from "../components/figures/cluster"
 import { DecodeTreadmillFigure } from "../components/figures/decode-treadmill"
 import { ParallelismFigure } from "../components/figures/parallelism"
 import { RooflineFigure } from "../components/figures/roofline"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Hardware: The physics of tokens
+
+<Byline readingTime={metadata.readingTime} />
 
 
 It is one of history's better jokes that the machine underneath the most important technology of the decade was built for video games. GPUs exist because rendering pixels is millions of small, independent, identical calculations — and by lucky coincidence (nudged along by a decade of co-evolution), so is a neural network. Chapter 1 showed you that a model is essentially a pile of matrix multiplies; this chapter is about the machine that does them, because its physics — not the math — sets the price of every token you buy. Four steps:

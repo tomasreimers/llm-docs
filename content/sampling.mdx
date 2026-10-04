@@ -1,12 +1,15 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { AgentLoopFigure } from "../components/figures/agent-loop"
 import { ConstrainedFigure } from "../components/figures/constrained"
 import { RagFigure } from "../components/figures/rag"
 import { TemperatureFigure } from "../components/figures/temperature"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Sampling & beyond: The model in the loop
+
+<Byline readingTime={metadata.readingTime} />
 
 
 Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision — sampling — is the last mile between the frozen artifact of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack stops being magic and becomes control flow, in four escalations:

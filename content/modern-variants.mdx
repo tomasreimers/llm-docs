@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { KvGridFigure } from "../components/figures/kv-grid"
 import { KvSharingFigure } from "../components/figures/kv-sharing"
 import { KvVariantsFigure } from "../components/figures/kv-variants"
@@ -7,9 +8,11 @@ import { RopeFigure } from "../components/figures/rope"
 import { SwigluFigure } from "../components/figures/swiglu"
 import { VitFigure } from "../components/figures/vit"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Modern variants: What's in a frontier model
+
+<Byline readingTime={metadata.readingTime} />
 
 If you diff GPT-2 (2019) against a frontier open model like [DeepSeek-V3](https://arxiv.org/abs/2412.19437) (2025), the shocking thing is how little the skeleton changed: embeddings, attention, MLPs, residual stream, next-token head. But the config file grew some new fields, and each one is a response to a specific pressure — almost always either *the cost of the MLPs* or *the cost of the KV cache*.
 

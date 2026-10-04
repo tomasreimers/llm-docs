@@ -1,13 +1,16 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { BigramFigure } from "../components/figures/bigram"
 import { BpeFigure } from "../components/figures/bpe"
 import { EmbeddingSpaceFigure } from "../components/figures/embedding-space"
 import { NextTokenFigure } from "../components/figures/next-token"
 import { TokenizationFigure } from "../components/figures/tokenization"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Language modeling: Predicting the next token
+
+<Byline readingTime={metadata.readingTime} />
 
 In 1951, [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon) published a paper in which he asked people to guess a sentence one letter at a time, and used their guesses to measure the statistical structure of English. Buried in that experiment is the entire premise of this book: **language has statistical structure, and predicting the next symbol is the way to capture it.**
 

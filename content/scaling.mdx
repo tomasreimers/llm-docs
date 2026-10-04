@@ -1,12 +1,15 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { ChinchillaFigure } from "../components/figures/chinchilla"
 import { EmergenceFigure } from "../components/figures/emergence"
 import { OvertrainFigure } from "../components/figures/overtrain"
 import { ScalingLawsFigure } from "../components/figures/scaling-laws"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Scaling: Bigger is different
+
+<Byline readingTime={metadata.readingTime} />
 
 In 2019, Rich Sutton — one of the fathers of reinforcement learning — published a short, grumpy essay called [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html). Its thesis: seventy years of AI history show that general methods that leverage more computation always, eventually, beat clever methods that encode human knowledge. Researchers hate this, because it means the craft they love loses to whoever buys more compute. They have also, repeatedly, been unable to refute it.
 

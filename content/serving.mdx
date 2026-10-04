@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { ContinuousBatchingFigure } from "../components/figures/continuous-batching"
 import { KvCalculatorFigure } from "../components/figures/kv-calculator"
 import { QuantQualityFigure } from "../components/figures/quant-quality"
@@ -6,9 +7,11 @@ import { ServingAnatomyFigure } from "../components/figures/serving-anatomy"
 import { SpeculativeFigure } from "../components/figures/speculative"
 import { StackTraceFigure } from "../components/figures/stack-trace"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Serving: Making it fast and cheap
+
+<Byline readingTime={metadata.readingTime} />
 
 
 Between "we trained a great model" and "an API that serves a planet" sits some of the best systems engineering of our time — and it's a shame how little of it most engineers see, because it's the part of the stack built from ideas you already know: virtual memory, batch schedulers, caches, compression. This chapter reverse-engineers the price-per-million-tokens on the invoice.

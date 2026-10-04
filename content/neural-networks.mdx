@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { BackpropFigure } from "../components/figures/backprop"
 import { FixedStepFigure } from "../components/figures/fixed-step"
 import { FlattenFigure } from "../components/figures/flatten"
@@ -11,9 +12,11 @@ import { XorFigure } from "../components/figures/xor"
 import { Image } from "../components/image"
 import MnistPng from "../public/images/content/neural-networks/mnist.png"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Neural networks: Functions that learn
+
+<Byline readingTime={metadata.readingTime} />
 
 
 In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too.

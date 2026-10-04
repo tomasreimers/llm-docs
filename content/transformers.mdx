@@ -1,4 +1,5 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { AttentionFigure } from "../components/figures/attention"
 import { AttentionStepFigure } from "../components/figures/attention-step"
 import { CausalMaskFigure } from "../components/figures/causal-mask"
@@ -8,9 +9,11 @@ import { LineageFigure } from "../components/figures/lineage"
 import { ResidualStreamFigure } from "../components/figures/residual-stream"
 import { StreamColumnFigure } from "../components/figures/stream-column"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # The transformer: Attention is all you need
+
+<Byline readingTime={metadata.readingTime} />
 
 In 2017, a team at Google working on machine translation published a paper with an unusually cocky title: [Attention Is All You Need](https://arxiv.org/abs/1706.03762). The claim was that the attention mechanism — until then a bolt-on that helped RNNs translate — could replace recurrence entirely. The resulting architecture, the **transformer**, is the substance of every model in this book. GPT stands for Generative Pre-trained *Transformer*, and nine years later the architecture is nearly unchanged.
 

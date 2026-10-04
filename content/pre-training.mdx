@@ -1,12 +1,15 @@
 import { Breadcrumbs } from "../components/breadcrumbs"
+import { Byline } from "../components/byline"
 import { DataFunnelFigure } from "../components/figures/data-funnel"
 import { DataMixFigure } from "../components/figures/data-mix"
 import { LrScheduleFigure } from "../components/figures/lr-schedule"
 import { TrainingRunFigure } from "../components/figures/training-run"
 
-<Breadcrumbs readingTime={metadata.readingTime} />
+<Breadcrumbs />
 
 # Pre-training: Compressing the internet
+
+<Byline readingTime={metadata.readingTime} />
 
 Everything so far has been about the *function*. This part of the book is about how the function gets made — and it starts with the strangest industrial process of our era: take a rough copy of the internet, and spend months of time on tens of thousands of GPUs compressing it into weights.
 
