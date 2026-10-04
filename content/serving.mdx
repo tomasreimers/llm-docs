@@ -60,7 +60,9 @@ The knee just below 4 bits is no accident of one codebase — [Dettmers & Zettle
 
 The most conceptually delightful trick, from [Leviathan et al.](https://arxiv.org/abs/2211.17192) (and [Chen et al.](https://arxiv.org/abs/2302.01318)): most tokens are *easy* — finishing "the United States of" doesn't need a trillion parameters. But decoding makes the big model pay full price for every token.
 
-So: let a small, fast **draft model** race ahead and propose several tokens, then have the big model check them *all in one forward pass* — which it can do because verifying a sequence is a parallel, prefill-like operation (that asymmetry between checking and generating is the whole trick):
+So: let a small, fast **draft model** race ahead and propose several tokens, then have the big model check them *all in one forward pass*.
+
+Why is checking cheap when generating isn't? Recall why decode is serial in the first place: token *n+1* can't be computed until token *n* exists, because token *n* is its input. But once the draft has *written down* four candidate tokens, that dependency is gone — the sequence is just text now, and the big model can process existing text the way it processes a prompt or a training batch (Chapter 3's causal-mask trick): every position at once, one read of the weights. That single pass hands back the big model's next-token prediction at *every* position — what it would have said after the context, after the context plus the first draft token, after the first two, and so on — and verification is nothing more than comparing those predictions against the draft's proposals. The draft model has converted a *generation* problem (serial, one weight-read per token) into a *reading* problem (parallel, one weight-read total), and Chapter 10 taught us those live on opposite sides of the roofline:
 
 <SpeculativeFigure />
 
