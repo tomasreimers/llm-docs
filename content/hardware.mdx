@@ -24,7 +24,13 @@ The numbers that matter, using the H100 as the reference machine of the era:
 - **Memory**: 80 GB of high-bandwidth memory (**HBM**) at ~3.35 TB/s.
 - **On-chip SRAM**: tens of megabytes, ~10× faster than HBM — the cache level FlashAttention (Chapter 5) lives in.
 
-Do the division and you get the single most important ratio in this book: roughly **300 floating-point operations per byte** moved from memory. The silicon can compute ~300 times faster than it can be fed.
+Do the division — compute rate over memory rate, the seconds cancelling — and you get the single most important ratio in this book:
+
+$$
+\frac{\tip{compute: about 1000 teraFLOPs per second}{\sim 10^{15}\ \text{FLOP/s}}}{\tip{bandwidth: about 3.35 terabytes per second}{3.35 \times 10^{12}\ \text{bytes/s}}} \;\approx\; 300\ \text{FLOPs per byte}
+$$
+
+Read it as a deadline: in the time HBM delivers *one byte*, the tensor cores can complete ~300 operations. So unless every byte fetched from memory participates in ~300 FLOPs once it arrives, the cores finish early and idle, waiting on the bus. The silicon can compute ~300 times faster than it can be fed.
 
 ## The roofline: are you feeding the beast?
 
