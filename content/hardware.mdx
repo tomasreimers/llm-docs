@@ -20,9 +20,9 @@ A CPU is a few dozen brilliant cores optimized to make *one* thread fast: caches
 
 The numbers that matter, using the H100 as the reference machine of the era:
 
-- **Compute**: on the order of 1,000 teraFLOPs (10¹⁵ operations/sec) at 16-bit precision.
-- **Memory**: 80 GB of high-bandwidth memory (**HBM**) at ~3.35 TB/s.
-- **On-chip SRAM**: tens of megabytes, ~10× faster than HBM — the cache level FlashAttention (Chapter 5) lives in.
+- **Compute**: on the order of 1,000 teraFLOPs (10¹⁵ operations/sec) at 16-bit precision. This is the part that does the actual work — every attention lookup and MLP from Chapter 3 bottoms out as matrix multiplies executed on the tensor cores, and it's what you think you're paying for.
+- **Memory**: 80 GB of high-bandwidth memory (**HBM**) at ~3.35 TB/s. This is where everything *waits* to be worked on: the model's weights, the KV cache, and the activations in flight all live here — and every number must cross the bus to the cores to participate in a single FLOP. The capacity (80 GB) decides what fits on the card at all; the bandwidth (3.35 TB/s) decides how fast the cores can be fed. It's what you're *actually* paying for, as the rest of the chapter will argue.
+- **On-chip SRAM**: tens of megabytes, ~10× faster than HBM. The scratchpad sitting next to the cores, holding only the small tiles of data being multiplied *right now* — thousands of times too small for the weights, so data constantly shuttles HBM → SRAM → cores and back. The best GPU kernels' whole game is maximizing work done per shuttle: FlashAttention (Chapter 5) is famous precisely for keeping attention's intermediate score matrix in SRAM instead of round-tripping it through HBM.
 
 Do the division — compute rate over memory rate, the seconds cancelling — and you get the single most important ratio in this book:
 
