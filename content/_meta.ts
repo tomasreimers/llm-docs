@@ -64,4 +64,12 @@ export default {
     title: 'Chapter 12: Sampling & beyond',
     theme: { breadcrumb: false },
   },
+  '-- Epilogue': {
+    type: 'separator',
+    title: 'EPILOGUE',
+  },
+  epilogue: {
+    title: 'Epilogue: Where this leaves you',
+    theme: { breadcrumb: false },
+  },
 };
