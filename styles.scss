@@ -49,18 +49,17 @@ main[data-pagefind-body] {
     hyphens: auto;
   }
 
-  // Highlighter links: a thick underline pulled up behind the text, like a
-  // marker stroke. Link text keeps the ink color.
+  // Highlighter links: a thick marker stroke behind the lower half of the
+  // text. Drawn as a background gradient rather than a text-decoration so it
+  // paints *under* the ::selection overlay (decorations paint over it, which
+  // looked muddy when selecting) and never clips descenders oddly.
   :where(p, li, figcaption) a {
     color: inherit;
-    text-decoration-line: underline;
-    text-decoration-skip-ink: none;
-    text-decoration-thickness: 0.5em;
-    text-underline-offset: -0.25em;
-    text-decoration-color: var(--brand);
+    text-decoration: none;
+    background-image: linear-gradient(to top, var(--brand) 0.45em, transparent 0.45em);
 
     &:hover {
-      text-decoration-color: var(--brand-alt);
+      background-image: linear-gradient(to top, var(--brand-alt) 0.45em, transparent 0.45em);
     }
   }
 
