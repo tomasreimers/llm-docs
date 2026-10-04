@@ -237,6 +237,8 @@ There's one curve we haven't mentioned yet, though — and it's the one that act
 
 One last concept, because it's the difference between machine learning and curve fitting. A model with enough parameters can *memorize* its training set — and score 100% on it while being useless on new data. This is **overfitting**, and it's why we always hold out a **test set** the model never trains on, and report accuracy there. In practice you watch *two* loss curves during training — one on training data, one on held-out data — and the number you actually care about is the second. When the training curve keeps falling but the held-out curve turns back upward, the model has stopped learning and started memorizing.
 
+Besides more data, the classic in-training countermeasures are **regularization** techniques: weight decay (which you met inside AdamW), and **dropout** — during training, zero out a different random fraction of the activations on every step, so no unit can rely on precise co-conspirators and the network is forced to learn redundant, robust features. (At inference, dropout is switched off.) For a decade dropout was in every architecture diagram; Chapter 7 holds a small surprise about its fate in LLMs.
+
 The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
 
 ## Further reading

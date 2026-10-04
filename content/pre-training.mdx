@@ -45,6 +45,8 @@ Unlike MNIST's many passes over the same images, your run will see this data rou
 
 With MNIST, Chapter 1 happily looped over 60,000 images dozens of times. At internet scale the economics invert: when data is abundant relative to compute, a *fresh* token teaches more than a repeated one, so you spend your FLOPs on text the model hasn't seen. Repetition also has a measured cost curve: a few epochs over high-quality data are nearly as good as fresh data, but returns decay fast, and heavy repetition actively hurts — the model starts memorizing documents instead of generalizing from them (overfitting, again). In practice labs repeat only the best slices (textbook-grade prose, verified code) a handful of times and show everything else once. This is also why Chapter 4's data wall bites: "just do more epochs" is not an escape hatch.
 
+Here's Chapter 1's promised surprise: **dropout has quietly vanished from LLM configs.** The defining anti-overfitting technique of the deep learning era is set to zero in essentially every modern pre-training run — when the model sees each example once, memorization barely gets a chance to start, and paying a regularization tax to prevent it is pure waste. A concept that was in every architecture diagram for a decade, retired by a change in the data economics.
+
 </details>
 
 ## The objective: unchanged
