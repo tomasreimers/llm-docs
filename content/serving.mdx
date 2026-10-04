@@ -4,6 +4,7 @@ import { KvCalculatorFigure } from "../components/figures/kv-calculator"
 import { QuantQualityFigure } from "../components/figures/quant-quality"
 import { ServingAnatomyFigure } from "../components/figures/serving-anatomy"
 import { SpeculativeFigure } from "../components/figures/speculative"
+import { StackTraceFigure } from "../components/figures/stack-trace"
 
 <Breadcrumbs readingTime={metadata.readingTime} />
 
@@ -82,7 +83,11 @@ Distillation is why "capability lag" keeps shrinking: whatever the frontier does
 
 ## The stack, assembled
 
-Trace a request through everything at once: it arrives, its system-prompt prefix hits cached KV blocks (no prefill), the novel suffix prefills on the compute pool, decode joins a continuously-batched swarm on the decode pool reading 4-bit weights, a draft model speculates 4 tokens ahead, and PagedAttention shuffles KV blocks underneath it all. None of these techniques knows anything about language. It's caches, pages, schedulers, and compression — your field, aimed at one workload. The invoice line "per million tokens" is the price of bytes moved through HBM, divided by how cleverly they're shared.
+Trace a request through everything at once:
+
+<StackTraceFigure />
+
+None of these techniques knows anything about language. It's caches, pages, schedulers, and compression — your field, aimed at one workload. The invoice line "per million tokens" is the price of bytes moved through HBM, divided by how cleverly they're shared.
 
 ## Further reading
 
