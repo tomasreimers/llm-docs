@@ -48,7 +48,7 @@ export function ReluFigure() {
         <text x={X(2.8)} y={Y(1.1) + 13} textAnchor="middle" fontSize={10.5} fill="currentColor" opacity={0.7}>
           unchanged (slope 1)
         </text>
-        <text x={X(0) + 10} y={Y(0) + 24} textAnchor="start" fontSize={10} fill="currentColor" opacity={0.6}>
+        <text x={X(0) + 26} y={Y(0) + 30} textAnchor="start" fontSize={10} fill="currentColor" opacity={0.6}>
           the branch
         </text>
       </svg>

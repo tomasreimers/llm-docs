@@ -74,10 +74,10 @@ export function KvCalculatorFigure() {
         </div>
         <div className="mb-1 flex h-8 w-full overflow-hidden rounded-sm bg-gray-500/10">
           <div
-            className="flex h-8 items-center justify-center text-xs text-white dark:text-black"
+            className="flex h-8 items-center justify-center overflow-hidden text-xs"
             style={{ width: `${(weightsGB / scaleMax) * 100}%`, background: ink(80) }}
           >
-            weights
+            <span className="whitespace-nowrap text-white dark:text-black">weights</span>
           </div>
           <div
             className="flex h-8 items-center justify-center text-xs"

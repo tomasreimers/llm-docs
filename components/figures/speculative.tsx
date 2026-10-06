@@ -40,7 +40,7 @@ export function SpeculativeFigure() {
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
         <svg viewBox="0 0 560 215" className="w-full max-w-xl">
           {/* context */}
-          <text x={X0 - 12} y={40} textAnchor="end" fontSize={10.5} fill="currentColor" opacity={0.7}>
+          <text x={4} y={40} textAnchor="start" fontSize={10.5} fill="currentColor" opacity={0.7}>
             …Solar System is
           </text>
 

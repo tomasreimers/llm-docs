@@ -162,7 +162,7 @@ export function XorFigure() {
               </g>
             ))}
             {bias.map(([node, k, label]) => (
-              <text key={k} x={NODE[node].x} y={NODE[node].y + R + 14} textAnchor="middle" fontSize={9} fill="currentColor" opacity={0.55}>
+              <text key={k} x={NODE[node].x} y={NODE[node].y + R + 14} textAnchor="middle" fontSize={10} fill="currentColor" opacity={0.7}>
                 {label} = {shownP[k].toFixed(2)}
               </text>
             ))}
