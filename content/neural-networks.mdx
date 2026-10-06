@@ -220,7 +220,7 @@ Besides more data, the classic in-training countermeasures are **regularization*
 - **Weight decay**, which you met inside AdamW.
 - **Dropout**: during training, zero out a different random fraction of the activations each step, so no unit can rely on precise co-conspirators. (At inference, dropout is off.) For a decade it was in every architecture diagram; Chapter 7 holds a surprise about its fate in LLMs.
 
-The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
+The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. That tension returns with a vengeance when we discuss benchmark contamination in Chapter 9.
 
 One more thing: nothing in this chapter was actually about digits. The machinery was generic — vectors in, scores out, loss down — pointed at 28×28 images only because the labels came free, and labels are the scarce resource: someone had to write 70,000 of them. So carry this into the next chapter: the largest pile of labeled data our species has produced is *text*, where every word is automatically a label for the words before it. What happens if we point this machinery at that?
 

@@ -54,8 +54,6 @@ $$
 C \approx 2.6 \times 10^{24} \times 0.40 \approx 10^{24} \text{ FLOPs.}
 $$
 
-A clean number. Hold onto it; the rest of the chapter spends it.
-
 ## The straight lines
 
 Knowing your budget doesn't tell you what it buys. In 2020, [Kaplan et al.](https://arxiv.org/abs/2001.08361) at OpenAI answered that: they trained transformers at many sizes (all small enough to be affordable) and measured how the next-token loss (Chapter 2's cross-entropy) fell as $N$, $D$, and $C$ grew. The result only shows up if you plot it right. The runs span a factor of a million in compute, so on ordinary axes everything cheap is crushed into the left margin; the fix is a **log-log plot**, where each tick on each axis means "×10" rather than "+10" (so the distance from 1 to 10 equals the distance from 10 to 100 — equal space per multiplication). Replotted that way, the measurements form a straight line, spanning many orders of magnitude without bending. And a straight line on log-log axes is a specific mathematical claim — it means the relationship is a **power law**:

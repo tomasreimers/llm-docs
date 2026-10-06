@@ -38,7 +38,13 @@ Work through the chapter and check each of these. Where a threshold is given, co
    chapter leans on the construction more than ~once per 500 words.
 6. **Self-narrated importance.** "This matters because," "why this matters," "worth
    noting," "crucially," "the key insight is." The strongest live tell in 2026
-   measurements. Flag every instance; the fix is to *show* the stakes, not announce them.
+   measurements. Also catch its second-person cousin, the **stage-direction to the
+   reader**: "hold onto it," "remember this number," "keep this in mind," "watch
+   what happens" — and the dramatic fragment that announces significance instead of
+   having it ("A clean number."). An imperative that delivers its content in the
+   same sentence ("Watch what the backward pass reuses: X, Y") is direct address
+   and fine; an imperative whose only content is *that something is important* is
+   the tell. Flag every instance; the fix is to *show* the stakes, not announce them.
 7. **Em-dash density.** A one-directional tell: absence proves nothing, and
    occasional em-dashes are ordinary good prose — but flag any paragraph with
    em-dashes in more than half its sentences, any sentence with two or more pairs,
