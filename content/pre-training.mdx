@@ -16,7 +16,12 @@ Everything so far has been about the *function*: the trained network that maps a
 
 The framing is not a metaphor. Chapter 2 noted that cross-entropy loss counts the bits needed to encode text under the model's beliefs (in base-2 logs the unit is bits; under the natural logs used in practice, *nats*, the same idea, a constant factor apart), so a model that predicts text well literally compresses it well. Pre-training is lossy compression of humanity's written output into a few terabytes of parameters, and the "loss" in this lossy compression is exactly the stuff the model gets wrong.
 
-The name deserves a word before we use it for a whole chapter: *pre*-training is "pre" relative to the training that was supposed to matter. In the older recipe, you first trained a network on some big generic objective to give it a foundation, then did the *real*, task-specific training on top — the generic phase was mere preparation, hence the prefix. The LLM era kept the name and inverted the emphasis: the "preparation" grew into 99% of the compute and essentially all of the capability, while the "real" training shrank into the comparatively tiny shaping pass of Chapter 8, leaving the prefix behind as a fossil.
+<details>
+<summary>Why "pre"-training? The name is a fossil.</summary>
+
+*Pre*-training is "pre" relative to the training that was supposed to matter. In the older recipe, you first trained a network on some big generic objective to give it a foundation, then did the *real*, task-specific training on top — the generic phase was mere preparation, hence the prefix. The LLM era kept the name and inverted the emphasis: the "preparation" grew into 99% of the compute and essentially all of the capability, while the "real" training shrank into the comparatively tiny shaping pass of Chapter 8, leaving the prefix behind as a fossil.
+
+</details>
 
 Chapter 4 left us with a fully-planned run: an 8B model, 15 trillion tokens, your 1,000 GPUs, about a month. This chapter executes it, in four movements:
 

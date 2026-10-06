@@ -25,7 +25,10 @@ Chapter 2 left a network-shaped hole: something has to read the context's embedd
 
 ## The problem attention solves
 
-Recall the RNN's two flaws. Squeezing an arbitrarily long past into one fixed-size hidden state meant long-range information got crushed: by the end of a page, the beginning had been averaged into mush. And the recurrence itself (each step consuming the previous step's output) meant the computation was inherently *serial*: token 1,000 could not be processed until tokens 1 through 999 had been, no matter how much hardware you owned.
+Recall the RNN's two flaws:
+
+- Squeezing an arbitrarily long past into one fixed-size hidden state meant long-range information got crushed: by the end of a page, the beginning had been averaged into mush.
+- The recurrence itself (each step consuming the previous step's output) meant the computation was inherently *serial*: token 1,000 could not be processed until tokens 1 through 999 had been, no matter how much hardware you owned.
 
 Start from what Chapter 2 handed us: after the embedding lookup, the context already *is* a list of vectors, one per token. The RNN's defining decision was to fold that list, token by token, into a single running summary; the first flaw is that decision's direct price: a thousand tokens of detail forced through one keyhole of fixed width $d$ (the hidden vector's dimension — a few thousand numbers). So consider the opposite decision: **don't fold.** Keep all $n$ vectors, and refine them in *rounds*. You've seen this organization before: Chapter 1's MLP was built from stacked **layers**, each one taking the previous layer's output and transforming it. The transformer keeps the word and scales up the unit: here, a layer takes all $n$ token vectors in and hands all $n$ vectors back, each one refined (what exactly happens inside a layer is this chapter's remaining business). Stack a few dozen layers and token 500's vector stays token 500's vector all the way up the stack, refined at every layer.
 
