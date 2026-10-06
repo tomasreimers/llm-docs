@@ -18,7 +18,7 @@ import MnistPng from "../public/images/content/neural-networks/mnist.png"
 <Byline readingTime={metadata.readingTime} />
 
 
-In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too. (60,000 of the images are used for training; 10,000 are held back, for a reason that closes the chapter.)
+In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled (70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database)) became the "hello world" of machine learning, and it's where we'll start too. (60,000 of the images are used for training; 10,000 are held back, for a reason that closes the chapter.)
 
 <Image src={MnistPng} alt="A grid of sample handwritten digits from the MNIST dataset, ten examples each of 0 through 9" />
 
@@ -26,13 +26,13 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 
 ## Programming with data
 
-Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 — every rule you write has a thousand exceptions — and the early vision systems built on hand-written rules fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
+Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 (every rule you write has a thousand exceptions), and the early vision systems built on hand-written rules fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
 
 That's the thread this chapter pulls on, in three steps:
 
-1. We treat digit-reading as a statistics problem. The simplest statistical tool is a regression — give every pixel a weight, add up the evidence — and this alone reads 92% of digits correctly.
-2. But a regression is linear: it can weigh each pixel, but it can't see *combinations* of strokes. Stacking regressions with small decisions between them — a neural network — lets us learn far richer functions than linear ones.
-3. "Learning" means searching for good values of the weights. Gradient descent does the searching — measure how wrong the current weights are and follow the slope downhill — and the chain rule (backpropagation) is what makes computing that slope cheap, even for millions of weights.
+1. We treat digit-reading as a statistics problem. The simplest statistical tool is a regression (give every pixel a weight, add up the evidence), and this alone reads 92% of digits correctly.
+2. But a regression is linear: it can weigh each pixel, but it can't see *combinations* of strokes. Stacking regressions with small decisions between them (a neural network) lets us learn far richer functions than linear ones.
+3. "Learning" means searching for good values of the weights. Gradient descent does the searching (measure how wrong the current weights are and follow the slope downhill), and the chain rule (backpropagation) is what makes computing that slope cheap, even for millions of weights.
 
 Seen this way, machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
 
@@ -52,7 +52,7 @@ $$
 \tip{10 scores — one per digit}{y} = \tip{a 10×784 matrix of learned weights}{W}\tip{the image as a vector of 784 pixel values}{x} + \tip{10 learned offsets — one per digit}{b}
 $$
 
-where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone — a *linear classifier* — gets about 92% accuracy on MNIST: a matrix multiply is already a primitive form of pattern matching.
+where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone (a *linear classifier*) gets about 92% accuracy on MNIST: a matrix multiply is already a primitive form of pattern matching.
 
 <LinearScoresFigure />
 
@@ -68,7 +68,7 @@ $$
 y = \tip{second layer: weighs combinations of features into digit scores}{W_2} \, \tip{the branch: zeroes out features that aren't present}{\mathrm{relu}}(\tip{first layer: detects 512 features in the pixels}{W_1 x + b_1}) + b_2
 $$
 
-With one **hidden layer** — the middle layer, neither input nor output — of 512 units (a designer's choice, not a derived number), this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
+With one **hidden layer** (the middle layer, neither input nor output) of 512 units (a designer's choice, not a derived number), this gets ~98% on MNIST. Intuitively, the first layer learns to detect features (strokes, loops, corners), and the second layer learns to combine features into digits.
 
 <MlpFigure />
 
@@ -96,11 +96,11 @@ Why a *small* step — and why must the steps shrink as we close in? Take the sa
 
 <FixedStepFigure />
 
-The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning. Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On a one-weight toy — loss $a\theta^2$, the bowl from the figures above — you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
+The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning. Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
 
 Two practical modifications, both in every framework:
 
-- **Stochastic** gradient descent (**SGD** — the name you'll see in every framework and paper): you *could* compute the exact gradient over all 60,000 images before each step — but consider what that buys you. The gradient from a random sample of images is an *unbiased* estimate of the full gradient (right on average, noisy per sample), and averaging $n$ samples shrinks the noise only like $1/\sqrt{n}$ — statistics' standard-error rule — while the cost grows linearly with $n$. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones (60,000 ÷ 128 ≈ 470 batches per pass — call it 500), and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
+- **Stochastic** gradient descent (**SGD**, the name you'll see in every framework and paper): you *could* compute the exact gradient over all 60,000 images before each step. But consider what that buys you. The gradient from a random sample of images is an *unbiased* estimate of the full gradient (right on average, noisy per sample), and averaging $n$ samples shrinks the noise only like $1/\sqrt{n}$ (statistics' standard-error rule) while the cost grows linearly with $n$. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones (60,000 ÷ 128 ≈ 470 batches per pass, call it 500), and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
 - **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
 
 ## The loss: measuring wrongness
@@ -119,13 +119,13 @@ Softmax exponentiates each score (positive, with differences amplified) and norm
 
 <SoftmaxFigure />
 
-The target it's graded against is the label written as a **one-hot** vector — all zeros except a 1 on the correct digit: a probability distribution with all of its mass on the truth. The grading rule is **cross-entropy loss**: the negative log — the *natural* log, base $e$; deep learning's logs all are, unless marked — of the probability the model assigned to the correct answer.
+The target it's graded against is the label written as a **one-hot** vector — all zeros except a 1 on the correct digit: a probability distribution with all of its mass on the truth. The grading rule is **cross-entropy loss**: the negative log (the *natural* log, base $e$; deep learning's logs all are, unless marked) of the probability the model assigned to the correct answer.
 
 $$
 \tip{the loss — what gradient descent minimizes}{L} = \tip{negated so that more confidence means less loss}{-\log}(\tip{the probability the model gave the right answer}{p_{\text{correct}}})
 $$
 
-The log of a probability has a name you'll meet in every LLM API: a **logprob**. Probabilities live in [0, 1], so logprobs live in [−∞, 0] — zero when the model is certain, increasingly negative as it's surprised — and cross-entropy is just the correct answer's logprob, negated. If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is $-\ln(0.01) \approx 4.6$.
+The log of a probability has a name you'll meet in every LLM API: a **logprob**. Probabilities live in [0, 1], so logprobs live in [−∞, 0] (zero when the model is certain, increasingly negative as it's surprised), and cross-entropy is just the correct answer's logprob, negated. If the model puts probability 1 on the right answer, the loss is 0. If it puts probability 0.01 on it, the loss is $-\ln(0.01) \approx 4.6$.
 
 <details>
 <summary>Why the log, rather than something simpler like penalizing $1 - p_{\text{correct}}$?</summary>
@@ -142,9 +142,9 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 ## Backpropagation: the chain rule, industrialized
 
-How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
+How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back (pixels in, through the layers, predictions out) is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
 
-The naive recipe: nudge one weight by a tiny $\varepsilon$, re-run the network, and read off the loss change — a derivative estimate costing one forward pass *per weight*, 400,000 of them per training step. [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients — exactly, not by nudging — in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. Take the simplest case from our own network — the loss $L$ depends on the prediction $y$, and the prediction depends on some weight $w$. Then:
+The naive recipe: nudge one weight by a tiny $\varepsilon$, re-run the network, and read off the loss change — a derivative estimate costing one forward pass *per weight*, 400,000 of them per training step. [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients (exactly, not by nudging) in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. Take the simplest case from our own network — the loss $L$ depends on the prediction $y$, and the prediction depends on some weight $w$. Then:
 
 $$
 \frac{\partial L}{\partial w} = \tip{how much the loss moves when y moves}{\frac{\partial L}{\partial y}} \cdot \tip{how much y moves when the weight moves}{\frac{\partial y}{\partial w}}
@@ -152,9 +152,9 @@ $$
 
 Nudge the weight: its effect on the prediction is scaled by $\partial y/\partial w$, and that effect on the loss is scaled again by $\partial L/\partial y$ — two links in a chain, two factors in a product. A deep network is just a longer chain.
 
-Backprop computes every weight's derivative — exactly, not by estimate — in one sweep:
+Backprop computes every weight's derivative (exactly, not by estimate) in one sweep:
 
-1. **One forward pass**, keeping every intermediate value in memory instead of discarding it — the first layer's weighted sums $h$, the ReLU'd versions $a$, the prediction $y$, the loss $L$. These intermediate values — everything computed between input and output, as opposed to the weights computed *with* — are called **activations**; the term recurs all book.
+1. **One forward pass**, keeping every intermediate value in memory instead of discarding it — the first layer's weighted sums $h$, the ReLU'd versions $a$, the prediction $y$, the loss $L$. These intermediate values (everything computed between input and output, as opposed to the weights computed *with*) are called **activations**; the term recurs all book.
 2. **One backward sweep.** Start at the loss and walk the network back to front. At each value, compute "how much does the loss change if *this* changes" — which is cheap, because it's just the answer already computed for the value *after* it, times one local derivative. And the local derivatives are known analytically: every operation in the network is simple (multiply, add, relu, softmax), and calculus gives each one's derivative as a formula — evaluated instantly using the values remembered from the forward pass. No $\varepsilon$ anywhere.
 3. **Collect the gradients along the way.** Every time the sweep passes a weight, that weight's exact $\partial L/\partial w$ falls out as a byproduct. By the time it reaches the input, you hold the derivative for *all* 400,000 weights — from one backward walk that costs about as much as the forward one.
 
@@ -184,7 +184,7 @@ for images, labels in dataloader:          # batches of 128
     opt.step()                             # gradient descent step
 ```
 
-Every model in this book — up to and including the frontier ones — is trained by a scaled-up version of these ten lines.
+Every model in this book (up to and including the frontier ones) is trained by a scaled-up version of these ten lines.
 
 ## Better optimizers: momentum and Adam
 

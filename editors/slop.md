@@ -39,10 +39,12 @@ Work through the chapter and check each of these. Where a threshold is given, co
 6. **Self-narrated importance.** "This matters because," "why this matters," "worth
    noting," "crucially," "the key insight is." The strongest live tell in 2026
    measurements. Flag every instance; the fix is to *show* the stakes, not announce them.
-7. **Em-dash density.** A one-directional tell: absence proves nothing, and this
-   book's house style legitimately uses them — but flag any paragraph with em-dashes
-   in more than half its sentences, any sentence with two or more pairs, and chapters
-   that exceed roughly 20 em-dashes per 1,000 words.
+7. **Em-dash density.** A one-directional tell: absence proves nothing, and
+   occasional em-dashes are ordinary good prose — but flag any paragraph with
+   em-dashes in more than half its sentences, any sentence with two or more pairs,
+   and chapters that exceed roughly 20 em-dashes per 1,000 words. When flagging,
+   suggest the conversion: paired appositives usually become parentheses or commas;
+   single-dash tails usually become a colon, a semicolon, or a new sentence.
 8. **Aphorism density.** This book earns punchy closers — but every paragraph ending
    on a drop-the-mic one-liner is a formula. Flag runs of 3+ consecutive paragraphs
    that each end in an aphorism.
@@ -63,8 +65,10 @@ Work through the chapter and check each of these. Where a threshold is given, co
 
 ## What NOT to flag (house-style carve-outs)
 
-- Em-dashes, worked numbers, direct address ("you"), and short sentences per se.
-  Density and formula are the problem, never existence.
+- Worked numbers, direct address ("you"), and short sentences per se. Density and
+  formula are the problem, never existence — this applies to em-dashes too (a few
+  per page is normal writing), but em-dash *density* enjoys no house-style
+  protection: the thresholds in item 7 are binding.
 - Bold **term introductions** at first definition — that's the book's define-before-use
   convention, not decoration.
 - Technical enumerations where a list is genuinely the right structure (config

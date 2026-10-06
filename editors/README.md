@@ -62,8 +62,11 @@ FINDINGS (severity-ordered, max 10):
 Editors advise; they do not rule. The house voice (see the style conventions in the
 repo and the author's past decisions) wins ties:
 
-- This book deliberately uses em-dashes, worked numbers, direct address, and short
-  punchy closers. Editors flag **density and formula**, not existence.
+- This book deliberately uses worked numbers, direct address, and short punchy
+  closers. Editors flag **density and formula**, not existence. Em-dashes get no
+  such protection: the Slop editor's density thresholds are binding, and the writer
+  should convert dashes (to parentheses, commas, colons, or new sentences) rather
+  than argue house style.
 - An editor's suggested fix is a starting point; the writer may fix the underlying
   problem a different way.
 - If two editors give conflicting advice (e.g., Completeness wants expansion where

@@ -40,9 +40,9 @@ Run it: a model with a modest 20% per-attempt success rate already passes 89% of
 
 <PassAtKFigure />
 
-Two readings of the same model — "usually fails" and "nearly always succeeds, given tries" — and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
+Two readings of the same model ("usually fails" and "nearly always succeeds, given tries"), and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
 
-And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless — a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^n$ for an $n$-step task (note the exponent is now step count, not attempt count). Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over a twenty-step task; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes — the exponent just points the other way — and most published numbers measure only the first.
+And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless; a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^n$ for an $n$-step task (note the exponent is now step count, not attempt count). Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over a twenty-step task; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes (the exponent just points the other way), and most published numbers measure only the first.
 
 ## Why you can't trust the numbers
 
@@ -58,7 +58,7 @@ Four systematic rots, in ascending order of subtlety:
 
 **Construct validity.** Does a 57-subject quiz measure what you mean by "smart"? Benchmark scores are precise measurements of *something*, and whether that something is what you're buying is a question the headline number skips.
 
-And beneath all four, a floor they stand on: **noise**. A benchmark score is a sample statistic with error bars nobody prints: the standard error of a measured proportion is $\sqrt{p(1-p)/n}$ — worst at $p = 0.5$ — and two of those (the two-sigma rule) make the 95% interval. On a 100-question eval that's $2\sqrt{0.25/100} = \pm 10$ points, so a 3-point gap between models is a coin flip; even on the ~14,000 questions of MMLU's graded test split it's ±0.8, making decimal-point rankings numerology. And scores are haunted by **prompt sensitivity**: reorder the multiple-choice options or reformat the prompt and results swing by whole points, which is why serious comparisons rerun every model under one harness with one prompt format — never quote two launch posts at each other.
+And beneath all four, a floor they stand on: **noise**. A benchmark score is a sample statistic with error bars nobody prints: the standard error of a measured proportion is $\sqrt{p(1-p)/n}$ (worst at $p = 0.5$), and two of those (the two-sigma rule) make the 95% interval. On a 100-question eval that's $2\sqrt{0.25/100} = \pm 10$ points, so a 3-point gap between models is a coin flip; even on the ~14,000 questions of MMLU's graded test split it's ±0.8, making decimal-point rankings numerology. And scores are haunted by **prompt sensitivity**: reorder the multiple-choice options or reformat the prompt and results swing by whole points, which is why serious comparisons rerun every model under one harness with one prompt format. Never quote two launch posts at each other.
 
 ## Grading without answer keys: judges and arenas
 
@@ -106,7 +106,7 @@ The mental shift: in ordinary software, tests verify logic you wrote. Here, the 
 
 When a new model drops, the sophisticated read of its eval table: check the benchmarks you know aren't saturated, discount anything the marketing leads with, note the k on every pass@k, treat arena Elo as a style-inclusive signal with error bars, and reserve judgment until it's run on *your* golden set. Benchmarks are the field's shared unit tests — imperfect, gamed, indispensable. The mistake isn't trusting them too little or too much; it's forgetting they were designed to answer someone else's question.
 
-One kind of number has gone suspiciously unexamined in this book so far. Every chapter has treated compute as a given — "10²⁴ FLOPs," said breezily, as if FLOPs grew on trees. They don't. They come out of specific silicon with specific, stubborn physics, and that physics — not the math — sets the price of every token you will ever buy. Time to meet the machine.
+One kind of number has gone suspiciously unexamined in this book so far. Every chapter has treated compute as a given — "10²⁴ FLOPs," said breezily, as if FLOPs grew on trees. They don't. They come out of specific silicon with specific, stubborn physics, and that physics, not the math, sets the price of every token you will ever buy. Time to meet the machine.
 
 ## Further reading
 
