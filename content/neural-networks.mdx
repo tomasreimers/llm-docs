@@ -45,9 +45,9 @@ Back to MNIST — an MNIST image is 28×28 pixels. Flatten it and you get a vect
 
 <FlattenFigure />
 
-Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, which we can treat as (and will shortly convert into) probabilities. Again, we're doing statistics, not logic.
+Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, soon converted into probabilities. Again: statistics, not logic.
 
-The simplest mechanism in all of statistics for turning many weighted pieces of evidence into a score is a regression — a linear function of the input:
+Statistics' simplest mechanism for turning weighted evidence into a score is a regression — a linear function of the input:
 
 $$
 \tip{10 scores — one per digit}{y} = \tip{a 10×784 matrix of learned weights}{W}\tip{the image as a vector of 784 pixel values}{x} + \tip{10 learned offsets — one per digit}{b}
@@ -59,7 +59,7 @@ where $W$ is a 10×784 grid of weights (a **matrix**) and $b$ holds ten learned 
 
 Why does a linear model top out at 92%? Because of what linearity *means*: each pixel gets one fixed weight, votes independently, and the votes are simply added up. A weighted sum is a linear combination — pixels do combine, but only *additively*. What it can't express is an **interaction**: "this pixel is evidence for an 8 *only if* this other region is dark too." The pixels of a 5 and a 2 overlap heavily; what separates them is strokes appearing *together*, a conjunction independent adding can't reproduce. In programming terms: a linear function is a program with no `if` statements — one pass of weighted arithmetic, no decisions that depend on the input.
 
-You might try to fix this by stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses into one matrix). However many layers you stack, you've written a longer program with still no `if` statements.
+Stacking two linear layers doesn't help: composing linear functions gives another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses into one matrix). However many layers you stack, you've written a longer program with still no `if` statements.
 
 The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29) (rectified linear unit): $\mathrm{relu}(x) = \max(0, x)$, applied to each **unit** (or *neuron*) — one weighted sum in a layer's output. Below zero the unit outputs nothing; above zero it passes its signal through — a branch, the smallest possible `if`:
 
