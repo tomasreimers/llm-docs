@@ -21,7 +21,7 @@ export function AgentLoopFigure() {
           task + transcript so far
         </text>
         <text x={105} y={160} textAnchor="middle" fontSize={9.5} fill="currentColor" opacity={0.6}>
-          (the agent&apos;s entire memory)
+          the agent&apos;s entire memory
         </text>
 
         {/* model */}

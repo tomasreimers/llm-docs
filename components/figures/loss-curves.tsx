@@ -41,10 +41,10 @@ export function LossCurvesFigure() {
         <text x={262} y={52} fontSize={11.5} fill="currentColor" opacity={0.85}>
           learning rate too high: diverges
         </text>
-        <text x={385} y={Y(1.95)} fontSize={11.5} fill="currentColor" opacity={0.85}>
+        <text x={385} y={Y(1.95) - 14} fontSize={11.5} fill="currentColor" opacity={0.85}>
           too low: crawls
         </text>
-        <text x={300} y={Y(0.12) - 12} fontSize={11.5} fill="currentColor" opacity={0.85}>
+        <text x={310} y={Y(0.75)} fontSize={11.5} fill="currentColor" opacity={0.85}>
           healthy: fast drop, long tail
         </text>
       </svg>

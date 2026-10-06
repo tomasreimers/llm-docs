@@ -59,7 +59,7 @@ export function PassAtKFigure() {
             />
             <text
               x={X(2) + 8}
-              y={Y(1 - Math.pow(1 - r.p, 2)) - 9}
+              y={Y(1 - Math.pow(1 - r.p, 2)) + (i === 2 ? -13 : 18)}
               fontSize={11}
               fill="currentColor"
               opacity={0.8}

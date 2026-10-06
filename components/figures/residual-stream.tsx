@@ -13,7 +13,7 @@ function Block({ y, label }: { y: number; label: string }) {
       />
       {/* write back (added) */}
       <path
-        d={`M 330 ${y + 30} C 370 ${y + 30}, 170 ${y + 8}, 128 ${y + 8}`}
+        d={`M 330 ${y + 30} C 392 ${y + 24}, 330 ${y - 6}, 240 ${y - 2} C 200 ${y}, 165 ${y + 4}, 128 ${y + 8}`}
         fill="none"
         stroke="currentColor"
         strokeOpacity={0.85}

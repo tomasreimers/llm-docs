@@ -116,7 +116,7 @@ export function OvertrainFigure() {
 
         {/* the declined optimum of the big budget */}
         <circle cx={X(bigMin.logN)} cy={Y(bigMin.l)} r={3.5} fill="currentColor" fillOpacity={0.55} />
-        <text x={X(bigMin.logN) + 12} y={Y(bigMin.l) + 6} fontSize={10.5} fill="currentColor" opacity={0.6}>
+        <text x={X(bigMin.logN) + 12} y={Y(bigMin.l) + 16} fontSize={10.5} fill="currentColor" opacity={0.6}>
           this budget&apos;s optimum: 81B
         </text>
       </svg>

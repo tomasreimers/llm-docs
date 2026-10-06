@@ -151,7 +151,7 @@ export function ScalingLawsFigure() {
               return (
                 <g key={i} opacity={show ? 1 : 0} style={{ transition: 'opacity 500ms' }}>
                   <circle cx={LX(logC)} cy={LY(loss)} r={5.5} fill="none" stroke="currentColor" strokeWidth={2} />
-                  <text x={LX(logC)} y={LY(loss) - 14} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.8}>
+                  <text x={LX(logC)} y={LY(loss) - 20} textAnchor="middle" fontSize={11} fill="currentColor" opacity={0.8}>
                     {p.label}
                   </text>
                 </g>

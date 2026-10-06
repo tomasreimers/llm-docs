@@ -29,7 +29,7 @@ export function LoraFigure() {
         <text x={212} y={86} textAnchor="middle" fontSize={9.5} fill="currentColor" opacity={0.6}>
           4096 × 4096 · 16.8M params
         </text>
-        <text x={212} y={102} textAnchor="middle" fontSize={9.5} fill="currentColor" opacity={0.6}>
+        <text x={212} y={102} textAnchor="middle" fontSize={8.5} fill="currentColor" opacity={0.6}>
           no gradients · no optimizer state
         </text>
 

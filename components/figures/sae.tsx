@@ -65,7 +65,7 @@ export function SaeFigure() {
                 strokeWidth={label ? 1.5 : 1}
               />
               {label && (
-                <text x={x + CELL + 10} y={y + CELL / 2 + 4} fontSize={9.5} fill="currentColor" opacity={0.8}>
+                <text x={DX + (CELL + 6) / 2 + CELL + 10} y={y + CELL / 2 + 4} fontSize={9.5} fill="currentColor" opacity={0.8}>
                   {label}
                 </text>
               )}

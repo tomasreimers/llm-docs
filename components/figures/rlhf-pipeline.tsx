@@ -113,7 +113,7 @@ export function RlhfPipelineFigure() {
           <Box x={480} y={30} w={140} label="reward model" sub="compressed judgment" active={s === 1 || s === 2} />
           <Box x={250} y={180} w={130} label="final model" sub="RL (PPO)" active={s === 3} />
           <Arrow d="M 150 53 L 243 53" label="demonstrations" lx={197} ly={43} active={s === 0} />
-          <Arrow d="M 380 53 L 473 53" label="A ≻ B comparisons" lx={427} ly={43} active={s === 1 || s === 2} />
+          <Arrow d="M 380 53 L 473 53" label="A ≻ B comparisons" lx={427} ly={36} active={s === 1 || s === 2} />
           <Arrow d="M 315 76 L 315 173" label="samples, gets scored" lx={382} ly={130} active={s === 3} />
           <Arrow d="M 480 76 C 440 120, 420 150, 387 185" dashed active={s === 3} />
           <Arrow d="M 250 192 C 180 180, 170 120, 233 80" label="KL leash" lx={168} ly={140} active={s === 3} />

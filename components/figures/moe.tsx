@@ -89,8 +89,8 @@ export function MoeFigure() {
                 <line
                   x1={324}
                   y1={144}
-                  x2={EX}
-                  y2={EY(i) + 12}
+                  x2={EX - 48}
+                  y2={144 + ((EX - 48 - 324) / (EX - 324)) * (EY(i) + 12 - 144)}
                   stroke="currentColor"
                   strokeOpacity={active ? 0.85 : scored ? 0.18 : 0.08}
                   strokeWidth={active ? 2 : 1}

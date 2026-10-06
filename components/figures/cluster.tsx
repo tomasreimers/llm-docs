@@ -92,7 +92,7 @@ export function ClusterFigure() {
         <text x={598} y={54} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.65}>
           InfiniBand fabric — ~50 GB/s per GPU
         </text>
-        <text x={598} y={66} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.5}>
+        <text x={598} y={66} textAnchor="end" fontSize={9} fill="currentColor" opacity={0.65}>
           (400 Gb/s links)
         </text>
 

@@ -88,6 +88,7 @@ export function BigramFigure() {
             <div className="mb-1 opacity-60">
               after &quot;{ctx === '.' ? '. (sentence start)' : ctx}&quot;:
             </div>
+            <div className="min-h-[104px]">
             {rows.map((r) => (
               <div key={r.tok} className="flex items-center gap-2">
                 <span className="w-10 text-right">{r.tok}</span>
@@ -99,6 +100,7 @@ export function BigramFigure() {
                 </span>
               </div>
             ))}
+            </div>
           </div>
           <div className="flex max-w-[240px] flex-col items-center gap-2">
             <button
