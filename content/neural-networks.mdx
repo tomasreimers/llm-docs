@@ -6,6 +6,7 @@ import { FlattenFigure } from "../components/figures/flatten"
 import { GradientDescentFigure } from "../components/figures/gradient-descent"
 import { LinearScoresFigure } from "../components/figures/linear-scores"
 import { MlpFigure } from "../components/figures/mlp"
+import { ReluFigure } from "../components/figures/relu"
 import { SoftmaxFigure } from "../components/figures/softmax"
 import { XorFigure } from "../components/figures/xor"
 import { Image } from "../components/image"
@@ -13,7 +14,7 @@ import MnistPng from "../public/images/content/neural-networks/mnist.png"
 
 <Breadcrumbs />
 
-# Neural networks: Functions that learn
+# Neural networks: Learning a function
 
 <Byline readingTime={metadata.readingTime} />
 
@@ -24,19 +25,19 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 
 <span className="mt-2 block text-center text-sm text-gray-500 dark:text-gray-400">Samples from MNIST. Image by [Josef Steppan](https://commons.wikimedia.org/wiki/File:MnistExamples.png), CC BY-SA 4.0.</span>
 
-## Programming with data
+## Where rules fail, examples work
 
-Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 (every rule you write has a thousand exceptions), and the early vision systems built on hand-written rules fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
+Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 (every rule you write has a thousand exceptions), and early rule-based vision systems fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
 
 That's the thread this chapter pulls on, in three steps:
 
 1. We treat digit-reading as a statistics problem. The simplest statistical tool is a regression (give every pixel a weight, add up the evidence), and this alone reads 92% of digits correctly.
-2. But a regression is linear: it can weigh each pixel, but it can't see *combinations* of strokes. Stacking regressions with small decisions between them (a neural network) lets us learn far richer functions than linear ones.
-3. "Learning" means searching for good values of the weights. Gradient descent does the searching (measure how wrong the current weights are and follow the slope downhill), and the chain rule (backpropagation) is what makes computing that slope cheap, even for millions of weights.
+2. But a regression is linear: every pixel votes independently, so it can't express *interactions*, where one stroke's meaning depends on another. Stacking regressions with small decisions between them (a neural network) can approximate far richer functions.
+3. "Learning" means *incrementally improving* the weights from feedback — a random search wouldn't qualify. Gradient descent supplies the increments (measure how wrong the current weights are and follow the slope downhill), and the chain rule (backpropagation) makes that slope cheap to compute, even for millions of weights.
 
-Seen this way, machine learning is a different way to program a computer: instead of writing the function yourself, you write its *signature* (an architecture with millions of tunable parameters), define what "good output" looks like (a loss function), and let an optimization algorithm fill in the implementation.
+A loose but useful analogy to programming: pick a *family* of functions (an architecture with millions of tunable parameters — the signature), define "good output" (a loss function — the spec), and let an optimization algorithm find the family member that fits the examples. Nothing "programs itself": the network is a fixed, highly parameterized function, and what gets learned are its parameters.
 
-One piece of vocabulary before we build: a model's life has two distinct phases. **Training** is when the optimization algorithm is searching for good weights — the model is being written. **Inference** is everything after: the weights are frozen, and the model is simply being *used*, like any other function. This chapter is almost entirely about training; by the end of the book, inference will have earned three chapters of its own.
+One piece of vocabulary before we build: a model's life has two distinct phases. **Training** is when the optimization algorithm is improving the weights — the model is being fit. **Inference** is everything after: the weights are frozen, and the model is simply being *used*, like any other function. This chapter is almost entirely about training; by the end of the book, inference will have earned three chapters of its own.
 
 ## The model: from a matrix to an MLP
 
@@ -52,15 +53,19 @@ $$
 \tip{10 scores — one per digit}{y} = \tip{a 10×784 matrix of learned weights}{W}\tip{the image as a vector of 784 pixel values}{x} + \tip{10 learned offsets — one per digit}{b}
 $$
 
-where $W$ is a 10×784 matrix of weights and $b$ is a vector of 10 biases. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone (a *linear classifier*) gets about 92% accuracy on MNIST: a matrix multiply is already a primitive form of pattern matching.
+where $W$ is a 10×784 grid of weights (a **matrix**) and $b$ holds ten learned offsets (the **biases**), letting each digit's score start high or low before any pixel votes. Each row of $W$ is effectively a template: the dot product between the input and that row measures "how much does this image look like this row's digit." This alone (a *linear classifier*) gets about 92% accuracy on MNIST: a matrix multiply is already a primitive form of pattern matching.
 
 <LinearScoresFigure />
 
-Why does a linear model top out at 92%? Because of what linearity *means*: each pixel gets one fixed weight, votes independently, and the votes are simply added up. A linear model cannot express "this pixel is evidence for an 8 — but only if this *other* region is dark too." The pixels of a 5 and a 2 overlap heavily; what distinguishes them is the *combination* of strokes, and combinations are exactly what a weighted sum can't see. In programming terms: a linear function is a program with no `if` statements — one pass of weighted arithmetic, no decisions that depend on the input.
+Why does a linear model top out at 92%? Because of what linearity *means*: each pixel gets one fixed weight, votes independently, and the votes are simply added up. A weighted sum is a linear combination — pixels do combine, but only *additively*. What it can't express is an **interaction**: "this pixel is evidence for an 8 *only if* this other region is dark too." The pixels of a 5 and a 2 overlap heavily; what separates them is strokes appearing *together*, a conjunction independent adding can't reproduce. In programming terms: a linear function is a program with no `if` statements — one pass of weighted arithmetic, no decisions that depend on the input.
 
 You might try to fix this by stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses into one matrix). However many layers you stack, you've written a longer program with still no `if` statements.
 
-The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29) (rectified linear unit): $\mathrm{relu}(x) = \max(0, x)$, applied to each **unit** (or *neuron*) — one weighted sum in a layer's output. Look at what it does: below zero the unit outputs nothing; above zero it passes its signal through. That's a branch — the smallest possible `if`. With a nonlinearity between them, the layers stop collapsing: the first layer computes features, the ReLU *decides* which are present, and the second layer weighs combinations of those decisions.
+The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29) (rectified linear unit): $\mathrm{relu}(x) = \max(0, x)$, applied to each **unit** (or *neuron*) — one weighted sum in a layer's output. Below zero the unit outputs nothing; above zero it passes its signal through — a branch, the smallest possible `if`:
+
+<ReluFigure />
+
+With a nonlinearity between them, the layers stop collapsing: the first layer computes features, the ReLU *decides* which are present, and the second layer weighs those decisions together.
 
 Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
 
@@ -96,7 +101,7 @@ Why a *small* step — and why must the steps shrink as we close in? Take the sa
 
 <FixedStepFigure />
 
-The multiplier $\eta$ is the **learning rate**, and it is the single most finicky number in all of deep learning. Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
+The multiplier $\eta$ is the **learning rate**, deep learning's most famously finicky number. (Adaptive optimizers like Adam, a few pages on, blunt the worst of it — but they still take a learning rate, and the sweep below remains standard.) Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
 
 Two practical modifications, both in every framework:
 
