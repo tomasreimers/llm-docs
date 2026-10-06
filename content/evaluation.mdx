@@ -11,7 +11,7 @@ import { PassAtKFigure } from "../components/figures/pass-at-k"
 
 Every engineer knows you don't ship code without tests. Now imagine your codebase is a trillion inscrutable floats (Chapter 6), its behavior changed in unknown ways by every training decision, and "correct" is defined as "answers arbitrary human requests well." Evaluation is the testing discipline of machine learning, and for LLMs it is simultaneously the most important and most broken part of the field.
 
-This chapter matters double for you, because unlike pre-training, **you will do this**. Anyone shipping an LLM feature is in the evals business, whether they've admitted it or not. Four stops:
+And unlike pre-training, **you will do this**: anyone shipping an LLM feature is in the evals business, whether they've admitted it or not. Four stops:
 
 1. **The benchmark canon** — the shared tests that define eras, and how grading itself evolved.
 2. **Why you can't trust the numbers** — four systematic rots, from contamination to construct validity.
@@ -22,15 +22,15 @@ This chapter matters double for you, because unlike pre-training, **you will do 
 
 A benchmark is a dataset of tasks plus a grading scheme. A handful have defined the eras:
 
-- **[MMLU](https://arxiv.org/abs/2009.03300)** — ~16K multiple-choice questions across 57 subjects; the "general knowledge" headline number of the GPT-4 era.
-- **[GSM8K](https://arxiv.org/abs/2110.14168)** — grade-school math word problems; for years the standard reasoning test.
-- **[HumanEval](https://arxiv.org/abs/2107.03374)** — write a function from a docstring, graded by *running the tests*. Grade by execution, not text match — a genuinely better idiom.
-- **[GPQA](https://arxiv.org/abs/2311.12022)** — PhD-level science questions that are "Google-proof"; built explicitly because models saturated easier tests.
-- **[SWE-bench](https://arxiv.org/abs/2310.06770)** — resolve real GitHub issues in real repos, graded by the repo's test suite. The closest canon benchmark to economically real work, and the industry's favorite agent metric.
+- **[MMLU](https://arxiv.org/abs/2009.03300)** (Massive Multitask Language Understanding) — ~16K multiple-choice questions across 57 subjects; the "general knowledge" headline number of the GPT-4 era.
+- **[GSM8K](https://arxiv.org/abs/2110.14168)** (Grade School Math 8K) — math word problems; for years the standard reasoning test.
+- **[HumanEval](https://arxiv.org/abs/2107.03374)** — write a function from a docstring, graded by *running the tests*: grading by execution, which beats text-matching.
+- **[GPQA](https://arxiv.org/abs/2311.12022)** (Google-Proof Q&A) — PhD-level science questions built explicitly because models saturated easier tests.
+- **[SWE-bench](https://arxiv.org/abs/2310.06770)** — resolve real GitHub issues in real repos, graded by the repo's test suite. The closest canon benchmark to economically real work, and the favorite metric for coding *agents* (models acting over many steps — Chapter 12).
 
 Read the progression: from multiple choice, to executed code, to *do a junior engineer's job*. Benchmarks have had to chase capability upward — because models keep eating them.
 
-HumanEval also introduced the metric you'll see on every coding leaderboard: **pass@k**, the probability that at least one of $k$ sampled solutions passes the tests. The math is worth thirty seconds, because it changes how you read the numbers. If a model solves a problem with probability $p$ per attempt, then all $k$ independent attempts fail with probability $(1-p)^k$, so:
+HumanEval also introduced the metric you'll see on every coding leaderboard: **pass@k**, the probability that at least one of $k$ sampled solutions passes the tests. Thirty seconds of math changes how you read the numbers. If a model solves a problem with probability $p$ per attempt, then all $k$ independent attempts fail with probability $(1-p)^k$, so:
 
 $$
 \text{pass@}k \; = \; 1 - (1 - p)^k
@@ -42,44 +42,44 @@ Run it: a model with a modest 20% per-attempt success rate already passes 89% of
 
 Two readings of the same model — "usually fails" and "nearly always succeeds, given tries" — and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
 
-And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless — a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^k$. Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over twenty steps; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes — the exponent just points the other way — and most published numbers measure only the first.
+And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless — a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^n$ for an $n$-step task (note the exponent is now step count, not attempt count). Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over a twenty-step task; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes — the exponent just points the other way — and most published numbers measure only the first.
 
 ## Why you can't trust the numbers
 
 Four systematic rots, in ascending order of subtlety:
 
-**Contamination.** Benchmarks are text on the internet; models train on the internet (Chapter 7's decontamination is regex-vs-adversary and imperfect — a rephrased test question sails through). A model can "know" the test the way a student who found the answer key does. This is Chapter 1's overfitting, resurrected at civilizational scale: the held-out set isn't held out anymore. Partial defenses — private test sets, canary strings, continuously refreshed problems — all trade away reproducibility.
+**Contamination.** Benchmarks are text on the internet; models train on the internet (Chapter 7's decontamination is regex-vs-adversary and imperfect — a rephrased test question sails through). A model can "know" the test the way a student who found the answer key does. This is Chapter 1's overfitting, resurrected at civilizational scale: the held-out set isn't held out anymore. Partial defenses exist: private test sets (nothing public to train on, but nothing independent to verify either), **canary strings** (unique marker text embedded in the test file — a model that can recite the marker was trained on the test), and continuously refreshed problems. Each trades away some reproducibility.
 
-**Saturation.** Frontier models cluster in the high 80s and 90s on MMLU, where remaining gains are noise and mislabeled questions. A saturated benchmark ranks nothing; the canon has a shelf life, and the field must keep minting harder tests (GPQA exists precisely because MMLU died).
+**Saturation.** Frontier models cluster in the high 80s and 90s on MMLU, where remaining gains are noise and mislabeled questions. A saturated benchmark ranks nothing, so the canon has a shelf life and the field keeps minting harder tests; GPQA exists because MMLU stopped separating anyone.
 
 <BenchmarkSaturationFigure />
 
 **Goodhart's law.** The moment a benchmark appears in marketing, it stops measuring and starts steering. Labs tune data mixes with benchmarks in view; "benchmark-tuned" is a real slur for models that top leaderboards and disappoint users. The number was a proxy for capability; optimize the proxy and the gap between them widens — the exact reward-hacking dynamic of Chapter 8, one level up.
 
-**Construct validity.** Does a 57-subject quiz measure what you mean by "smart"? Benchmark scores are precise measurements of *something*; whether that something is what you're buying is a question the single headline number quietly skips.
+**Construct validity.** Does a 57-subject quiz measure what you mean by "smart"? Benchmark scores are precise measurements of *something*, and whether that something is what you're buying is a question the headline number skips.
 
-And beneath all four, a floor they stand on: **noise**. A benchmark score is a sample statistic with error bars nobody prints. On a 100-question eval, the 95% confidence interval is about ±10 points — a 3-point gap between models is a coin flip; even on MMLU's ~14,000 questions it's ±0.8, making decimal-point rankings numerology. And scores are haunted by **prompt sensitivity**: reorder the multiple-choice options or reformat the prompt and results swing by whole points, which is why serious comparisons rerun every model under one harness with one prompt format — never quote two launch posts at each other.
+And beneath all four, a floor they stand on: **noise**. A benchmark score is a sample statistic with error bars nobody prints: the standard error of a measured proportion is $\sqrt{p(1-p)/n}$ — worst at $p = 0.5$ — and two of those (the two-sigma rule) make the 95% interval. On a 100-question eval that's $2\sqrt{0.25/100} = \pm 10$ points, so a 3-point gap between models is a coin flip; even on the ~14,000 questions of MMLU's graded test split it's ±0.8, making decimal-point rankings numerology. And scores are haunted by **prompt sensitivity**: reorder the multiple-choice options or reformat the prompt and results swing by whole points, which is why serious comparisons rerun every model under one harness with one prompt format — never quote two launch posts at each other.
 
 ## Grading without answer keys: judges and arenas
 
 Multiple choice and unit tests only cover tasks with checkable answers — Chapter 8's "verifiable" end of the spectrum. For "write a good email," grading needs judgment, and human judgment doesn't scale. The field's two answers:
 
-**LLM-as-judge.** Use a strong model to grade outputs, pioneered by [MT-Bench](https://arxiv.org/abs/2306.05685). It broadly agrees with human raters — with biases you must engineer around, and which should sound familiar from the reward-hacking discussion: **position bias** (favors the first answer shown; fix by grading both orders), **length bias** (favors longer), **self-preference** (favors its own family's prose). A judge is a reward model you run at eval time — trust it accordingly, and never let a model family be its own final examiner.
+**LLM-as-judge.** Use a strong model to grade outputs, pioneered by [MT-Bench](https://arxiv.org/abs/2306.05685). It broadly agrees with human raters — with biases you must engineer around, and which should sound familiar from the reward-hacking discussion: **position bias** (favors the first answer shown; fix by grading both orders), **length bias** (favors longer), **self-preference** (favors its own family's prose). A judge is a reward model (Chapter 8's trained stand-in for human judgment) run at eval time — and graders that stand in for judgment get gamed, so trust it accordingly and never let a model family be its own final examiner.
 
-**Arenas.** [LMArena](https://lmarena.ai/) (née Chatbot Arena) shows users two anonymous models' answers and lets them vote, aggregating millions of votes into **Elo ratings** — the same math as chess. It resists contamination (prompts are live user traffic) and measures *something* real, but that something is "what impresses people in a chat window," which conflates capability with confident formatting. Style-controlled variants exist precisely because the community learned that pleasing and correct are separable — Chapter 8's sycophancy lesson, measured.
+**Arenas.** [LMArena](https://lmarena.ai/) (née Chatbot Arena) shows users two anonymous models' answers and lets them vote, aggregating millions of votes into **Elo ratings** — the same math as chess. It resists contamination (prompts are live user traffic) and measures *something* real, but that something is "what impresses people in a chat window," which conflates capability with confident formatting — the sycophancy dynamic of Chapter 8, now measurable. Style-controlled variants (re-scoring votes while holding length and formatting constant) exist precisely because pleasing and correct turned out to be separable.
 
 <details>
 <summary>How Elo turns votes into a leaderboard.</summary>
 
-Elo assigns each model a number such that rating *gaps* predict win rates: a model rated 100 points above another is expected to win about 64% of head-to-heads; 200 points, about 76% ($E = 1 / (1 + 10^{-\Delta/400})$). After each vote, the winner takes points from the loser in proportion to how surprising the result was — an upset moves ratings a lot, an expected win barely at all. Two properties worth knowing when you read the leaderboard: ratings are *relative* (the absolute number means nothing; only gaps do), and small gaps are noise (a 10-point lead is ~51.4% expected win rate — indistinguishable from a coin flip without enormous vote counts). The confidence intervals on the public board are doing real work; respect them.
+Elo assigns each model a number such that rating *gaps* predict win rates: a model rated 100 points above another is expected to win about 64% of head-to-heads; 200 points, about 76% ($E = 1 / (1 + 10^{-\Delta/400})$). After each vote, the winner takes points from the loser in proportion to how surprising the result was — an upset moves ratings a lot, an expected win barely at all. When you read the leaderboard: ratings are *relative* (the absolute number means nothing; only gaps do), and small gaps are noise (a 10-point lead is ~51.4% expected win rate — indistinguishable from a coin flip without enormous vote counts). The confidence intervals on the public board are doing real work; respect them.
 
 </details>
 
 ## Two newer rooms in the zoo
 
-**Long context.** Chapters 5 and 7 both deferred a question here: does "supports 1M tokens" mean the model can *use* 1M tokens? The basic probe is **needle in a haystack**: bury one arbitrary fact ("the magic number is 4,096,241") at a controlled depth in a long document, ask for it, and repeat across every length-and-depth cell until you have a grid. Modern models ace that naive version — and still degrade on the harder family: multiple needles, **multi-hop** chains (fact A names the place you'll find fact B), and any task requiring *aggregation* across the window rather than retrieval from it ([RULER](https://arxiv.org/abs/2404.06654) formalizes this ladder). The recurring finding is an **effective context** meaningfully shorter than the advertised one: the window runs, but attention thins. Before you architect a product around a context-window claim, run your own haystack.
+**Long context.** Chapters 5 and 7 both deferred a question here: does "supports 1M tokens" mean the model can *use* 1M tokens? The basic probe is **needle in a haystack**: bury one arbitrary fact ("the magic number is 4,096,241") at a controlled depth in a long document, ask for it, and repeat across every length-and-depth cell until you have a grid. Modern models ace that naive version — and still degrade on the harder family: multiple needles, **multi-hop** chains (fact A names the place you'll find fact B), and any task requiring *aggregation* across the window rather than retrieval from it ([RULER](https://arxiv.org/abs/2404.06654) formalizes this ladder). The recurring finding is an **effective context** meaningfully shorter than the advertised one: the window runs, but retrieval degrades as the relevant tokens compete with ever more distractors for attention weight (the model's fixed budget of who-to-consult, spread thinner as the window fills). Before you architect a product around a context-window claim, run your own haystack.
 
-**Thinking budgets.** Reasoning models (Chapter 8) broke the single-number score a second way: accuracy now depends on how many thinking tokens the model is allowed to spend — Chapter 4's test-time axis, now a free variable inside every eval table. The same model posts different scores at different budgets, with different tools, at different attempt counts, so honest reporting names all three — and the benchmarks themselves keep escalating to stay ahead of saturation ([Humanity's Last Exam](https://arxiv.org/abs/2501.14249) is the current emblem of the chase: questions commissioned specifically to stump frontier models, falling anyway). When a launch post says "state of the art," the sophisticated question is no longer just "on what benchmark" but "at what budget."
+**Thinking budgets.** Reasoning models (Chapter 8) broke the single-number score a second way (the first was attempt count): accuracy now depends on how many thinking tokens the model is allowed to spend — Chapter 4's test-time axis, now a free variable inside every eval table. The same model posts different scores at different budgets, with different tools, at different attempt counts, so honest reporting names all three — and the benchmarks themselves keep escalating to stay ahead of saturation ([Humanity's Last Exam](https://arxiv.org/abs/2501.14249) is the current emblem of the chase: questions commissioned specifically to stump frontier models, falling anyway). When a launch post says "state of the art," the question to ask is as much "at what budget" as "on what benchmark."
 
 ## The eval stack you'll actually build
 
@@ -96,7 +96,7 @@ Now the part that pays your rent. Public benchmarks tell you which model to star
 }
 ```
 
-2. **Grade mechanically where possible.** Exact match, schema validation, "did the code run," "did it cite a real document" — cheap, deterministic checks catch a shocking fraction of regressions. Save judgment for what needs it.
+2. **Grade mechanically where possible.** Exact match, schema validation, "did the code run," "did it cite a real document" — cheap, deterministic checks catch a large fraction of regressions. Save judgment for what needs it.
 3. **Use an LLM judge for the rest — and eval the judge.** Write a rubric, grade both response orders, and spot-check judge verdicts against your own until you trust it (then keep spot-checking).
 4. **Run it on every change.** Model version bumps, prompt edits, retrieval tweaks — all of them shift behavior in ways that don't announce themselves. The teams that ship reliable LLM features aren't the ones with the best prompts; they're the ones who *notice* when something breaks.
 

@@ -18,7 +18,7 @@ import MnistPng from "../public/images/content/neural-networks/mnist.png"
 <Byline readingTime={metadata.readingTime} />
 
 
-In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too. (By convention, 60,000 of the images are used for training and 10,000 are held back — a split whose purpose becomes clear at the end of the chapter.)
+In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes off envelopes. The dataset they eventually assembled — 70,000 grayscale images of handwritten digits, called [MNIST](https://en.wikipedia.org/wiki/MNIST_database) — became the "hello world" of machine learning, and it's where we'll start too. (60,000 of the images are used for training; 10,000 are held back, for a reason that closes the chapter.)
 
 <Image src={MnistPng} alt="A grid of sample handwritten digits from the MNIST dataset, ten examples each of 0 through 9" />
 
@@ -60,7 +60,7 @@ Why does a linear model top out at 92%? Because of what linearity *means*: each 
 
 You might try to fix this by stacking two linear layers. But composing linear functions just gives you another linear function ($W_2(W_1x) = (W_2W_1)x$ — the composition collapses into one matrix). However many layers you stack, you've written a longer program with still no `if` statements.
 
-The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29) (rectified linear unit): $\mathrm{relu}(x) = \max(0, x)$, applied to each entry of a layer's output — each **unit** (or *neuron*), one weighted sum of the layer's inputs. Look at what it does: below zero the unit outputs nothing; above zero it passes its signal through. That's a branch — the smallest possible `if`. With a nonlinearity between them, the layers stop collapsing: the first layer can compute features, the ReLU can *decide* which ones are present, and the second layer can weigh combinations of those decisions.
+The fix is to insert a nonlinearity between the layers, and the field has settled on the almost comically simple [ReLU](https://en.wikipedia.org/wiki/Rectifier_%28neural_networks%29) (rectified linear unit): $\mathrm{relu}(x) = \max(0, x)$, applied to each **unit** (or *neuron*) — one weighted sum in a layer's output. Look at what it does: below zero the unit outputs nothing; above zero it passes its signal through. That's a branch — the smallest possible `if`. With a nonlinearity between them, the layers stop collapsing: the first layer computes features, the ReLU *decides* which are present, and the second layer weighs combinations of those decisions.
 
 Stack linear layers with nonlinearities between them and you have a **multi-layer perceptron** (MLP):
 
@@ -72,15 +72,15 @@ With one **hidden layer** — the middle layer, neither input nor output — of 
 
 <MlpFigure />
 
-But the stack exacts a price. A lone regression can be *solved*: for a linear model, calculus hands you the best-fit weights directly — set the derivative of the error to zero and solve the equations (this is least squares, the same machinery that fits a trend line in a spreadsheet). The moment a nonlinearity sits between two matrices, that machinery dies. For a linear model the error surface is a smooth bowl — "set the derivative to zero" is a system of *linear* equations with one solution. Add the ReLUs and the surface shatters: each unit is either on or off for a given input, so $n$ units carve the surface into up to $2^n$ regions with a different linear rule inside each — and "set the derivative to zero" becomes a system of nonlinear equations nobody can solve in general. This isn't just empirical pessimism: [Blum and Rivest proved](https://people.csail.mit.edu/rivest/pubs/BR93.pdf) that optimally training even a three-neuron network is NP-complete, so a general-purpose *efficient* recipe for the best $W_1$ and $W_2$ would, among other things, resolve P vs. NP. The best anyone knows how to do is start with random weights and improve them *iteratively* — which is exactly what the rest of this chapter is about.
+But the stack exacts a price. A lone regression can be *solved*: for a linear model, calculus hands you the best-fit weights directly — set the derivative of the error to zero and solve (least squares, the machinery that fits a spreadsheet's trend line). The moment a nonlinearity sits between two matrices, that machinery dies. For a linear model the error surface is a smooth bowl — "set the derivative to zero" is a system of *linear* equations with one solution. Add the ReLUs and the surface shatters: each unit is either on or off for a given input, so $n$ units carve the surface into up to $2^n$ regions with a different linear rule inside each — and "set the derivative to zero" becomes a system of nonlinear equations nobody can solve in general. This isn't just empirical pessimism: [Blum and Rivest proved](https://people.csail.mit.edu/rivest/pubs/BR93.pdf) that optimally training even a three-neuron network is NP-complete, so a general-purpose *efficient* recipe for the best $W_1$ and $W_2$ would, among other things, resolve P vs. NP. The best anyone knows how to do is start with random weights and improve them *iteratively* — which is exactly what the rest of this chapter is about.
 
 ## The learning: gradient descent
 
-So here's where we are: an MLP with ~400,000 weights (784×512 for the first layer plus 512×10 for the second, with biases: 407,050), every one of them initialized to a random number. Feed it a handwritten 7 — the one from the figures above; it'll be our running example — and it reports something like 10% on every digit. Of course it does; it's random. How do we get 400,000 random numbers to take on *useful* values?
+So here's where we are: an MLP with ~400,000 weights (784×512 + 512×10 + biases = 407,050), every one initialized to a random number. Feed it a handwritten 7 (the one from the figures above — our running example) and it reports roughly 10% on every digit. Of course it does; it's random. How do we get 400,000 random numbers to take on *useful* values?
 
 Since we can't solve for them, we iterate: nudge the weights, check whether the model got better, keep the nudges that help, repeat a few hundred thousand times. For now, assume that "did the model get better?" is a single number we can compute — a score, called the **loss** $L$, that measures how wrong the model is on the training data, where lower is better. (Constructing it carefully is the next section's job; here we only need that it exists and is smooth.)
 
-Here's the situation for any single weight. Somewhere out there is its *optimal* value — the setting that makes the model least wrong. We don't know how to find it; that's the closed-form door that slammed shut a section ago. What we *do* know how to compute, for whatever value we currently have, is how bad it is (the loss) — and, because the loss is smooth, which direction makes it worse (the derivative). That suggests a humble strategy: repeatedly move in whichever direction makes things less bad, and stop when no direction helps. You may never learn where the best value was, but you'll settle somewhere *least bad*.
+Here's the situation for any single weight. Somewhere out there is its *optimal* value; the closed-form door to finding it slammed shut a section ago. What we *can* compute, at whatever value we currently hold, is how bad it is (the loss) and, because the loss is smooth, which direction makes it worse (the derivative). So, humbly: repeatedly move in whichever direction makes things less bad, and stop when no direction helps. You may never learn where the best value was, but you'll settle somewhere *least bad*.
 
 <GradientDescentFigure />
 
@@ -92,7 +92,7 @@ $$
 
 This update runs for every weight simultaneously. Each weight's partial derivative, collected into one big vector, is the **gradient** — papers write the whole update as $\theta \leftarrow \theta - \eta \nabla_\theta L$, and now you can read that too.
 
-Why a *small* step — and why must the steps shrink as we close in? Imagine taking the same confident stride every time: nearing the valley floor, you'd overshoot it, land on the opposite slope, turn around, and overshoot again — orbiting the minimum forever without ever landing on it. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows. Here's the fixed-stride version for comparison:
+Why a *small* step — and why must the steps shrink as we close in? Take the same confident stride every time and you'd overshoot the valley floor, land on the opposite slope, and overshoot again — orbiting the minimum forever. Gradient descent has an elegant built-in fix: the step is $\eta$ *times the slope*, and the slope fades to zero at the minimum, so the steps shrink automatically as you arrive — exactly what the animation above shows. Here's the fixed-stride version for comparison:
 
 <FixedStepFigure />
 
@@ -115,7 +115,7 @@ $$
 \tip{the probability assigned to digit i}{p_i} = \frac{\tip{exponentiate: always positive and amplifies gaps}{e^{y_i}}}{\tip{normalize: divide by the total so everything sums to 1}{\sum_j e^{y_j}}}
 $$
 
-Softmax exponentiates each score (making everything positive, and amplifying differences) and normalizes so they sum to 1. Here it is applied to the scores our linear classifier produced for the 7:
+Softmax exponentiates each score (positive, with differences amplified) and normalizes to a sum of 1 — here applied to the linear classifier's scores for the 7:
 
 <SoftmaxFigure />
 
@@ -144,7 +144,7 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back — pixels in, through the layers, predictions out — is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
 
-The naive recipe would be to nudge one weight by a tiny amount $\varepsilon$, re-run the network, and see how much the loss moved — that ratio approximates the derivative. It works, and it costs one forward pass *per weight*: 400,000 forward passes for every single training step. [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients — exactly, not by nudging — in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. Take the simplest case from our own network — the loss $L$ depends on the prediction $y$, and the prediction depends on some weight $w$. Then:
+The naive recipe: nudge one weight by a tiny $\varepsilon$, re-run the network, and read off the loss change — a derivative estimate costing one forward pass *per weight*, 400,000 of them per training step. [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients — exactly, not by nudging — in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. Take the simplest case from our own network — the loss $L$ depends on the prediction $y$, and the prediction depends on some weight $w$. Then:
 
 $$
 \frac{\partial L}{\partial w} = \tip{how much the loss moves when y moves}{\frac{\partial L}{\partial y}} \cdot \tip{how much y moves when the weight moves}{\frac{\partial y}{\partial w}}
@@ -154,7 +154,7 @@ Nudge the weight: its effect on the prediction is scaled by $\partial y/\partial
 
 Backprop computes every weight's derivative — exactly, not by estimate — in one sweep:
 
-1. **One forward pass**, keeping every intermediate value in memory instead of discarding it — the first layer's weighted sums $h$, the ReLU'd versions $a$, the prediction $y$, the loss $L$. These intermediate values — everything the network computes between input and output, as opposed to the weights it computes *with* — are called **activations**, a term that recurs through the whole book.
+1. **One forward pass**, keeping every intermediate value in memory instead of discarding it — the first layer's weighted sums $h$, the ReLU'd versions $a$, the prediction $y$, the loss $L$. These intermediate values — everything computed between input and output, as opposed to the weights computed *with* — are called **activations**; the term recurs all book.
 2. **One backward sweep.** Start at the loss and walk the network back to front. At each value, compute "how much does the loss change if *this* changes" — which is cheap, because it's just the answer already computed for the value *after* it, times one local derivative. And the local derivatives are known analytically: every operation in the network is simple (multiply, add, relu, softmax), and calculus gives each one's derivative as a formula — evaluated instantly using the values remembered from the forward pass. No $\varepsilon$ anywhere.
 3. **Collect the gradients along the way.** Every time the sweep passes a weight, that weight's exact $\partial L/\partial w$ falls out as a byproduct. By the time it reaches the input, you hold the derivative for *all* 400,000 weights — from one backward walk that costs about as much as the forward one.
 
@@ -188,17 +188,17 @@ Every model in this book — up to and including the frontier ones — is traine
 
 ## Better optimizers: momentum and Adam
 
-Vanilla SGD — gradient descent on random batches, exactly as we've described it — works, but the loss landscape of a real network is a mess of ravines and plateaus, and two refinements are so universal you should know them by name.
+Vanilla SGD works, but a real network's loss landscape is a mess of ravines and plateaus, and two refinements are so universal you should know them by name.
 
-**Momentum** keeps a running average of recent gradients — exponentially decaying, so the latest steps weigh most and older ones fade geometrically — and steps in that direction: like a ball rolling downhill, it smooths over noise and powers through small bumps.
+**Momentum** keeps a running average of recent gradients (exponentially decaying: recent steps weigh most) and steps in that direction — like a ball rolling downhill, it smooths over noise and powers through small bumps.
 
-**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how **weight decay** — a regularization term: a gentle pressure shrinking every weight toward zero each step, so that large weights must earn their size through the data (why that's protective is this chapter's closing section) — interacts with the adaptivity (the details of that fix wait for Chapter 7, where the optimizer wars resume).
+**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how **weight decay** — a regularization term: a gentle pressure shrinking every weight toward zero each step, so large weights must be earned through the data (why that protects is the closing section) — interacts with the adaptivity (the details of that fix wait for Chapter 7, where the optimizer wars resume).
 
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. And file one fact for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
 
 ## Putting it together: learning XOR
 
-Every piece is now on the table, so let's watch a complete training run — on a problem a linear model provably cannot solve. **XOR** ("exactly one of the two inputs is on") is the famous one: no threshold on any weighted sum of the two inputs can fire for (0,1) and (1,0) while staying silent for (0,0) and (1,1). (The proof is three lines: firing on the two singles requires $w_1 \ge t$ and $w_2 \ge t$; staying silent on (1,1) requires $w_1 + w_2 < t$; the three can't all hold for positive $t$, and the remaining cases fall the same way. [Minsky and Papert's 1969 book](https://en.wikipedia.org/wiki/Perceptrons_%28book%29) made this limit famous and stalled neural network research for a decade.) Two hidden neurons and a ReLU handle it.
+Every piece is now on the table, so let's watch a complete training run — on a problem a linear model provably cannot solve. **XOR** ("exactly one of the two inputs is on") is the famous one: no threshold on any weighted sum of the two inputs can fire for (0,1) and (1,0) while staying silent for (0,0) and (1,1). (Proof: firing on the singles needs $w_1 \ge t$ and $w_2 \ge t$; silence on (1,1) needs $w_1 + w_2 < t$ — impossible for positive $t$. [Minsky and Papert's 1969 book](https://en.wikipedia.org/wiki/Perceptrons_%28book%29) made this limit famous and stalled the field for a decade.) Two hidden neurons and a ReLU handle it.
 
 The network below is as small as they come — two inputs, two hidden units, one output squashed through a *sigmoid* (softmax's two-option sibling, turning the score into a probability between 0 and 1). It trains on all four cases of XOR at once, by plain gradient descent:
 
@@ -210,11 +210,11 @@ Early on, the gradients are large and the weights move fast; by the end, the pre
 
 One last concept, because it's the difference between machine learning and curve fitting. A model with enough parameters can *memorize* its training set — and score 100% on it while being useless on new data. This is **overfitting**, and it's why we always hold out a **test set** the model never trains on, and report accuracy there. In practice you watch *two* loss curves during training — one on training data, one on held-out data — and the number you actually care about is the second. When the training curve keeps falling but the held-out curve turns back upward, the model has stopped learning and started memorizing.
 
-Besides more data, the classic in-training countermeasures are **regularization** techniques: weight decay (which you met inside AdamW), and **dropout** — during training, zero out a different random fraction of the activations on every step, so no unit can rely on precise co-conspirators and the network is forced to learn redundant, robust features. (At inference, dropout is switched off.) For a decade dropout was in every architecture diagram; Chapter 7 holds a small surprise about its fate in LLMs.
+Besides more data, the classic in-training countermeasures are **regularization** techniques: weight decay (which you met inside AdamW), and **dropout** — during training, zero out a different random fraction of the activations each step, so no unit can rely on precise co-conspirators. (At inference, dropout is off.) For a decade it was in every architecture diagram; Chapter 7 holds a surprise about its fate in LLMs.
 
 The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. Keep this tension in mind — it returns with a vengeance when we discuss benchmark contamination in Chapter 9.
 
-One more thing to notice before moving on: nothing in this chapter was actually about digits. The machinery was generic — vectors in, scores out, loss down — and we pointed it at 28×28 images only because the labels came free with the dataset. Labels are the scarce resource; someone had to write 70,000 of them. So here's the thought to carry into the next chapter: the largest pile of labeled data our species has ever produced is just *text* — where every word is, automatically, a label for the words before it. What happens if we point this machinery at that?
+One more thing: nothing in this chapter was actually about digits. The machinery was generic — vectors in, scores out, loss down — pointed at 28×28 images only because the labels came free, and labels are the scarce resource: someone had to write 70,000 of them. So carry this into the next chapter: the largest pile of labeled data our species has produced is *text*, where every word is automatically a label for the words before it. What happens if we point this machinery at that?
 
 ## Further reading
 
