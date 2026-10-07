@@ -26,7 +26,7 @@ The physics from last chapter, restated as the serving problem: decode is memory
 
 The waste in serving one user is that a 70B model's 140 GB of weights (70B parameters × 2 bytes each) get read to produce *one* token. Serve 100 conversations in a single batch, and the same read produces 100 tokens; per-token cost falls ~100× before any cleverness. Throughput providers live and die on batch size (and this is why per-token API prices can sit so far below what a dedicated GPU would cost you).
 
-Before the scheduling trick, pin down the plumbing: *where does a generated token actually go?* Both places, in different forms. The decode loop is **GPU-resident**: the weights, every conversation's KV cache, and the step itself all live in HBM (high-bandwidth memory, the GPU's on-package RAM; Chapter 10), and the newly sampled token never leaves. It's appended on-GPU as the next step's input, and its K/V join the cache. What crosses back over PCIe each step is just the sampled token *ID* (a few bytes per live request), which the **CPU-side engine** detokenizes, streams to the user, checks against stop conditions, and feeds to its scheduler. The GPU does the arithmetic; the CPU runs the airport:
+Before the scheduling trick, pin down the plumbing: a generated token lands in two places, in two forms. The decode loop is **GPU-resident**: the weights, every conversation's KV cache, and the step itself all live in HBM (high-bandwidth memory, the GPU's on-package RAM; Chapter 10), and the newly sampled token never leaves. It's appended on-GPU as the next step's input, and its K/V join the cache. What crosses back over PCIe each step is just the sampled token *ID* (a few bytes per live request), which the **CPU-side engine** detokenizes, streams to the user, checks against stop conditions, and feeds to its scheduler. The GPU does the arithmetic; the CPU runs the airport:
 
 <ServingAnatomyFigure />
 
@@ -48,7 +48,7 @@ The vLLM team measured production servers holding actual KV entries in as little
 The fix, from the [vLLM paper](https://arxiv.org/abs/2309.06180), is called **PagedAttention** and it is exactly what its name promises: chop KV caches into fixed-size blocks (~16 tokens), allocate on demand from a shared pool, and translate through a per-request block table. Virtual memory, reinvented for attention: fragmentation vanishes, effective batch size jumps, and (just as page tables enabled shared memory) two requests with the same prefix can *map the same physical blocks*.
 
 <details>
-<summary>Does the GPU reach back into system RAM? No — and the "no" matters.</summary>
+<summary>Why the GPU never reaches back into system RAM</summary>
 
 "Paging" here borrows the bookkeeping, not the disk. The entire block pool is carved out of HBM at startup (whatever's left once the weights move in). The "page table" is just a small array of block indices per request. And the attention kernel is written to gather each block through that one extra indirection — pointer-chasing the GPU does itself, inside HBM, at full bandwidth. The CPU-side scheduler (the anatomy figure above) updates the tables as it allocates and frees, but the hot path never crosses PCIe, and there is no page fault: a request that can't get a block simply waits. (The analogy does extend one level further, deliberately: under real memory pressure, vLLM can *swap* a preempted request's blocks out to CPU RAM, or drop them and recompute later. That's an eviction tier for the queue, never the serving path.)
 

@@ -12,7 +12,7 @@ import { TemperatureFigure } from "../components/figures/temperature"
 <Byline readingTime={metadata.readingTime} />
 
 
-Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision (sampling) is the last mile between the frozen artifact (the trained model) of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack stops being magic and becomes control flow, in four escalations:
+Here is the fact this book has been building toward since Chapter 2: **a language model never outputs text.** It outputs a probability distribution over ~100,000 tokens, every step, and something outside the model must decide what to do with it. That decision (sampling) is the last mile between the frozen artifact (the trained model) of Parts II–III and the products you use. And once you see the model as "a distribution you query in a loop," the rest of the modern stack stops being magic and becomes control flow:
 
 1. **Reshape the distribution** — temperature, top-k, top-p: the knobs on every API.
 2. **Constrain it** — mask the illegal tokens and malformed output becomes impossible: structured output.
@@ -105,7 +105,7 @@ Put everything in this chapter in a `while` loop and you have an **agent**: mode
 
 That's the whole trick — the coding agents and computer-using assistants of 2026 are this loop plus enormous post-training investment in not derailing over long horizons.
 
-The engineering discipline that emerged around it is **context engineering** — the recognition that the context window is the agent's *entire working memory*, and curating it (what to retrieve and summarize, what to evict; note how agent transcripts hit Chapter 11's prefix cache, reusing the computation for the repeated transcript prefix) is the systems half of agent quality.
+The discipline it spawned is **context engineering**: the context window is the agent's *entire working memory*, and curating it (what to retrieve and summarize, what to evict; agent transcripts hit Chapter 11's prefix cache, reusing the computation for the repeated prefix) is the systems half of agent quality.
 
 The security discipline it demands is less mature. **Prompt injection** is this book's one alarm bell: instructions and data share one channel, the context, so any text an agent reads (a webpage, an email) can *try to reprogram it*, and an agent with tools turns that into real-world side effects. (Keep it distinct from **jailbreaking** — a *user* talking the model past its own refusal training. A jailbreak attacks the model's character, and the user is the attacker. Injection attacks *your application* through content it reads, with your user as the victim — and unlike jailbreaking, it gets worse the more useful you make the agent.) There is no reliable fix yet; Simon Willison's [running series](https://simonwillison.net/series/prompt-injection/) is the essential literature. Design like it's the '90s web:
 

@@ -37,7 +37,7 @@ That's the thread this chapter pulls on:
 
 A loose but useful analogy to programming: pick a *family* of functions (an architecture with millions of tunable parameters — the signature), define "good output" (a loss function — the spec), and let an optimization algorithm find the family member that fits the examples. Nothing "programs itself": the network is a fixed, highly parameterized function, and what gets learned are its parameters.
 
-One piece of vocabulary before we build: a model's life has two distinct phases. **Training** is when the optimization algorithm is improving the weights — the model is being fit. **Inference** is everything after: the weights are frozen, and the model is simply being *used*, like any other function. This chapter is almost entirely about training; by the end of the book, inference will have earned three chapters of its own.
+A model's life has two distinct phases. **Training** is when the optimization algorithm is improving the weights — the model is being fit. **Inference** is everything after: the weights are frozen, and the model is simply being *used*, like any other function. This chapter is almost entirely about training; by the end of the book, inference will have earned three chapters of its own.
 
 ## The model: from a matrix to an MLP
 
@@ -45,7 +45,7 @@ Back to MNIST — an MNIST image is 28×28 pixels. Flatten it and you get a vect
 
 <FlattenFigure />
 
-Notice that the problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, soon converted into probabilities. Again: statistics, not logic.
+The problem itself isn't deterministic. A sloppily written 5 shades into a 2; even humans disagree about the worst examples. So a function that returns *the* answer is the wrong shape — what we want is a function that weighs the evidence and returns a *score* for each of the 10 candidates, soon converted into probabilities. Again: statistics, not logic.
 
 Statistics' simplest mechanism for turning weighted evidence into a score is a regression — a linear function of the input:
 
@@ -105,7 +105,7 @@ The multiplier $\eta$ is the **learning rate**, deep learning's most famously fi
 
 On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
 
-Two practical modifications, both in every framework:
+Two practical modifications every framework makes:
 
 - **Stochastic** gradient descent (**SGD**, the name you'll see in every framework and paper): you *could* compute the exact gradient over all 60,000 images before each step. But consider what that buys you. The gradient from a random sample of images is an *unbiased* estimate of the full gradient (right on average, noisy per sample), and averaging $n$ samples shrinks the noise only like $1/\sqrt{n}$ (statistics' standard-error rule) while the cost grows linearly with $n$. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones (60,000 ÷ 128 ≈ 470 batches per pass, call it 500), and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
 - **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)

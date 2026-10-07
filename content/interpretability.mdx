@@ -47,7 +47,7 @@ for a feature that isn't present at all.
 
 Packed representations *lie* when features co-occur. So why do trained models choose this? Because real-world features are **sparse**. "Golden Gate Bridge" and "Python type error" are each absent from the overwhelming majority of text; if each is active, say, 1% of the time, a given pair collides only 0.01% of the time. The expected cost of the occasional ghost is tiny; the benefit (representing 5 things where 2 fit, and in a real model's thousands of dimensions, *millions* of things) is enormous, so gradient descent takes the deal.
 
-This is **superposition**, and it has a sharp consequence. A *neuron* is one coordinate axis of the space, and packed feature directions aren't axis-aligned — so each feature smears across many neurons, and each neuron participates in many features. Individual neurons are therefore **polysemantic**: one fires for cats, and car grilles, and a particular Korean suffix, not because the model is confused but because that's what a compressed encoding looks like from the inside. You cannot read the code by looking at one wire.
+This is **superposition**, and it has a sharp consequence. A *neuron* is one coordinate axis of the space, and packed feature directions aren't axis-aligned — so each feature smears across many neurons, and each neuron participates in many features. So individual neurons are **polysemantic**: one fires for cats, and car grilles, and a particular Korean suffix, not because the model is confused but because that's what a compressed encoding looks like from the inside. You cannot read the code by looking at one wire.
 
 <details>
 <summary>How many almost-orthogonal directions fit?</summary>
@@ -133,7 +133,7 @@ Feature-level handles offer a path to controlling models that's more surgical th
 
 Honest scorecard: the field can fully explain toy models, extract features and some circuits from frontier models, and steer with them — but a complete mechanistic account of "why did the model say *that*" remains out of reach. It is biology in the decade after the microscope: we can finally see cells; we cannot yet cure much.
 
-So far, though, every model in this book has simply been *handed* to us — a trillion floats, a fait accompli, which this chapter learned to probe after the fact. It's time to watch one get made. The next three chapters are the production line: the month the weights are forged from a copy of the internet, the week they're given a personality, and the forever after of arguing about whether any of it worked.
+So far, though, every model in this book has simply been *handed* to us — a trillion floats, a done deal, which this chapter learned to probe after the fact. It's time to watch one get made. The next three chapters are the production line: the month the weights are forged from a copy of the internet, the week they're given a personality, and the forever after of arguing about whether any of it worked.
 
 ## Further reading
 
