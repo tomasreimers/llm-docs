@@ -65,7 +65,12 @@ Work through the chapter and check each of these. Where a threshold is given, co
     summary that re-asserts rather than adds.
 11. **Template transitions.** "Let's dive in," "with that said," "at its core,"
     "in the realm of," "navigating the landscape," "it's important to note,"
-    "in conclusion." Flag every instance.
+    "in conclusion." Also the **stage-setting recap**: a clause that only announces
+    readiness before the content — "every piece is now on the table," "all the
+    parts are in place," "now that we have X, we can Y." The test: delete the
+    clause; if nothing is lost, it was throat-clearing. (The same words used as
+    *content* are fine — "the full text is already on the table" describing what
+    an encoder sees is a claim, not a transition.) Flag every instance.
 12. **Weasel superlatives.** "Remarkably," "strikingly," "fascinating," "powerful,"
     "robust," "seamless" — flag when the adjective does work the evidence should do.
 

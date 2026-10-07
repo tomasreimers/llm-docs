@@ -17,7 +17,7 @@ import { StreamColumnFigure } from "../components/figures/stream-column"
 
 In 2017, a team at Google working on machine translation published a paper with an unusually cocky title: [Attention Is All You Need](https://arxiv.org/abs/1706.03762). The claim was that the attention mechanism (until then a bolt-on that helped RNNs translate) could replace recurrence entirely. The resulting architecture, the **transformer**, is the substance of every model in this book. GPT stands for Generative Pre-trained *Transformer*, and nine years later the architecture is nearly unchanged.
 
-Chapter 2 left a network-shaped hole: something has to read the context's embedding vectors and produce the next-token logits. This chapter fills it, in three steps:
+Chapter 2 left a network-shaped hole: something has to read the context's embedding vectors and produce the next-token logits. This chapter fills it:
 
 1. The RNNs that held the job crushed the whole past into one fixed-size vector and processed tokens one at a time. We need a network that keeps *every* token's vector and reads them all at once.
 2. One new primitive does it — **attention**: a differentiable lookup in which every token fetches what it needs from the tokens before it.
@@ -32,7 +32,7 @@ Recall the RNN's two flaws:
 
 Start from what Chapter 2 handed us: after the embedding lookup, the context already *is* a list of vectors, one per token. The RNN's defining decision was to fold that list, token by token, into a single running summary; the first flaw is that decision's direct price: a thousand tokens of detail forced through one keyhole of fixed width $d$ (the hidden vector's dimension — a few thousand numbers). So consider the opposite decision: **don't fold.** Keep all $n$ vectors, and refine them in *rounds*. You've seen this organization before: Chapter 1's MLP was built from stacked **layers**, each one taking the previous layer's output and transforming it. The transformer keeps the word and scales up the unit: here, a layer takes all $n$ token vectors in and hands all $n$ vectors back, each one refined (what exactly happens inside a layer is this chapter's remaining business). Stack a few dozen layers and token 500's vector stays token 500's vector all the way up the stack, refined at every layer.
 
-But refusing to summarize creates a problem the RNN never had. If every token keeps its own vector, how does information move *between* them at all? In "the cat sat … because it was tired," the vector for "it" is useless until something from "cat" gets into it — and which other tokens matter differs for every token, every sentence. We need a mechanism by which each token's vector can reach into the rest of the context and pull in what's relevant, *selectively*, with the selection itself learned. That mechanism is this chapter's one invention.
+But refusing to summarize creates a problem the RNN never had. If every token keeps its own vector, how does information move *between* them at all? In "the cat sat … because it was tired," the vector for "it" is useless until something from "cat" gets into it — and which other tokens matter differs for every token, every sentence. We need a way for each token's vector to reach into the rest of the context and pull in what's relevant, *selectively*, with the selection itself learned. That mechanism is this chapter's one invention.
 
 The second flaw dies as a side effect of the first decision. Each token's update depends only on the *previous layer's* vectors — never on another token's output at the same layer — so every position can be computed **simultaneously**. That quiet property let the architecture absorb all the parallel hardware money could buy — the subject of the next chapter, and of Chapter 10, where we meet the hardware itself.
 
@@ -82,7 +82,7 @@ The mask figure's score matrix also shows the architecture's famous tax. That sc
 
 ## Many heads, many questions
 
-One soft lookup per token is not enough. Resolving "it" needs one kind of question; tracking whether we're inside a quotation needs another; matching a closing bracket in code needs a third. So the mechanism is run many times in parallel: each **head** gets its own (smaller) learned $W_q, W_k, W_v$, performs its own lookup, and the results are concatenated. A single attention operation in a frontier model runs on the order of a hundred heads side by side — and the full model, as we'll assemble in a moment, stacks on the order of a hundred such operations.
+One soft lookup per token is not enough. Resolving "it" needs one kind of question, tracking whether we're inside a quotation needs another, and matching a closing bracket in code needs a third. So the mechanism is run many times in parallel: each **head** gets its own (smaller) learned $W_q, W_k, W_v$, does its own lookup, and the results are concatenated. A single attention operation in a frontier model runs on the order of a hundred heads side by side — and the full model, as we'll assemble in a moment, stacks on the order of a hundred such operations.
 
 <AttentionFigure />
 
@@ -102,7 +102,7 @@ The division of labor: **attention routes, the MLP computes.** Attention gathers
 
 ## One picture to keep
 
-All the parts are on the table; here is the machine they make, in a single mental image — the computation as a *spreadsheet*. One column per token; the top row is the embeddings; each row below is all $n$ vectors after one more layer. Watch it build, one cell at a time, and watch what each cell reads:
+Here is the machine all those parts make, in a single mental image — the computation as a *spreadsheet*. One column per token. The top row is the embeddings; each row below is all $n$ vectors after one more layer. Watch it build, one cell at a time, and watch what each cell reads:
 
 <GridCellsFigure />
 
@@ -118,7 +118,7 @@ Now zoom in on a single *column* of that spreadsheet — one token's vector, fol
 
 <StreamColumnFigure />
 
-We can now say what's inside the "layer" promised at the chapter's start: one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Each part doesn't *replace* the token's vector; it computes a modification and **adds** it:
+We can now say what's inside the "layer" promised at the chapter's start: one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Each part doesn't *replace* the token's vector; it computes an update and **adds** it:
 
 $$
 \tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
@@ -166,7 +166,7 @@ GPT-2 shipped in four sizes; the smallest (plain "GPT-2", the 124M-parameter one
 
 ## From distribution to text
 
-One loose end, because every demo you've ever seen depends on it: the architecture ends at a probability distribution — the model *never emits text*. Something outside the weights has to pick. The two basic moves: take the single most likely token every time (**greedy decoding**: safe, prone to ruts), or *draw* from the distribution (**sampling**: livelier, occasionally derailed). Between them sits one knob you've already met in every API: **temperature**, which divides the logits by $T$ before the softmax (low $T$ exaggerates the leader's edge toward greedy; high $T$ evens the field toward random). Whatever gets picked is appended to the context and the model runs again; that loop *is* generation. The engineering hiding inside that "pick" — smarter truncations like top-p, masking the distribution so only valid JSON can come out, and what you can build by programming against the distribution rather than the text — is deferred to Chapter 12, where it closes the book.
+One loose end, because every demo you've ever seen depends on it: the architecture ends at a probability distribution — the model *never emits text*. Something outside the weights has to pick. The two basic moves: take the single most likely token every time (**greedy decoding**: safe, prone to ruts), or *draw* from the distribution (**sampling**: livelier, occasionally derailed). Between them sits one knob you've already met in every API: **temperature**, which divides the logits by $T$ before the softmax (low $T$ exaggerates the leader's edge toward greedy; high $T$ evens the field toward random). Whatever gets picked is appended to the context and the model runs again; that loop *is* generation. The engineering hiding inside that "pick" — smarter truncations like top-p, masking the distribution so only valid JSON can come out, and what you can build by programming against the distribution rather than the text — waits for Chapter 12, where it closes the book.
 
 ## The lineage that won
 

@@ -29,7 +29,7 @@ In 1989, researchers at Bell Labs built a system to read handwritten ZIP codes o
 
 Programming a computer to read these scribbles is brutally hard with classical logic. There are no hard-and-fast rules for what makes a 5 a 5 (every rule you write has a thousand exceptions), and early rule-based vision systems fell on their faces. The same wall appears wherever the input is fuzzy: parsing an English sentence, recognizing a face in a photo. This is why these problems stayed unsolved for decades while computers conquered chess. But problems like these have a saving grace: the rules are hard to write, but *examples* are cheap — and the discipline for extracting patterns from examples is statistics.
 
-That's the thread this chapter pulls on, in three steps:
+That's the thread this chapter pulls on:
 
 1. We treat digit-reading as a statistics problem. The simplest statistical tool is a regression (give every pixel a weight, add up the evidence), and this alone reads 92% of digits correctly.
 2. But a regression is linear: every pixel votes independently, so it can't express *interactions*, where one stroke's meaning depends on another. Stacking regressions with small decisions between them (a neural network) can approximate far richer functions.
@@ -101,7 +101,9 @@ Why a *small* step — and why must the steps shrink as we close in? Take the sa
 
 <FixedStepFigure />
 
-The multiplier $\eta$ is the **learning rate**, deep learning's most famously finicky number. (Adaptive optimizers like Adam, a few pages on, blunt the worst of it — but they still take a learning rate, and the sweep below remains standard.) Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow. On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
+The multiplier $\eta$ is the **learning rate**, deep learning's most famously finicky number. (Adaptive optimizers like Adam, a few pages on, blunt the worst of it — but they still take a learning rate, and the sweep below remains standard.) Too small is merely slow — thousands of timid steps down a hill you could have descended in ten. Too large is fatal, in a way that seems to contradict the self-shrinking steps we just celebrated. That guarantee had a hidden assumption: that each step lands you *closer* to the minimum, where the slope is gentler and the next step therefore smaller. Overshoot far enough, though, and you land on the far slope at a point *steeper* than the one you left. Now "step proportional to slope" works against you: a steeper landing means a bigger next step, which means a steeper landing still. The same feedback loop that damped the walk now amplifies it, and the parameters ricochet outward until the numbers overflow.
+
+On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can make this exact: the slope of $a\theta^2$ is $2a\theta$, so one update moves $\theta$ to $\theta - \eta \cdot 2a\theta = (1 - 2a\eta)\,\theta$ — every step multiplies your distance from the minimum by $|1 - 2a\eta|$. Keep $\eta$ below $1/a$ and that factor is less than one: the walk converges. Above it, every step lands further out than it started.
 
 Two practical modifications, both in every framework:
 
@@ -147,7 +149,7 @@ Averaged over the dataset, this single number summarizes how wrong the model is 
 
 ## Backpropagation: the chain rule, industrialized
 
-How do you compute a gradient with respect to a million parameters? First, a term: running the network front-to-back (pixels in, through the layers, predictions out) is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
+How do you compute a gradient with respect to a million parameters? Running the network front-to-back (pixels in, through the layers, predictions out) is called a **forward pass**; it's what the model does every time it makes a prediction (during training, we then score those predictions against the label to get the loss).
 
 The naive recipe: nudge one weight by a tiny $\varepsilon$, re-run the network, and read off the loss change — a derivative estimate costing one forward pass *per weight*, 400,000 of them per training step. [Backpropagation](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b) computes *all* of the gradients (exactly, not by nudging) in about the cost of two forward passes. The engine is the **chain rule** from calculus. As a reminder: when functions are composed, their rates of change multiply. Take the simplest case from our own network — the loss $L$ depends on the prediction $y$, and the prediction depends on some weight $w$. Then:
 
@@ -203,7 +205,7 @@ When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those bet
 
 ## Putting it together: learning XOR
 
-Every piece is now on the table, so let's watch a complete training run — on a problem a linear model provably cannot solve. **XOR** ("exactly one of the two inputs is on") is the famous one: no threshold on any weighted sum of the two inputs can fire for (0,1) and (1,0) while staying silent for (0,0) and (1,1). (Proof: firing on the singles needs $w_1 \ge t$ and $w_2 \ge t$; silence on (1,1) needs $w_1 + w_2 < t$ — impossible for positive $t$. [Minsky and Papert's 1969 book](https://en.wikipedia.org/wiki/Perceptrons_%28book%29) made this limit famous and stalled the field for a decade.) Two hidden neurons and a ReLU handle it.
+Let's watch a complete training run — on a problem a linear model provably cannot solve. **XOR** ("exactly one of the two inputs is on") is the famous one: no threshold on any weighted sum of the two inputs can fire for (0,1) and (1,0) while staying silent for (0,0) and (1,1). (Proof: firing on the singles needs $w_1 \ge t$ and $w_2 \ge t$; silence on (1,1) needs $w_1 + w_2 < t$ — impossible for positive $t$. [Minsky and Papert's 1969 book](https://en.wikipedia.org/wiki/Perceptrons_%28book%29) made this limit famous and stalled the field for a decade.) Two hidden neurons and a ReLU handle it.
 
 The network below is as small as they come — two inputs, two hidden units, one output squashed through a *sigmoid* (softmax's two-option sibling, turning the score into a probability between 0 and 1). It trains on all four cases of XOR at once, by plain gradient descent:
 

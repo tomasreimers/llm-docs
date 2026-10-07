@@ -14,7 +14,7 @@ import { TokenizationFigure } from "../components/figures/tokenization"
 
 In 1951, [Claude Shannon](https://en.wikipedia.org/wiki/Claude_Shannon) published a paper in which he asked people to guess a sentence one letter at a time, and used their guesses to measure the statistical structure of English. Buried in that experiment is the entire premise of this book: **language has statistical structure, and predicting the next symbol is the way to capture it.**
 
-How do we get from reading digits to a machine that writes? The answer, in three steps:
+How do we get from reading digits to a machine that writes? The answer:
 
 1. We pose "produce language" as a prediction problem: given text so far, guess the next token. That makes it a *classifier* — the classifier from Chapter 1, with every possible next token (roughly: words and word-pieces, made precise mid-chapter) as the classes.
 2. The obvious approach, counting what followed what, works until it has to generalize — so words become learned *vectors*, where similar words can share what the model knows.
@@ -32,7 +32,7 @@ Look at what this is, in Chapter 1's terms: a *classifier*. Input: the context. 
 
 <NextTokenFigure />
 
-Note what the model emits: a probability distribution, every time. Something outside the model must decide what to do with it — take the top token, or sample from it (that decision matters enough to get Chapter 12 to itself). Generation is this classifier in a loop: predict a token, append it to the context, run again. One token at a time, no plan sitting in a buffer — any appearance of planning is implicit in the distribution at each step.
+The model emits a probability distribution, every time. Something outside the model must decide what to do with it — take the top token, or sample from it (that decision matters enough to get Chapter 12 to itself). Generation is this classifier in a loop: predict a token, append it to the context, run again. One token at a time, no plan sitting in a buffer — any appearance of planning is implicit in the distribution at each step.
 
 Why would such a humble objective produce systems that write code and answer questions? Because predicting the next token of *arbitrary* text, well, requires modeling whatever process produced the text. Predicting the next token of `The capital of France is` requires knowing facts. A half-finished function can't be continued without a model of its author's intent; the final chapter of a murder mystery, not without a memory of every clue planted in the previous ten. Pushed to a sufficiently low loss, prediction doesn't *approximate* understanding — it demands it. (Whether it demands understanding in the same *form* humans have it is a genuinely open question; Chapter 6 is about the people prying the models open to check.)
 
@@ -50,7 +50,7 @@ $$
 \tip{vocabulary size}{|V|}^{\,\tip{context length}{n}} = 50{,}000^{10} \approx 10^{47}
 $$
 
-possible rows in the table — about as many as there are atoms in Earth's oceans. And no corpus can keep up. Be as ambitious as you like: take every page of the public internet, tens of trillions of words, the largest body of text our species has produced. That is still fewer than $10^{14}$ examples with which to fill a $10^{47}$-row table. Almost every context you'll ever encounter *has never occurred before, anywhere* — and the table simply has no entry for it.
+possible rows in the table — about as many as there are atoms in Earth's oceans. And no corpus can keep up. Be as ambitious as you like: take every page of the public internet, tens of trillions of words, the largest body of text our species has produced. That is still fewer than $10^{14}$ examples to fill a $10^{47}$-row table. Almost every context you'll ever encounter *has never occurred before, anywhere* — and the table simply has no entry for it.
 
 The failure is deeper than size: **counting can't share.** Having seen "the dog sat on the ___" a thousand times tells a counting model *nothing* about "the cat sat on the ___" — the contexts differ, so they're different rows, full stop. Yet any English speaker knows those contexts are nearly the same. What we need is for *similar words to have similar representations*, so that evidence about one flows to the other. Chapter 1 gave us exactly one tool for learning useful representations under pressure of a loss — a neural network trained by gradient descent. We'll need it, but first we have to decide what the atoms are.
 
@@ -60,7 +60,7 @@ What should the unit of prediction be? Characters make sequences enormously long
 
 <BpeFigure />
 
-Run until the vocabulary hits a target size (typically 50,000–250,000 merges), and the effect is elegant: common words ("the", " function") end up as single tokens, rare words split into meaningful chunks — and *anything* can still be encoded, any typo, any language, any binary blob, because the original characters never left the vocabulary. The worst case is simply falling all the way back down to them. Here's a real GPT-style tokenizer on a real sentence; note that the model never sees the letters, only the integer IDs:
+Run until the vocabulary hits a target size (typically 50,000–250,000 merges), and the effect is elegant: common words ("the", " function") end up as single tokens, rare words split into meaningful chunks — and *anything* can still be encoded, any typo, any language, any binary blob, because the original characters never left the vocabulary. The worst case is simply falling all the way back down to them. Here's a real GPT-style tokenizer on a real sentence; the model never sees the letters, only the integer IDs:
 
 <TokenizationFigure />
 
@@ -106,9 +106,9 @@ And this is what rescues us from counting's sharing problem. Under the pressure 
 
 ## The same loss — and its alter ego
 
-How is all this trained — the predictor, or the embeddings? Both at once. Everything we've assembled is *one* function: the embedding matrix is the first layer, then comes a network that reads the context's vectors (picture Chapter 1's multi-layer perceptron, stacked layers of matrix-multiply-plus-nonlinearity, for now; replacing it is the next chapter's job), then an output layer producing a logit per vocabulary token. Backpropagation doesn't distinguish between these parts. The chain rule walks from the loss back through the output layer, through the network, and on into the embedding rows of whichever tokens appeared in the context: one backward sweep, every parameter nudged by the same gradient. Embeddings are simply the layer nearest the input. (Historically word2vec *did* train embeddings as a standalone artifact; modern models get them as a side effect of the main objective.)
+The predictor and the embeddings train at once, because everything we've assembled is *one* function: the embedding matrix is the first layer, then comes a network that reads the context's vectors (picture Chapter 1's multi-layer perceptron, stacked layers of matrix-multiply-plus-nonlinearity, for now; replacing it is the next chapter's job), then an output layer producing a logit per vocabulary token. Backpropagation doesn't distinguish between these parts. The chain rule walks from the loss back through the output layer, through the network, and on into the embedding rows of whichever tokens appeared in the context: one backward sweep, every parameter nudged by the same gradient. Embeddings are simply the layer nearest the input. (Historically word2vec *did* train embeddings as a standalone artifact; modern models get them as a side effect of the main objective.)
 
-And the loss driving it all, you already know. The vocabulary plays the role of the 10 digits; the target is the correct next token, written one-hot (Chapter 1's format: all zeros, a single 1 at the right index); the loss is the negative logprob of the truth: cross-entropy, verbatim from Chapter 1. Nothing about the loss changes between MNIST (Chapter 1's hand-labeled digits) and a frontier LLM except the number of classes. And text has a gift those hand-labeled digits never had: **the labels are free.** Every position in every sentence on the internet is a training example: the context is the input, and the next token, already sitting right there, is the label. No annotators required; the internet labels itself.
+And the loss driving it all, you already know. The vocabulary plays the role of the 10 digits. The target is the correct next token, written one-hot (Chapter 1's format: all zeros, a single 1 at the right index). The loss is the negative logprob of the truth: cross-entropy, verbatim from Chapter 1. Nothing about the loss changes between MNIST (Chapter 1's hand-labeled digits) and a frontier LLM except the number of classes. And text has a gift those hand-labeled digits never had: **the labels are free.** Every position in every sentence on the internet is a training example: the context is the input, and the next token, already sitting right there, is the label. No annotators required; the internet labels itself.
 
 Averaged per token, the loss has an interpretable cousin. **Perplexity** is its exponential:
 

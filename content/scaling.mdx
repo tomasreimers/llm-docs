@@ -13,7 +13,7 @@ import { ScalingLawsFigure } from "../components/figures/scaling-laws"
 
 In 2019, Rich Sutton, one of the fathers of reinforcement learning, published a short, grumpy essay called [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html). Its thesis: seventy years of AI history show that general methods that leverage more computation always, eventually, beat clever methods that encode human knowledge. Researchers hate this, because it means the craft they love loses to whoever buys more compute. They have also, repeatedly, been unable to refute it.
 
-The transformer era is the bitter lesson's greatest vindication. The previous chapter's architecture is almost aggressively generic — identical blocks, no linguistic structure baked in. This chapter is about the discovery that turned "just make it bigger" from a hope into a *quantitative engineering discipline*, in three steps:
+The transformer era is the bitter lesson's greatest vindication. The previous chapter's architecture is almost aggressively generic — identical blocks, no linguistic structure baked in. This chapter is about the discovery that turned "just make it bigger" from a hope into a *quantitative engineering discipline*:
 
 1. Loss falls as a **power law** in model size, data, and compute — straight lines on log-log plots that you can fit on cheap runs and extrapolate to expensive ones. Capability became predictable.
 2. A fixed compute budget must be split between a bigger model and more data, and there is a measured answer (**Chinchilla's ~20 tokens per parameter**), which the industry then deliberately violates in one direction, for a good reason.
@@ -23,7 +23,7 @@ And because these laws are working tools, we'll use them. Here is the running ex
 
 ## Three numbers describe a training run
 
-Before the laws, the quantities they relate. Any training run is summarized by three numbers:
+Any training run is summarized by three numbers:
 
 - $N$ — **parameters**: the count of weights in the model. GPT-2: 124M (we counted them at the end of Chapter 3). GPT-3: 175B.
 - $D$ — **training tokens**: how much text the model sees, measured after tokenization (Chapter 2). GPT-3: ~300B tokens.
@@ -107,7 +107,7 @@ So the laws told you your loss in advance — 1.96 for the optimal plan. What th
 
 GPT-3's paper was titled [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165) because of its headline surprise: show the model a few examples of a task *in its prompt*, and it performs the task — no training, no gradient updates. Nobody designed **in-context learning**; it emerged. Smaller models mostly couldn't do it; bigger ones could. Likewise multi-digit arithmetic, translation, and code generation seemed to snap from "can't" to "can" at particular scales — a phenomenon catalogued in [Emergent Abilities of Large Language Models](https://arxiv.org/abs/2206.07682).
 
-You should hold this idea with some skepticism, because the sharpest version of it may be an artifact of how we grade. [Are Emergent Abilities a Mirage?](https://arxiv.org/abs/2304.15004) showed that many "discontinuous" jumps come from all-or-nothing metrics. The arithmetic makes it obvious: suppose a correct answer is 10 tokens long, and the model's per-token accuracy $p$ improves smoothly with scale. A grader that awards partial credit reports $p$ — smooth. A grader that requires the whole answer scores $p^{10}$: at $p = 0.5$ that's 0.001, at $p = 0.9$ it's 0.35, at $p = 0.98$ it's 0.82 — a cliff, manufactured entirely by the exponent:
+Be skeptical here, because the sharpest version of this idea may be an artifact of how we grade. [Are Emergent Abilities a Mirage?](https://arxiv.org/abs/2304.15004) showed that many "discontinuous" jumps come from all-or-nothing metrics. The arithmetic makes it obvious: suppose a correct answer is 10 tokens long, and the model's per-token accuracy $p$ improves smoothly with scale. A grader that awards partial credit reports $p$ — smooth. A grader that requires the whole answer scores $p^{10}$: at $p = 0.5$ that's 0.001, at $p = 0.9$ it's 0.35, at $p = 0.98$ it's 0.82 — a cliff, manufactured entirely by the exponent:
 
 <EmergenceFigure />
 
@@ -115,7 +115,13 @@ The truth seems to be: *underlying competence improves smoothly; thresholded, re
 
 ## The data wall, and what came after
 
-Power laws don't repeal themselves, but their inputs can run short — and your own plan shows where. Your month wanted 1.7T tokens. Now scale the plan the way the industry did: a frontier lab's budget is 100× yours, $10^{26}$ FLOPs, and the same fit asks for roughly a **trillion parameters trained on ~16 trillion tokens**. Estimates of all usable, deduplicated public text land in the low tens of trillions of tokens ([Villalobos et al.](https://arxiv.org/abs/2211.04325) is the standard accounting). The compute-optimal frontier run wants *most of the usable internet* — and you cannot 10× a dataset that is most of the internet. By 2024 this "data wall" was reshaping the field's direction. Data *quality* became the frontier: if you can't get more tokens, get better ones, through aggressive filtering, deduplication, and curriculum design (Chapter 7). Synthetic data went mainstream (models generating and grading training data for the next generation of models), with one failure mode to engineer around: train a model naively on its own outputs and the distribution narrows with each round, a degradation called **model collapse**. And a third scaling axis opened: **test-time compute**. If you can't profitably make the model bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws; that story belongs to post-training (the stages applied after a run like this one finishes), and it's the climax of Chapter 8.
+Power laws don't repeal themselves, but their inputs can run short — and your own plan shows where. Your month wanted 1.7T tokens. Now scale the plan the way the industry did: a frontier lab's budget is 100× yours, $10^{26}$ FLOPs, and the same fit asks for roughly a **trillion parameters trained on ~16 trillion tokens**. Estimates of all usable, deduplicated public text land in the low tens of trillions of tokens ([Villalobos et al.](https://arxiv.org/abs/2211.04325) is the standard accounting). The compute-optimal frontier run wants *most of the usable internet* — and you cannot 10× a dataset that is most of the internet.
+
+By 2024 this "data wall" was reshaping the field's direction:
+
+- **Data *quality* became the frontier.** If you can't get more tokens, get better ones, through aggressive filtering, deduplication, and curriculum design (Chapter 7).
+- **Synthetic data went mainstream**: models generating and grading training data for the next generation of models. The failure mode to engineer around: train a model naively on its own outputs and the distribution narrows with each round, a degradation called **model collapse**.
+- **A third scaling axis opened: test-time compute.** If you can't profitably make the model bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws. That story belongs to post-training (the stages applied after a run like this one finishes), and it's the climax of Chapter 8.
 
 The bitter lesson, in other words, keeps winning. And yet — download a frontier model's config file and it is *not* GPT-2 scaled up. The fields have grown strange: `num_experts`, `num_key_value_heads`, `rope_theta`. Scaling won, but it won while mutating, because at these sizes three costs become unbearable and each one forced a surgery on the architecture. The next chapter reads a modern config line by line and explains what every mutation buys.
 
