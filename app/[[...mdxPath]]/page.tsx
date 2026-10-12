@@ -19,7 +19,7 @@ export async function generateMetadata(props) {
       title: title || 'Modern LLMs',
       description:
         frontMatter?.description ||
-        'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
+        'A 13-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
       images: [
         {
           url: `https://modernllms.com/api/og/${!params.mdxPath ? 'default' : params.mdxPath}/image.png`,

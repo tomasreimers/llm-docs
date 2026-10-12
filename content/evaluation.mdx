@@ -26,7 +26,7 @@ A benchmark is a dataset of tasks plus a grading scheme. A handful have defined 
 - **[GSM8K](https://arxiv.org/abs/2110.14168)** (Grade School Math 8K) — math word problems; for years the standard reasoning test.
 - **[HumanEval](https://arxiv.org/abs/2107.03374)** — write a function from a docstring, graded by *running the tests*: grading by execution, which beats text-matching.
 - **[GPQA](https://arxiv.org/abs/2311.12022)** (Google-Proof Q&A) — PhD-level science questions built explicitly because models saturated easier tests.
-- **[SWE-bench](https://arxiv.org/abs/2310.06770)** — resolve real GitHub issues in real repos, graded by the repo's test suite. The closest canon benchmark to economically real work, and the favorite metric for coding *agents* (models acting over many steps — Chapter 12).
+- **[SWE-bench](https://arxiv.org/abs/2310.06770)** — resolve real GitHub issues in real repos, graded by the repo's test suite. The closest canon benchmark to economically real work, and the favorite metric for coding *agents* (models acting over many steps — Chapter 13).
 
 Read the progression: from multiple choice, to executed code, to *do a junior engineer's job*. Benchmarks have had to chase capability upward — because models keep eating them.
 
@@ -40,9 +40,9 @@ Run it: a model with a modest 20% per-attempt success rate already passes 89% of
 
 <PassAtKFigure />
 
-Two readings of the same model ("usually fails" and "nearly always succeeds, given tries"), and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 12 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
+Two readings of the same model ("usually fails" and "nearly always succeeds, given tries"), and both are true. Which one matters depends entirely on whether your product can afford to sample, verify, and retry (Chapter 13 returns to this as a serving strategy). When a leaderboard shows one number, your first question is: *at what k, and who checked the answer?*
 
-And pass@k has an evil twin. For an *agent* (Chapter 12), one success out of $k$ tries is worthless; a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^n$ for an $n$-step task (the exponent is now step count, not attempt count). Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over a twenty-step task; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes (the exponent just points the other way), and most published numbers measure only the first.
+And pass@k has an evil twin. For an *agent* (Chapter 13), one success out of $k$ tries is worthless; a twenty-step task needs every step to go right, so the relevant quantity inverts: the probability that *all* steps succeed, $p^n$ for an $n$-step task (the exponent is now step count, not attempt count). Run that math: a step that works 90% of the time compounds to $0.9^{20} \approx 12\%$ over a twenty-step task; even 99% per step still fails roughly one task in five at that length. The same model reads as "nearly always succeeds, given tries" on a benchmark and "derails weekly" in production. Capability and *reliability* are different axes (the exponent just points the other way), and most published numbers measure only the first.
 
 ## Why you can't trust the numbers
 

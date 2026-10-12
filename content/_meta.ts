@@ -61,7 +61,15 @@ export default {
   hardware: { title: 'Chapter 10: Hardware', theme: { breadcrumb: false } },
   serving: { title: 'Chapter 11: Serving', theme: { breadcrumb: false } },
   sampling: {
-    title: 'Chapter 12: Sampling & beyond',
+    title: 'Chapter 12: Sampling',
+    theme: { breadcrumb: false },
+  },
+  '-- Applications': {
+    type: 'separator',
+    title: 'APPLICATIONS',
+  },
+  harness: {
+    title: 'Chapter 13: The harness',
     theme: { breadcrumb: false },
   },
   '-- Epilogue': {
