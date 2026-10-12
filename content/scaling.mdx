@@ -13,7 +13,7 @@ import { ScalingLawsFigure } from "../components/figures/scaling-laws"
 
 In 2019, Rich Sutton, one of the fathers of reinforcement learning, published a short, grumpy essay called [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html). Its thesis: seventy years of AI history show that general methods that leverage more computation always, eventually, beat clever methods that encode human knowledge. Researchers hate this, because it means the craft they love loses to whoever buys more compute. They have also, repeatedly, been unable to refute it.
 
-The transformer era is the bitter lesson's greatest vindication. The previous chapter's architecture is almost aggressively generic — identical blocks, no linguistic structure baked in. This chapter is about the discovery that turned "just make it bigger" from a hope into a *quantitative engineering discipline*:
+The transformer era is the bitter lesson's greatest vindication. Chapter 3's architecture is almost aggressively generic — identical blocks, no linguistic structure baked in. This chapter is about the discovery that turned "just make it bigger" from a hope into a *quantitative engineering discipline*:
 
 1. Loss falls as a **power law** in model size, data, and compute — straight lines on log-log plots that you can fit on cheap runs and extrapolate to expensive ones. Capability became predictable.
 2. A fixed compute budget must be split between a bigger model and more data, and there is a measured answer (**Chinchilla's ~20 tokens per parameter**), which the industry then deliberately violates in one direction, for a good reason.
@@ -119,9 +119,9 @@ Power laws don't repeal themselves, but their inputs can run short — and your 
 
 By 2024 this "data wall" was reshaping the field's direction:
 
-- **Data *quality* became the frontier.** If you can't get more tokens, get better ones, through aggressive filtering, deduplication, and curriculum design (Chapter 7).
+- **Data *quality* became the frontier.** If you can't get more tokens, get better ones, through aggressive filtering, deduplication, and curriculum design (Chapter 8).
 - **Synthetic data went mainstream**: models generating and grading training data for the next generation of models. The failure mode to engineer around: train a model naively on its own outputs and the distribution narrows with each round, a degradation called **model collapse**.
-- **A third scaling axis opened: test-time compute.** If you can't profitably make the model bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws. That story belongs to post-training (the stages applied after a run like this one finishes), and it's the climax of Chapter 8.
+- **A third scaling axis opened: test-time compute.** If you can't profitably make the model bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws. That story belongs to post-training (the stages applied after a run like this one finishes), and it's the climax of Chapter 9.
 
 The bitter lesson, in other words, keeps winning. And yet — download a frontier model's config file and it is *not* GPT-2 scaled up. The fields have grown strange: `num_experts`, `num_key_value_heads`, `rope_theta`. Scaling won, but it won while mutating, because at these sizes three costs become unbearable and each one forced a surgery on the architecture. The next chapter reads a modern config line by line and explains what every mutation buys.
 

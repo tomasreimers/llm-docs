@@ -34,7 +34,7 @@ Start from what Chapter 2 handed us: after the embedding lookup, the context alr
 
 But refusing to summarize creates a problem the RNN never had. If every token keeps its own vector, how does information move *between* them at all? In "the cat sat … because it was tired," the vector for "it" is useless until something from "cat" gets into it — and which other tokens matter differs for every token, every sentence. We need a way for each token's vector to reach into the rest of the context and pull in what's relevant, *selectively*, with the selection itself learned. That mechanism is this chapter's one invention.
 
-The second flaw dies as a side effect of the first decision. Each token's update depends only on the *previous layer's* vectors — never on another token's output at the same layer — so every position can be computed **simultaneously**. That quiet property let the architecture absorb all the parallel hardware money could buy — the subject of the next chapter, and of Chapter 10, where we meet the hardware itself.
+The second flaw dies as a side effect of the first decision. Each token's update depends only on the *previous layer's* vectors — never on another token's output at the same layer — so every position can be computed **simultaneously**. That quiet property let the architecture absorb all the parallel hardware money could buy — the subject of Chapter 5, and of Chapter 11, where we meet the hardware itself.
 
 ## Attention: a differentiable lookup
 
@@ -78,7 +78,7 @@ This mask is what makes the model **autoregressive** — a term borrowed from ti
 
 The same mask makes training efficient: every position in the sequence becomes its own training example (predict token 2 from token 1, token 3 from tokens 1–2, …), and all of them are computed in a single parallel pass.
 
-The mask figure's score matrix also shows the architecture's famous tax. That score matrix has one cell per query–key pair: $n$ tokens means $n^2$ cells, so doubling the context quadruples attention's cost. This is why models advertise a **context window** (a maximum sequence length) and why long context is expensive enough that Chapters 5, 10, and 11 all spend time fighting the quadratic.
+The mask figure's score matrix also shows the architecture's famous tax. That score matrix has one cell per query–key pair: $n$ tokens means $n^2$ cells, so doubling the context quadruples attention's cost. This is why models advertise a **context window** (a maximum sequence length) and why long context is expensive enough that Chapters 6, 11, and 12 all spend time fighting the quadratic.
 
 ## Many heads, many questions
 
@@ -86,19 +86,19 @@ One soft lookup per token is not enough. Resolving "it" needs one kind of questi
 
 <AttentionFigure />
 
-Heads learn their jobs the way all network weights do: gradient descent, nothing more. Some of what they learn turns out to be legible after the fact — previous-token heads like the one above are among the best-documented **circuits** (small learned subnetworks with identifiable jobs) in interpretability, the field that reverse-engineers what networks learned (Chapter 6 tells that story).
+Heads learn their jobs the way all network weights do: gradient descent, nothing more. Some of what they learn turns out to be legible after the fact — previous-token heads like the one above are among the best-documented **circuits** (small learned subnetworks with identifiable jobs) in interpretability, the field that reverse-engineers what networks learned (Chapter 7 tells that story).
 
 ## Attention is a set operation
 
 Look at the code again: nothing in it knows *where* a token is. Shuffle the keys and values and every output is unchanged — attention treats the context as a *set*, not a sequence. "The cat chased the dog" and "the dog chased the cat" would be indistinguishable. Word order has to be injected explicitly.
 
-The fix is unglamorous: make position part of the input. The original paper computed a **positional encoding** (a vector that depends only on the position number) and *added* it to each token's embedding, so "cat as token 2" and "cat as token 9" enter the network as slightly different vectors, and attention can learn to care about the difference. Modern models use a cleverer scheme (**RoPE**, Rotary Position Embedding) that encodes *relative* position — "three tokens back" rather than "position #4,821," which is what sentences actually care about. Its mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 5's business.
+The fix is unglamorous: make position part of the input. The original paper computed a **positional encoding** (a vector that depends only on the position number) and *added* it to each token's embedding, so "cat as token 2" and "cat as token 9" enter the network as slightly different vectors, and attention can learn to care about the difference. Modern models use a cleverer scheme (**RoPE**, Rotary Position Embedding) that encodes *relative* position — "three tokens back" rather than "position #4,821," which is what sentences actually care about. Its mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 6's business.
 
 ## The MLP returns
 
 Attention moves information *between* tokens, but does surprisingly little computation on it. So after each attention step, every token's vector is passed (independently, in parallel) through an MLP: the exact architecture from Chapter 1, typically expanding to 4× the model width and back down (a convention from the 2017 paper that simply stuck).
 
-The division of labor: **attention routes, the MLP computes.** Attention gathers the relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as Chapter 6 will show, where most of the model's factual knowledge appears to live. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
+The division of labor: **attention routes, the MLP computes.** Attention gathers the relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as Chapter 7 will show, where most of the model's factual knowledge appears to live. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
 
 ## One picture to keep
 
@@ -110,7 +110,7 @@ Every cell looked at exactly one place: the row above, columns up to its own. An
 
 <KvGridFigure />
 
-The next token always comes from the **bottom-right cell** — everything else exists to make that one cell smart. And generation just *appends a column*: the new token's cells are computed, and **no existing cell changes** — a finished column is finished forever. Which means each cell's keys and values can be stored and reused instead of recomputed. That store is the **KV cache**; Chapter 11 is largely about its economics.
+The next token always comes from the **bottom-right cell** — everything else exists to make that one cell smart. And generation just *appends a column*: the new token's cells are computed, and **no existing cell changes** — a finished column is finished forever. Which means each cell's keys and values can be stored and reused instead of recomputed. That store is the **KV cache**; Chapter 12 is largely about its economics.
 
 ## The residual stream
 
@@ -164,10 +164,6 @@ GPT-2 shipped in four sizes; the smallest (plain "GPT-2", the 124M-parameter one
 
 </details>
 
-## From distribution to text
-
-One loose end, because every demo you've ever seen depends on it: the architecture ends at a probability distribution — the model *never emits text*. Something outside the weights has to pick. The two basic moves: take the single most likely token every time (**greedy decoding**: safe, prone to ruts), or *draw* from the distribution (**sampling**: livelier, occasionally derailed). Between them sits one knob you've already met in every API: **temperature**, which divides the logits by $T$ before the softmax (low $T$ exaggerates the leader's edge toward greedy; high $T$ evens the field toward random). Whatever gets picked is appended to the context and the model runs again; that loop *is* generation. The engineering hiding inside that "pick" (smarter truncations like top-p, masking the distribution so only valid JSON can come out) waits for Chapter 12; what you can build by programming against the distribution rather than the text — tools, retrieval, agents — closes the book in Chapter 13.
-
 ## The lineage that won
 
 The 2017 paper had two towers: an **encoder** reading the source sentence (every token attending in both directions — no causal mask, since nothing is being predicted left-to-right), and a **decoder** — the masked stack this chapter built — writing the translation. The years since sorted their descendants:
@@ -176,9 +172,9 @@ The 2017 paper had two towers: an **encoder** reading the source sentence (every
 
 [BERT](https://arxiv.org/abs/1810.04805)-style encoders powered search and classification, and that branch is still very much alive. (An encoder has no causal mask — every token attends in both directions — so it can't train on next-token prediction: each token would see its "answer" sitting right next to it. BERT's objective is **masked language modeling** instead: blank out ~15% of the tokens at random and predict them from both sides, a cloze test, the natural objective when reading is the job.) The **embedding models** behind semantic search today are encoders: their output is a single vector summarizing a whole text, so that similar texts land near each other (Chapter 2's word embeddings, scaled up to entire documents). The reason falls out of the mask. The causal mask exists for one purpose: to keep next-token prediction honest, so no token peeks at its own future. An embedding model isn't predicting anything; the full text is already on the table, and the job is to read it as well as possible. Hiding the end of a sentence from its beginning would only make the summary worse — so the mask comes off, and every token attends in both directions.
 
-OpenAI's GPT line took the **decoder-only** path: just the causal stack described in this chapter, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100×, which is the next chapter's story. Every frontier LLM today is decoder-only, but the embedding model sitting next to it in a retrieval pipeline is the encoder lineage, still on the job.
+OpenAI's GPT line took the **decoder-only** path: just the causal stack described in this chapter, trained on next-token prediction. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) (2019) showed one such model could do many tasks without task-specific training; [GPT-3](https://arxiv.org/abs/2005.14165) (2020) showed what happens when you scale it 100×, which is Chapter 5's story. Every frontier LLM today is decoder-only, but the embedding model sitting next to it in a retrieval pipeline is the encoder lineage, still on the job.
 
-Before you turn the page, dwell on how strange the situation is. We have an architecture with no linguistic knowledge built in, trained by Chapter 1's loop (predict, score, backpropagate, step), and the chief difference between the toy in this chapter and the model you talked to this morning is… *size*. That can't be the whole story — can it? The next chapter is about the discovery that it nearly is: that the relationship between size and ability is so lawful you can plan a frontier training run on graph paper, months before you can afford to run it.
+One loose end remains, and every demo you've ever seen depends on it: the architecture ends at a probability distribution — the model *never emits text*. Something outside the weights has to pick a token, append it to the context, and run the stack again; that loop *is* generation. What hides inside the "pick" turns out to be the knobs on every API you've used (temperature among them) and a lever most engineers never find: masks that make malformed output literally impossible. How a distribution becomes text — and becomes a thing you can program against — is the next chapter.
 
 ## Further reading
 

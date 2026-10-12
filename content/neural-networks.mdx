@@ -108,7 +108,7 @@ On a one-weight toy (loss $a\theta^2$, the bowl from the figures above) you can 
 Two practical modifications every framework makes:
 
 - **Stochastic** gradient descent (**SGD**, the name you'll see in every framework and paper): you *could* compute the exact gradient over all 60,000 images before each step. But consider what that buys you. The gradient from a random sample of images is an *unbiased* estimate of the full gradient (right on average, noisy per sample), and averaging $n$ samples shrinks the noise only like $1/\sqrt{n}$ (statistics' standard-error rule) while the cost grows linearly with $n$. Worse, extra precision is mostly thrown away: you only take one small step in that direction, and after the step the landscape has changed and the direction must be recomputed anyway. So instead, estimate the gradient on a random **batch** (say, 128 images) per step: for the price of one perfect step you take ~500 noisy ones (60,000 ÷ 128 ≈ 470 batches per pass, call it 500), and 500 stumbles downhill travel much farther than one flawless stride. (The noise even turns out to *help* — it jiggles the trajectory out of flat regions and bad ruts.)
-- **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 7.)
+- **Epochs**: one full pass through the training data is an epoch. Small datasets get looped over many times. (Foreshadowing: LLMs, trained on trillions of tokens, typically see their data roughly *once* — more on that in Chapter 8.)
 
 ## The loss: measuring wrongness
 
@@ -199,7 +199,7 @@ Vanilla SGD works, but a real network's loss landscape is a mess of ravines and 
 
 **Momentum** keeps a running average of recent gradients (exponentially decaying: recent steps weigh most) and steps in that direction — like a ball rolling downhill, it smooths over noise and powers through small bumps.
 
-**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how **weight decay** — a regularization term: a gentle pressure shrinking every weight toward zero each step, so large weights must be earned through the data (why that protects is the closing section) — interacts with the adaptivity (the details of that fix wait for Chapter 7, where the optimizer wars resume).
+**[Adam](https://arxiv.org/abs/1412.6980)** additionally tracks a running average of the gradient's *magnitude* for each individual parameter, and scales each parameter's step size accordingly: parameters with consistently large gradients get smaller steps, and vice versa. It's a per-parameter adaptive learning rate. The variant actually used everywhere is [AdamW](https://arxiv.org/abs/1711.05101), which fixes how **weight decay** — a regularization term: a gentle pressure shrinking every weight toward zero each step, so large weights must be earned through the data (why that protects is the closing section) — interacts with the adaptivity (the details of that fix wait for Chapter 8, where the optimizer wars resume).
 
 When you read an LLM paper and see "AdamW, β₁ = 0.9, β₂ = 0.95," those betas are just the decay rates of the two running averages. And file one fact for the infrastructure chapters: Adam stores two extra numbers *per parameter*, so the optimizer's state is twice the size of the model itself.
 
@@ -220,9 +220,9 @@ One last concept, because it's the difference between machine learning and curve
 Besides more data, the classic in-training countermeasures are **regularization** techniques:
 
 - **Weight decay**, which you met inside AdamW.
-- **Dropout**: during training, zero out a different random fraction of the activations each step, so no unit can rely on precise co-conspirators. (At inference, dropout is off.) For a decade it was in every architecture diagram; Chapter 7 holds a surprise about its fate in LLMs.
+- **Dropout**: during training, zero out a different random fraction of the activations each step, so no unit can rely on precise co-conspirators. (At inference, dropout is off.) For a decade it was in every architecture diagram; Chapter 8 holds a surprise about its fate in LLMs.
 
-The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. That tension returns with a vengeance when we discuss benchmark contamination in Chapter 9.
+The entire game is generalization: we don't want a model that knows these 60,000 digits, we want one that has learned what digits *are*. That tension returns with a vengeance when we discuss benchmark contamination in Chapter 10.
 
 One more thing: nothing in this chapter was actually about digits. The machinery was generic — vectors in, scores out, loss down — pointed at 28×28 images only because the labels came free, and labels are the scarce resource: someone had to write 70,000 of them. So carry this into the next chapter: the largest pile of labeled data our species has produced is *text*, where every word is automatically a label for the words before it. What happens if we point this machinery at that?
 

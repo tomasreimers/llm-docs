@@ -32,7 +32,7 @@ export function AttentionFigure() {
   const head = HEADS[h];
 
   return (
-    <Figure caption="The same query token under three different heads, each asking its own question of the context. Weight patterns are illustrative, but the head types are real — previous-token heads in particular are among the best-documented circuits in trained models (Chapter 6).">
+    <Figure caption="The same query token under three different heads, each asking its own question of the context. Weight patterns are illustrative, but the head types are real — previous-token heads in particular are among the best-documented circuits in trained models (Chapter 7).">
       <div className="flex w-full flex-col items-center gap-2.5 font-mono text-[11.5px]">
         <div className="flex flex-wrap justify-center gap-1.5">
           {TOKENS.map((text, i) =>

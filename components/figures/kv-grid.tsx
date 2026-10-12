@@ -51,7 +51,7 @@ export function KvGridFigure() {
   };
 
   return (
-    <Figure caption="The transformer as a spreadsheet: columns are token positions, rows are layers, and cell (row, column) is computed from the row above, columns up to its own — the mask, again. The next token is read off the bottom-right cell. Generating appends a column and computes only it; every older cell is finished forever, which is why caching them (the KV cache, Chapter 11) is such a big deal.">
+    <Figure caption="The transformer as a spreadsheet: columns are token positions, rows are layers, and cell (row, column) is computed from the row above, columns up to its own — the mask, again. The next token is read off the bottom-right cell. Generating appends a column and computes only it; every older cell is finished forever, which is why caching them (the KV cache, Chapter 12) is such a big deal.">
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
         <svg viewBox="0 0 560 270" className="w-full max-w-xl">
           {/* column headers */}

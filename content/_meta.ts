@@ -29,13 +29,17 @@ export default {
     type: 'separator',
     title: 'MODEL ARCHITECTURE',
   },
-  scaling: { title: 'Chapter 4: Scaling', theme: { breadcrumb: false } },
+  sampling: {
+    title: 'Chapter 4: Sampling',
+    theme: { breadcrumb: false },
+  },
+  scaling: { title: 'Chapter 5: Scaling', theme: { breadcrumb: false } },
   'modern-variants': {
-    title: 'Chapter 5: Modern variants',
+    title: 'Chapter 6: Modern variants',
     theme: { breadcrumb: false },
   },
   interpretability: {
-    title: 'Chapter 6: Interpretability',
+    title: 'Chapter 7: Interpretability',
     theme: { breadcrumb: false },
   },
   '-- Training': {
@@ -43,27 +47,23 @@ export default {
     title: 'TRAINING',
   },
   'pre-training': {
-    title: 'Chapter 7: Pre-training',
+    title: 'Chapter 8: Pre-training',
     theme: { breadcrumb: false },
   },
   'post-training': {
-    title: 'Chapter 8: Post-training',
+    title: 'Chapter 9: Post-training',
     theme: { breadcrumb: false },
   },
   evaluation: {
-    title: 'Chapter 9: Evaluation',
+    title: 'Chapter 10: Evaluation',
     theme: { breadcrumb: false },
   },
   '-- Inference': {
     type: 'separator',
     title: 'INFERENCE',
   },
-  hardware: { title: 'Chapter 10: Hardware', theme: { breadcrumb: false } },
-  serving: { title: 'Chapter 11: Serving', theme: { breadcrumb: false } },
-  sampling: {
-    title: 'Chapter 12: Sampling',
-    theme: { breadcrumb: false },
-  },
+  hardware: { title: 'Chapter 11: Hardware', theme: { breadcrumb: false } },
+  serving: { title: 'Chapter 12: Serving', theme: { breadcrumb: false } },
   '-- Applications': {
     type: 'separator',
     title: 'APPLICATIONS',
