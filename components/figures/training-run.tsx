@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 
 import { Figure, ink } from './figure';
 
-// A month in the life of the run planned in Chapter 5: the 8B model on 15T
+// A month in the life of the run planned in Chapter 4: the 8B model on 15T
 // tokens. Mechanics are illustrative; the endpoints are real — loss starts
 // at ln(128,256) ≈ 11.76 (uniform over the vocabulary) and lands at ≈2.03,
-// the value Chapter 5's fitted formula predicted for this plan.
+// the value Chapter 4's fitted formula predicted for this plan.
 const WARMUP = 0.02;
 const DECAY_AT = 0.85;
 const SPIKE_T = 0.45;
@@ -70,7 +70,7 @@ const STEP_TEXT = [
   'step zero: loss = ln(128,256) ≈ 11.8 — every token equally likely. Warmup ramps the learning rate so the violent early gradients don\u2019t wreck the initialization',
   'the cruise: ~3 weeks at full learning rate, ~720B tokens a day, loss gliding down its power law',
   'day 13: a loss spike — a bad batch or a numerical hiccup. Clip the gradients, skip the batch; worst case, rewind to a checkpoint',
-  'the last 15%: decay the learning rate and the loss takes a final dive — landing at 2.03, where Chapter 5\u2019s fit said it would',
+  'the last 15%: decay the learning rate and the loss takes a final dive — landing at 2.03, where Chapter 4\u2019s fit said it would',
 ];
 const N = STEP_TEXT.length;
 
@@ -94,7 +94,7 @@ export function TrainingRunFigure() {
   const [w0, w1] = WINDOWS[s];
 
   return (
-    <Figure caption="A month in the life of the run Chapter 5 planned: the 8B model, 15T tokens, 1,000 GPUs. Top: loss (log scale) — from ln(vocab) ≈ 11.8 at initialization, down the power-law glide, over one spike, to the final decay dive. Bottom: the WSD learning-rate schedule driving it. Mechanics illustrative; endpoints real.">
+    <Figure caption="A month in the life of the run Chapter 4 planned: the 8B model, 15T tokens, 1,000 GPUs. Top: loss (log scale) — from ln(vocab) ≈ 11.8 at initialization, down the power-law glide, over one spike, to the final decay dive. Bottom: the WSD learning-rate schedule driving it. Mechanics illustrative; endpoints real.">
       <div className="flex w-full flex-col items-center gap-2 font-mono text-[11px]">
         <svg viewBox="0 0 560 330" className="w-full max-w-xl">
           {/* highlight window */}

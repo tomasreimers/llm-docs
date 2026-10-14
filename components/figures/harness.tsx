@@ -4,7 +4,7 @@ import { Figure } from './figure';
 // context, runs the sampled tokens, and loops.
 export function HarnessFigure() {
   return (
-    <Figure caption="One turn through a harness. The 'conversation' the user sees is an illusion the harness maintains: it assembles the system prompt, the transcript, tool results, and any retrieved documents into one flat token sequence (Chapter 9's chat template), hands it to the frozen model, samples from the distribution (Chapter 4), and then decides what the tokens mean — text to stream, or a tool call to execute. Whatever happens is appended, and the loop runs again.">
+    <Figure caption="One turn through a harness. The 'conversation' the user sees is an illusion the harness maintains: it assembles the system prompt, the transcript, tool results, and any retrieved documents into one flat token sequence (Chapter 8's chat template), hands it to the frozen model, samples from the distribution (Chapter 3), and then decides what the tokens mean — text to stream, or a tool call to execute. Whatever happens is appended, and the loop runs again.">
       <svg viewBox="0 0 680 300" className="w-full max-w-xl font-mono">
         <defs>
           <marker id="hn-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -74,7 +74,7 @@ export function HarnessFigure() {
           tokens
         </text>
         <text x={498} y={164} textAnchor="middle" fontSize={8} fill="currentColor" opacity={0.55}>
-          (Ch. 4)
+          (Ch. 3)
         </text>
 
         {/* return loop */}

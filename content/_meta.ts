@@ -25,21 +25,24 @@ export default {
     title: 'Chapter 3: The transformer',
     theme: { breadcrumb: false },
   },
+  sampling: {
+    display: 'hidden',
+    theme: {
+      navbar: true,
+      breadcrumb: false,
+    },
+  },
   '-- Architecture': {
     type: 'separator',
     title: 'MODEL ARCHITECTURE',
   },
-  sampling: {
-    title: 'Chapter 4: Sampling',
-    theme: { breadcrumb: false },
-  },
-  scaling: { title: 'Chapter 5: Scaling', theme: { breadcrumb: false } },
+  scaling: { title: 'Chapter 4: Scaling', theme: { breadcrumb: false } },
   'modern-variants': {
-    title: 'Chapter 6: Modern variants',
+    title: 'Chapter 5: Modern variants',
     theme: { breadcrumb: false },
   },
   interpretability: {
-    title: 'Chapter 7: Interpretability',
+    title: 'Chapter 6: Interpretability',
     theme: { breadcrumb: false },
   },
   '-- Training': {
@@ -47,25 +50,25 @@ export default {
     title: 'TRAINING',
   },
   'pre-training': {
-    title: 'Chapter 8: Pre-training',
+    title: 'Chapter 7: Pre-training',
     theme: { breadcrumb: false },
   },
   'post-training': {
-    title: 'Chapter 9: Post-training',
+    title: 'Chapter 8: Post-training',
     theme: { breadcrumb: false },
   },
   evaluation: {
-    title: 'Chapter 10: Evaluation',
+    title: 'Chapter 9: Evaluation',
     theme: { breadcrumb: false },
   },
   '-- Inference': {
     type: 'separator',
     title: 'INFERENCE',
   },
-  hardware: { title: 'Chapter 11: Hardware', theme: { breadcrumb: false } },
-  serving: { title: 'Chapter 12: Serving', theme: { breadcrumb: false } },
+  hardware: { title: 'Chapter 10: Hardware', theme: { breadcrumb: false } },
+  serving: { title: 'Chapter 11: Serving', theme: { breadcrumb: false } },
   harness: {
-    title: 'Chapter 13: The harness',
+    title: 'Chapter 12: The harness',
     theme: { breadcrumb: false },
   },
   '-- Epilogue': {

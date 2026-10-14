@@ -15,7 +15,7 @@ export const metadata = {
     template: '%s - Modern LLMs',
   },
   description:
-    'A 13-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
+    'A 12-chapter, front-to-back-readable guide on how modern LLMs work, for experienced engineers.',
   applicationName: 'Modern LLMs',
   generator: 'Next.js',
   appleWebApp: {
