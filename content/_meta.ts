@@ -64,10 +64,6 @@ export default {
   },
   hardware: { title: 'Chapter 11: Hardware', theme: { breadcrumb: false } },
   serving: { title: 'Chapter 12: Serving', theme: { breadcrumb: false } },
-  '-- Applications': {
-    type: 'separator',
-    title: 'APPLICATIONS',
-  },
   harness: {
     title: 'Chapter 13: The harness',
     theme: { breadcrumb: false },
