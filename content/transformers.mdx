@@ -22,7 +22,7 @@ Chapter 2 left a network-shaped hole: something has to read the context's embedd
 
 1. The RNNs that held the job crushed the whole past into one fixed-size vector and processed tokens one at a time. We need a network that keeps *every* token's vector and reads them all at once.
 2. One new primitive does it — **attention**: a differentiable lookup in which every token fetches what it needs from the tokens before it.
-3. Alternate attention with Chapter 1's MLP along a residual stream, stack it deep, and you have a GPT. Everything since is this, scaled.
+3. Alternate attention with Chapter 1's MLP along a residual stream (a per-token running vector each layer adds to — defined below), stack it deep, and you have a GPT. Everything since is this, scaled.
 
 ## The problem attention solves
 
@@ -35,7 +35,7 @@ Start from what Chapter 2 handed us: after the embedding lookup, the context alr
 
 But refusing to summarize creates a problem the RNN never had. If every token keeps its own vector, how does information move *between* them at all? In "the cat sat … because it was tired," the vector for "it" is useless until something from "cat" gets into it — and which other tokens matter differs for every token, every sentence. We need a way for each token's vector to reach into the rest of the context and pull in what's relevant, *selectively*, with the selection itself learned. That mechanism is this chapter's one invention.
 
-The second flaw dies as a side effect of the first decision. Each token's update depends only on the *previous layer's* vectors — never on another token's output at the same layer — so every position can be computed **simultaneously**. That quiet property let the architecture absorb all the parallel hardware money could buy — the subject of Chapter 4, and of Chapter 10, where we meet the hardware itself.
+The second flaw dies as a side effect of the first decision. Each token's update depends only on the *previous layer's* vectors (never on another token's output at the same layer), so every position can be computed **simultaneously**. That quiet property let the architecture absorb all the parallel hardware money could buy: the subject of Chapter 4, and of Chapter 10, where we meet the hardware itself.
 
 ## Attention: a differentiable lookup
 
@@ -60,7 +60,7 @@ $$
 And in code, it's a handful of matrix multiplies:
 
 ```python showLineNumbers
-def attention(x, W_q, W_k, W_v):     # x: (seq_len, d_model)
+def attention(x, W_q, W_k, W_v):     # x: (seq_len, d) — d_model in most codebases
     Q, K, V = x @ W_q, x @ W_k, x @ W_v
     scores = Q @ K.T / math.sqrt(K.shape[-1])   # (seq_len, seq_len)
     scores = causal_mask(scores)     # -inf above the diagonal
@@ -87,11 +87,11 @@ One soft lookup per token is not enough. Resolving "it" needs one kind of questi
 
 <AttentionFigure />
 
-Heads learn their jobs the way all network weights do: gradient descent, nothing more. Some of what they learn turns out to be legible after the fact — previous-token heads like the one above are among the best-documented **circuits** (small learned subnetworks with identifiable jobs) in interpretability, the field that reverse-engineers what networks learned (Chapter 6 tells that story).
+Heads learn their jobs the way all network weights do: gradient descent, nothing more. Some of what they learn turns out to be legible after the fact — previous-token heads (heads that always attend to the immediately preceding token) like the one above are among the best-documented **circuits** (small learned subnetworks with identifiable jobs) in interpretability, the field that reverse-engineers what networks learned (Chapter 6 tells that story).
 
 ## Attention is a set operation
 
-Look at the code again: nothing in it knows *where* a token is. Shuffle the keys and values and every output is unchanged — attention treats the context as a *set*, not a sequence. "The cat chased the dog" and "the dog chased the cat" would be indistinguishable. Word order has to be injected explicitly.
+Look at the code again: beyond the mask's before/after ordering, nothing in it knows *where* a token is. Shuffle the keys and values a token is allowed to see and its output is unchanged — attention treats the visible context as a *set*, not a sequence. "The cat chased the dog" and "the dog chased the cat" would be indistinguishable. Word order has to be injected explicitly.
 
 The fix is unglamorous: make position part of the input. The original paper computed a **positional encoding** (a vector that depends only on the position number) and *added* it to each token's embedding, so "cat as token 2" and "cat as token 9" enter the network as slightly different vectors, and attention can learn to care about the difference. Modern models use a cleverer scheme (**RoPE**, Rotary Position Embedding) that encodes *relative* position — "three tokens back" rather than "position #4,821," which is what sentences actually care about. Its mechanics, and the tricks for stretching positions to million-token contexts, are Chapter 5's business.
 
@@ -101,7 +101,7 @@ Attention moves information *between* tokens, but does surprisingly little compu
 
 The division of labor: **attention routes, the MLP computes.** Attention gathers the relevant context into a token's vector; the MLP is where that vector gets *processed* — and, as Chapter 6 will show, where most of the model's factual knowledge appears to live. In a standard transformer the MLPs hold roughly two-thirds of the parameters. When people say "a bigger model knows more," they are mostly talking about MLP weights.
 
-## One picture to keep
+## The computation as a spreadsheet
 
 Here is the machine all those parts make, in a single mental image — the computation as a *spreadsheet*. One column per token. The top row is the embeddings; each row below is all $n$ vectors after one more layer. Watch it build, one cell at a time, and watch what each cell reads:
 
@@ -119,7 +119,7 @@ Now zoom in on a single *column* of that spreadsheet — one token's vector, fol
 
 <StreamColumnFigure />
 
-We can now say what's inside the "layer" promised at the chapter's start: one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Each part doesn't *replace* the token's vector; it computes an update and **adds** it:
+The "layer" promised at the chapter's start is one attention step plus one MLP — each preceded by a normalization step that keeps the vectors' magnitudes stable. That pair is called a **block** (papers use "block" and "layer" interchangeably): $n$ vectors in, $n$ refined vectors out. A model is a stack of them: 12 in GPT-2, on the order of a hundred in a frontier model. Each part doesn't *replace* the token's vector; it computes an update and **adds** it:
 
 $$
 \tip{the token's residual stream}{x} \leftarrow x + \tip{reads the stream and writes back what it gathered from other tokens}{\mathrm{Attention}(x)}; \qquad x \leftarrow x + \tip{reads the stream and writes back what it computed on this token}{\mathrm{MLP}(x)}
@@ -131,7 +131,7 @@ $$
 x_{\text{new}} = \tip{whatever 'it' already was — still in there}{[0, 2]} + \tip{what attention fetched — mostly cat}{[1.65,\ 0.31]} = [1.65,\ 2.31]
 $$
 
-Look at what addition preserved. The original $[0, 2]$ — everything "it" already was (a pronoun, in subject position) — is *still in the vector*, now joined by cat-ness. If the block had **replaced** the vector instead, the pronoun would have been overwritten by the cat; because it **adds**, the token accumulates. The MLP then reads the combined vector and adds its own contribution — perhaps, having seen "pronoun + cat + tired" together, something like *sleepy animal*. A later block's attention can read *that* and route it to other tokens. Each token's vector only ever gets richer.
+Look at what addition preserved: the original $[0, 2]$ — everything "it" already was (a pronoun, in subject position) — is *still in the vector*, now joined by cat-ness. If the block had **replaced** the vector instead, the pronoun would have been overwritten by the cat; because it **adds**, the token accumulates. The MLP then reads the combined vector and adds its own contribution — perhaps, having seen "pronoun + cat + tired" together, something like *sleepy animal*. A later block's attention can read *that* and route it to other tokens. Each token's vector only ever gets richer.
 
 That accumulating vector is the **residual stream**, and the mental model, standard in the interpretability field, is a shared memory bus: one stream per token, flowing up through the stack, with every attention head and every MLP *reading* from it, computing something, and *writing* the result back by addition:
 
@@ -146,7 +146,7 @@ If blocks *replaced* the vector, backprop would still work — the chain rule co
 
 </details>
 
-Suppose the context said, pages ago, "Jack, a tall man with red hair, walked in" — and the model must now continue "Jack's hair was ___". A single attention lookup sounds hopeless for this: the token "hair" can attend back to "Jack," but the *token* "Jack" is just a name — the redness lives three tokens away, on "red." How can attending to unprocessed tokens answer a question whose answer is smeared across several of them?
+Suppose the context said, pages ago, "Jack, a tall man with red hair, walked in," and the model must now continue "Jack's hair was ___". A single attention lookup sounds hopeless for this: the token "hair" can attend back to "Jack," but the *token* "Jack" is just a name — the redness lives three tokens away, on "red." How can attending to unprocessed tokens answer a question whose answer is smeared across several of them?
 
 It can't — and it never has to. After the first block, **attention reads the previous layer's *streams*, not raw tokens.** Somewhere in an early block, a head doing purely local work moved "red" into the stream above "Jack" — the column over that name now *contains* his hair color. By the time a late block's query from "hair was" goes looking for facts-about-Jack, the answer has already been computed and parked where the name is; retrieval is one hop because earlier layers did the assembly. That's what depth buys: each layer attends over the *results* of every layer below it, so one lookup becomes a pipeline of lookups over its own previous conclusions. The stream above a token is the model's accumulating *dossier* on that position, and later layers consult the dossiers.
 
@@ -191,17 +191,17 @@ Dividing by $T$ changes the outcome because the exponential turns logit **gaps**
 - At $T = 0.5$ every gap doubles, so every ratio squares: **98% / 1.8% / 0.2%**, nearly deterministic.
 - At $T = 2$ every gap halves, every ratio square-roots: **63% / 23% / 14%** — the underdogs breathe.
 
-Low temperature is *not* "more accurate" — it's more *conservative*: you're trading diversity for **mode-seeking**, always harvesting the distribution's highest peak. The right trade for extraction tasks, often the wrong one for writing. (Training itself can also prune diversity before temperature gets a say — Chapter 8 names that failure when it builds the training that causes it.)
+Low temperature is *not* "more accurate" — it's more *conservative*: you're trading diversity for **mode-seeking**, always harvesting the distribution's highest peak. The right trade for extraction tasks, often the wrong one for writing. (Training itself can also prune diversity before temperature gets a say; Chapter 8 names that failure when it builds the training that causes it.)
 
-Why not always take the argmax? Pure greed degenerates into repetition loops ("I really really really really…"), each copy making the next more probable. And why not sample honestly? The **long tail**: the bottom 90,000 tokens are individually negligible but *collectively* carry enough mass that a catastrophic token occasionally gets drawn — and one bad token compounds, because generation has no backspace. Call that the **autoregressive original sin**: a sampled token enters the context permanently, and every later distribution conditions on it *as if it were ground truth*. Training never prepared the model for its own mistakes — the training context was always real corpus text (a setup called **teacher forcing**), so the model has only ever practiced continuing *good* prefixes, and errors compound with length (the textbook name is **exposure bias**). The fix, from [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751), is to amputate the tail: **top-k** keeps the k most likely tokens; **top-p** ("nucleus") keeps the smallest set whose probabilities sum to p — narrow when the model is confident, wide when it isn't. Modern defaults (temperature ~0.7–1.0 with top-p ~0.9–0.95) are the field's accumulated scar tissue; nobody derived them.
+Why not always take the argmax? Pure greed degenerates into repetition loops ("I really really really really…"), each copy making the next more probable. And why not sample honestly? The **long tail**: of a frontier model's ~100,000-token vocabulary, the bottom 90,000 are individually negligible but *collectively* carry enough mass that a catastrophic token occasionally gets drawn — and one bad token compounds, because generation has no backspace. Call that the **autoregressive original sin**: a sampled token enters the context permanently, and every later distribution conditions on it *as if it were ground truth*. Training never prepared the model for its own mistakes — the training context was always real corpus text (a setup called **teacher forcing**), so the model has only ever practiced continuing *good* prefixes, and errors compound with length (the textbook name is **exposure bias**). The fix, from [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751), is to amputate the tail: **top-k** keeps the k most likely tokens; **top-p** ("nucleus") keeps the smallest set whose probabilities sum to p — narrow when the model is confident, wide when it isn't. Modern defaults (temperature ~0.7–1.0 with top-p ~0.9–0.95) are the field's accumulated scar tissue; nobody derived them.
 
 <TemperatureFigure />
 
-The remaining knobs, briefly. **Frequency and presence penalties** subtract from the logit of every token already in the context (in proportion to its count, or a flat amount once), attacking repetition directly. **Beam search** — the machine-translation era's standard decoder, which carries the $B$ most probable partial sequences instead of committing to one — is essentially never used for open-ended generation: maximizing total sequence probability is precisely the degenerate-repetition objective.
+**Frequency and presence penalties** subtract from the logit of every token already in the context (in proportion to its count, or a flat amount once), attacking repetition directly. **Beam search** — the machine-translation era's standard decoder, which carries the $B$ most probable partial sequences instead of committing to one — is essentially never used for open-ended generation: repetition is self-reinforcing, so the highest-probability long sequence is often a loop, and beam search seeks it out even harder than greedy does.
 
-No knob, though, makes the model compute longer on a hard problem, know a fact the weights never learned, or touch anything outside its context — and no temperature makes "valid JSON only" a *guarantee*. Programming the distribution harder than a knob can (masking it so malformed output is impossible, making tokens executable with tools and retrieval) is Chapter 12, where the book ends.
+No knob, though, makes the model compute longer on a hard problem, know a fact the weights never learned, or touch anything outside its context — and no temperature makes "valid JSON only" a *guarantee*. Programming the distribution harder than a knob can (masking it so malformed output is impossible, letting generated tokens trigger your code and searches) is Chapter 12, where the book ends.
 
-We now have an architecture with no linguistic knowledge built in, trained by Chapter 1's loop (predict, score, backpropagate, step), wired all the way to text — and the chief difference between the toy in this chapter and the model you talked to this morning is… *size*. That can't be the whole story — can it? The next chapter is about the discovery that it nearly is: the relationship between size and ability is so lawful you can plan a frontier training run on graph paper, months before you can afford to run it.
+We now have an architecture with no linguistic knowledge built in, trained by Chapter 1's loop (predict, score, backpropagate, step), wired all the way to text. And the chief difference between the toy in this chapter and the model you talked to this morning is… *size*. That can't be the whole story — can it? The next chapter is about the discovery that it nearly is: the relationship between size and ability is so lawful you can plan a frontier training run on graph paper, months before you can afford to run it.
 
 ## Further reading
 
