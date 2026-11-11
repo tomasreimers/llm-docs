@@ -27,7 +27,7 @@ Any training run is summarized by three numbers:
 
 - $N$ — **parameters**: the count of weights in the model. GPT-2: 124M (we counted them at the end of Chapter 3). GPT-3: 175B.
 - $D$ — **training tokens**: how much text the model sees, measured after tokenization (Chapter 2). GPT-3: ~300B tokens.
-- $C$ — **compute**: the total work executed during training, counted in **FLOPs**: floating-point operations, where one FLOP is a single multiply or add of two numbers. (Careful with the units: FLOPs is a *count* of operations; a chip's speed is FLOPs *per second*, often written FLOP/s. A training run costs 10²⁴ FLOPs the way a trip costs 500 miles — how fast you cover them is the hardware's problem, and Part IV's subject.)
+- $C$ — **compute**: the total work executed during training, counted in **FLOPs**: floating-point operations, where one FLOP is a single multiply or add of two numbers. (Careful with the units: FLOPs is a *count* of operations; a chip's speed is FLOPs *per second*, often written FLOP/s. A training run costs 10²⁴ FLOPs the way a trip costs 500 miles — how fast you cover them is the hardware's problem, and Chapter 10's subject.)
 
 These aren't independent. Each training token costs a fixed amount of work proportional to the model's size, and the total is well-approximated by a rule of thumb you will see everywhere in this field:
 
@@ -48,7 +48,7 @@ $$
 1{,}000 \times 10^{15} \times 2{,}592{,}000 \text{ s} \approx 2.6 \times 10^{24} \text{ FLOPs — at peak.}
 $$
 
-You will not run at peak. The fraction of theoretical FLOPs a training run actually achieves is called **MFU** (model FLOPs utilization), and a well-engineered run manages around 40% — the rest is lost to memory stalls, communication between GPUs, and everything else in Part IV. So your real budget is:
+You will not run at peak. The fraction of theoretical FLOPs a training run actually achieves is called **MFU** (model FLOPs utilization), and a well-engineered run manages around 40% — the rest is lost to memory stalls, communication between GPUs, and everything else in the inference chapters (10 and 11). So your real budget is:
 
 $$
 C \approx 2.6 \times 10^{24} \times 0.40 \approx 10^{24} \text{ FLOPs.}
@@ -99,7 +99,7 @@ But compute-optimal is only the right target if **training cost is all you care 
 
 <OvertrainFigure />
 
-Look at what the drop bought and declined. Bought: loss 2.14 → 2.03, at a serving cost that didn't move — 8B parameters is 8B parameters. Declined: the optimum of the budget Llama 3 actually spent ($7 \times 10^{23}$ FLOPs), an 81B model at loss 1.97 — better, but 10× the price on every token it would ever serve. Which choice is right depends entirely on how many tokens the model serves in its lifetime; a popular model serves trillions, and the training premium amortizes to nothing. This is why cheap, fast, surprisingly good small models exist: you are looking at this trade. ([Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) is a great meditation on the corollary: once data is the binding constraint, where does more *data* come from?)
+Look at what the drop bought and declined. Bought: loss 2.14 → 2.03, at a serving cost that didn't move — 8B parameters is 8B parameters. Declined: the optimum of the budget Llama 3 actually spent ($7 \times 10^{23}$ FLOPs), an 81B model at loss 1.97 — better, but 10× the price on every token it would ever serve. Which choice is right depends entirely on how many tokens the model serves in its lifetime; a popular model serves trillions, and the training premium amortizes to nothing. This is why cheap, fast, surprisingly good small models exist: you are looking at this trade. It's also the trade you'll make: your model is meant to be served, so the plan Chapter 7 actually runs is Llama 3's, an 8B model on 15T tokens. ([Chinchilla's Wild Implications](https://www.lesswrong.com/posts/6Fpvch8RR29qLEWNH/chinchilla-s-wild-implications) is a great meditation on the corollary: once data is the binding constraint, where does more *data* come from?)
 
 ## Emergence: when quantity reads as quality
 
@@ -119,7 +119,7 @@ Power laws don't repeal themselves, but their inputs can run short — and your 
 
 By 2024 this "data wall" was reshaping the field's direction:
 
-- **Data *quality* became the frontier.** If you can't get more tokens, get better ones, through aggressive filtering, deduplication, and curriculum design (Chapter 7).
+- **Data *quality* became the frontier.** If you can't get more tokens, get better ones, through aggressive filtering, deduplication, careful data mixes, and saving the best data for last (Chapter 7).
 - **Synthetic data went mainstream**: models generating and grading training data for the next generation of models. The failure mode to engineer around: train a model naively on its own outputs and the distribution narrows with each round, a degradation called **model collapse**.
 - **A third scaling axis opened: test-time compute.** If you can't profitably make the model bigger, make it *think longer* — spend more tokens reasoning before answering. The reasoning models of 2024–2026 (o1, R1, and their descendants) scale capability with inference compute, and turned out to have their own scaling laws. That story belongs to post-training (the stages applied after a run like this one finishes), and it's the climax of Chapter 8.
 

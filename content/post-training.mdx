@@ -96,13 +96,13 @@ Given an unhackable reward and room to explore, the model *discovers* extended r
 
 <RlvrFigure />
 
-This is the third scaling axis promised in Chapter 4, **test-time compute**, made concrete: reasoning models convert inference tokens into accuracy, and the exchange rate is good enough that "think for 10,000 tokens" competes with "be 10× bigger." It also reframes the economics of Part IV: a reasoning model's cost lives largely in its inference bill. (OpenAI's [o1](https://openai.com/index/learning-to-reason-with-llms/) announced the regime; R1 showed everyone how it works.)
+This is the third scaling axis promised in Chapter 4, **test-time compute**, made concrete: reasoning models convert inference tokens into accuracy, and the exchange rate is good enough that "think for 10,000 tokens" competes with "be 10× bigger." It also reframes the economics of Chapters 10 and 11: a reasoning model's cost lives largely in its inference bill. (OpenAI's [o1](https://openai.com/index/learning-to-reason-with-llms/) announced the regime; R1 showed everyone how it works.)
 
 Two caveats to keep your model of reasoning models honest. Verifiability is a *spectrum* — math and code sit at the easy end, and extending RLVR to essay quality or medical advice requires reward models again (with all their hackability; there's active work on making the graders themselves reason). And recall Chapter 6: the chain of thought is *evidence* of the computation, not a faithful log of it.
 
 ## The practical tier: fine-tuning for the rest of us
 
-You will probably never run RLHF, but you may well fine-tune — and the method you'd use is **[LoRA](https://arxiv.org/abs/2106.09685)** (low-rank adaptation). The problem it solves is Chapter 7's checkpoint arithmetic, landing on your desk: full fine-tuning needs gradients and optimizer state for every weight (~14 bytes per parameter, >100 GB of working state for even an 8B model), which prices out single GPUs. LoRA's move: freeze every original weight $W$, and next to each big matrix install a *bypass* of two skinny matrices ($A$ projects the layer's input $x$ down to a tiny width $r$, then $B$ projects it back up) so the layer computes $Wx + BAx$. Only $A$ and $B$ train:
+You will probably never run RLHF, but you may well fine-tune — and the method you'd use is **[LoRA](https://arxiv.org/abs/2106.09685)** (low-rank adaptation). The problem it solves is training's memory arithmetic, landing on your desk: full fine-tuning needs weights, gradients, and optimizer state for every parameter (~16 bytes each, Chapter 10's tally, so ~130 GB of working state for even an 8B model), which prices out single GPUs. LoRA's move: freeze every original weight $W$, and next to each big matrix install a *bypass* of two skinny matrices ($A$ projects the layer's input $x$ down to a tiny width $r$, then $B$ projects it back up) so the layer computes $Wx + BAx$. Only $A$ and $B$ train:
 
 <LoraFigure />
 
@@ -110,15 +110,13 @@ The bet behind it is that a fine-tune's *change* to the weights ($\Delta W = BA$
 
 The advice half of this section: fine-tuning teaches *form* extremely well (your tone, your domain's jargon) and *facts* poorly — new knowledge injected via fine-tuning tends to be brittle and to collide with what the model already believes. For facts, retrieval (Chapter 12) usually beats weights. And for strict output *syntax* (valid JSON matching a schema), you may not need training at all: **constrained generation** masks away every token that would break the grammar at decode time, making invalid output impossible rather than unlikely (Chapter 12 covers how). Fine-tune for behavior; retrieve for knowledge. Constrain for syntax. And know the tax you're paying either way: any narrow training erodes some general capability (**catastrophic forgetting**), which is why labs mix general data into every specialization run — and why a model that's been aggressively aligned can feel slightly dumber than its base (the "alignment tax," real but much reduced in modern pipelines).
 
-## What post-training can't fix
-
-A clean mental model to close the part on: pre-training sets the *ceiling* — the knowledge and raw capability. Post-training determines how much of the ceiling you can *reach* through the chat interface, and RLVR genuinely raises it for verifiable domains. But no amount of preference tuning installs knowledge that isn't there.
-
 ## Hallucination: the failure users meet first
 
 **Hallucination** — the model confidently asserting things that aren't true — is not a bug bolted onto an otherwise truthful system; it's the default behavior of the machine this book has described. A language model never retrieves facts: it continues documents (Chapter 2), and nothing in the pre-training loss distinguishes *true* from *plausible*. A confident, well-formatted wrong answer is often literally the most likely next text, and when the fact isn't in the weights, the distribution still has to put its mass somewhere — it lands on things that *sound like* answers. Post-training then makes a bad situation worse in a specific, measurable way. Graders, human raters and benchmarks alike, score a blank "I don't know" as zero and a guess as sometimes-right, so optimization teaches the model to be a confident test-taker ([OpenAI's analysis](https://arxiv.org/abs/2509.04664) frames hallucination as exactly this: an artifact of evaluations that reward guessing over calibrated uncertainty). Calibration (training the model to say "I don't know" when its internal confidence is genuinely low) treats the symptom. For facts that must be right, ground the model in retrieved sources (Chapter 12) and verify what comes out (Chapter 9).
 
-When a model fails you, ask which layer failed: the ceiling, or the character?
+## What post-training can't fix
+
+Hallucination is one instance of a general rule, and a clean mental model to close on: pre-training sets the *ceiling* — the knowledge and raw capability. Post-training determines how much of the ceiling you can *reach* through the chat interface, and RLVR genuinely raises it for verifiable domains. But no amount of preference tuning installs knowledge that isn't there. When a model fails you, ask which layer failed: the ceiling, or the character?
 
 Every section of this chapter also quietly assumed that someone can *tell* when an answer is better — every technique optimized a measurement, whether a reward model, a verifier, or a human preference. So everything hangs on a question the techniques themselves can't answer: are the measurements any good? The next chapter is about how this field grades its models, and why you should trust almost none of the numbers in a launch post.
 
